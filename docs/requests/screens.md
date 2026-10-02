@@ -50,8 +50,7 @@ strings.
   `bridge.window.*` when clicked.
 - macOS: the HTML menu bar and the drawn window controls are hidden; a 72 px spacer leaves
   room for the traffic lights. This was not run on macOS.
-- `baren://auth/<code>` wakes the "continue in browser" poller immediately
-  (`lib/devicePoll.ts`); `baren://invite/<token>` opens the invite screen.
+- `baren://invite/<token>` opens the invite screen.
 - Proposal, agreeing with desktop-shell §4.2: typed `bridge.onCommand(cb)` and `bridge.app.ready()`
   would replace the two DOM events.
 
@@ -71,9 +70,9 @@ strings.
    fractional advances Chromium puts them up to 2 px to the left, and the menus anchored under
    them move too. screens snaps the title widths once per font load (`useWholePixelTitles` in
    `app/AppMenuBar.tsx`). This could move into `MenuBar`.
-4. **`AuthHeading` lead line height.** Sign in and Create account use 14/20; Verify and
-   Continue in browser use 14/22 (the component's value). screens overrides the first two with
-   `.leadCompact p`. A `lead` size prop would be cleaner.
+4. **`AuthHeading` lead line height.** Sign in and Create account use 14/20; Verify uses 14/22
+   (the component's value). screens overrides the first two with `.leadCompact p`. A `lead`
+   size prop would be cleaner.
 5. **No modal dialog.** screens built `renderer/components/Dialog.tsx` (focus trap, Escape,
    backdrop click, focus restore) for invite, rename, create team, confirmations and
    shortcuts. A ui-kit `Dialog` would let the editor share it.

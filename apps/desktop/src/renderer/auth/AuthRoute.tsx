@@ -1,6 +1,5 @@
 /** Lazily loaded chunk with every auth step and the invite landing screen. */
 import type { AuthStep } from '../app/routes'
-import { BrowserScreen } from './BrowserScreen'
 import { ForgotScreen } from './ForgotScreen'
 import { InviteScreen } from './InviteScreen'
 import { RegisterScreen } from './RegisterScreen'
@@ -19,8 +18,6 @@ export default function AuthRoute(props: AuthRouteProps) {
       return <RegisterScreen />
     case 'verify':
       return <VerifyScreen />
-    case 'browser':
-      return <BrowserScreen />
     case 'forgot':
       return <ForgotScreen />
     case 'reset':

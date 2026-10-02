@@ -7,7 +7,7 @@
 use std::time::Duration;
 
 use axum::extract::FromRequestParts;
-use axum::http::header::{AUTHORIZATION, COOKIE};
+use axum::http::header::AUTHORIZATION;
 use axum::http::request::Parts;
 use axum::http::HeaderMap;
 use baren_proto::dto;
@@ -19,8 +19,6 @@ use crate::secrets::{hash_secret, new_token};
 use crate::state::AppState;
 
 const BUMP_EVERY: Duration = Duration::from_secs(5 * 60);
-/// Cookie used only by the server-rendered `/device` page.
-pub const SESSION_COOKIE: &str = "baren_session";
 
 /// The authenticated caller of a request.
 #[derive(Debug, Clone)]
@@ -146,19 +144,6 @@ pub fn bearer_token(headers: &HeaderMap) -> Option<&str> {
         .filter(|t| !t.is_empty())
 }
 
-/// The `/device` page's session cookie.
-pub fn cookie_token(headers: &HeaderMap) -> Option<&str> {
-    headers
-        .get_all(COOKIE)
-        .iter()
-        .filter_map(|v| v.to_str().ok())
-        .flat_map(|v| v.split(';'))
-        .filter_map(|pair| pair.trim().split_once('='))
-        .find(|(name, _)| *name == SESSION_COOKIE)
-        .map(|(_, value)| value.trim())
-        .filter(|v| !v.is_empty())
-}
-
 impl FromRequestParts<AppState> for AuthUser {
     type Rejection = ApiError;
 
@@ -176,17 +161,12 @@ mod tests {
     use axum::http::HeaderValue;
 
     #[test]
-    fn parses_bearer_and_cookie() {
+    fn parses_bearer_token() {
         let mut h = HeaderMap::new();
         assert_eq!(bearer_token(&h), None);
         h.insert(AUTHORIZATION, HeaderValue::from_static("Bearer abc"));
         assert_eq!(bearer_token(&h), Some("abc"));
         h.insert(AUTHORIZATION, HeaderValue::from_static("Basic abc"));
         assert_eq!(bearer_token(&h), None);
-        h.insert(
-            COOKIE,
-            HeaderValue::from_static("a=1; baren_session=tok; b=2"),
-        );
-        assert_eq!(cookie_token(&h), Some("tok"));
     }
 }

@@ -5,7 +5,7 @@
 
 export type HomeView = 'recents' | 'files' | 'archive'
 export type TeamTab = 'members' | 'settings'
-export type AuthStep = 'sign-in' | 'register' | 'verify' | 'browser' | 'forgot' | 'reset'
+export type AuthStep = 'sign-in' | 'register' | 'verify' | 'forgot' | 'reset'
 
 export type AppRoute =
   | { kind: 'home'; view: HomeView }
@@ -24,7 +24,6 @@ export const paths = {
   signIn: '/auth/sign-in',
   register: '/auth/register',
   verify: '/auth/verify',
-  browser: '/auth/browser',
   forgot: '/auth/forgot',
   reset: '/auth/reset',
   invite: (token: string) => `/invite/${encodeURIComponent(token)}`,
@@ -64,8 +63,6 @@ export function resolveRoute(location: string): AppRoute {
       return { kind: 'auth', step: 'register' }
     case '/auth/verify':
       return { kind: 'auth', step: 'verify' }
-    case '/auth/browser':
-      return { kind: 'auth', step: 'browser' }
     case '/auth/forgot':
       return { kind: 'auth', step: 'forgot' }
     case '/auth/reset':
@@ -91,7 +88,6 @@ const AUTH_TITLES: Record<AuthStep, string> = {
   'sign-in': 'Sign in',
   register: 'Create account',
   verify: 'Verify email',
-  browser: 'Sign in',
   forgot: 'Forgot password',
   reset: 'Reset password',
 }

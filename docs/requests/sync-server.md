@@ -61,14 +61,6 @@ integration, or reject them. Operational details are in `crates/server/README.md
     `410 invite_revoked | invite_expired | invite_used_up`.
   - Accepting is idempotent for existing members (`alreadyMember: true`), even when the link
     has since been used up.
-- **Device flow:**
-  - `/device/start` also returns `expiresIn` (600 s) and `interval` (2 s).
-  - `userCode` looks like `KQ7-4XM` (the alphabet has no `0 O 1 I L`).
-  - `/device/poll` can also return `{status:"denied"}` and `{status:"expired"}`. An unknown code
-    returns 404.
-  - After approval, the browser page links to **`baren://auth/<userCode>`**. The link carries
-    no secret. Desktop-shell should only focus the window and poll immediately; the token
-    always arrives through the poll.
 - `POST /api/teams/:id/files` accepts an optional `snapshot` (base64 Loro snapshot or update).
   The server validates it and stores it as a snapshot. This lets "share to team" upload a local
   file in one call.
@@ -92,8 +84,6 @@ integration, or reject them. Operational details are in `crates/server/README.md
   adds `connectFile`.
   - Create the API client with
     `createApiClient({ baseUrl: SERVER_URL, getToken: () => bridge.auth.getToken() })`.
-  - Continue in browser: call `api.auth.deviceStart()`, then `bridge.shell.openExternal(verifyUrl)`,
-    then `api.auth.waitForDevice(start, { signal })`.
 - **editor:**
 
   ```ts

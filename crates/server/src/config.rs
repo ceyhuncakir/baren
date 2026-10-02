@@ -33,7 +33,7 @@ pub struct Config {
     pub bind: String,
     /// `DATABASE_URL`: `sqlite://path/to/file.db` (created if missing).
     pub database_url: String,
-    /// `PUBLIC_URL`: externally visible base URL, used in invite and device links.
+    /// `PUBLIC_URL`: externally visible base URL, used in invite links.
     /// When unset it is derived from the bound address.
     pub public_url: Option<String>,
     /// `CORS_ORIGINS`: comma-separated origins, or `*`.

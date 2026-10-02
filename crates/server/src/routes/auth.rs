@@ -6,17 +6,16 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use baren_proto::dto::{
-    AuthResponse, ChangePasswordRequest, DevicePollRequest, DevicePollResponse,
-    DeviceStartResponse, ForgotPasswordRequest, LoginRequest, MeResponse, OkResponse,
-    ProvidersResponse, RegisterRequest, RegisterResponse, ResendCodeRequest, ResetPasswordRequest,
-    Role, VerifyRequest,
+    AuthResponse, ChangePasswordRequest, ForgotPasswordRequest, LoginRequest, MeResponse,
+    OkResponse, ProvidersResponse, RegisterRequest, RegisterResponse, ResendCodeRequest,
+    ResetPasswordRequest, Role, VerifyRequest,
 };
 use sqlx::SqlitePool;
 
 use crate::db::{self, ms, new_id, now_ms, UserRow};
 use crate::error::{ApiError, ApiResult, JsonBody};
 use crate::mailer::{templates::CODE_TTL_MINUTES, Email, Mailer};
-use crate::secrets::{self, hash_secret, new_email_code, new_token, new_user_code};
+use crate::secrets::{self, hash_secret, new_email_code};
 use crate::session::{create_session, delete_session, AuthUser};
 use crate::state::{AppState, Revocation};
 use crate::validate;
@@ -28,8 +27,6 @@ pub const RESET_CODE_TTL: Duration = EMAIL_CODE_TTL;
 pub const RESET_CODE_MAX_ATTEMPTS: i64 = 5;
 /// Minimum gap between two codes for the same account ("Resend in 0:24").
 pub const EMAIL_CODE_COOLDOWN: Duration = Duration::from_secs(30);
-pub const DEVICE_CODE_TTL: Duration = Duration::from_secs(10 * 60);
-pub const DEVICE_POLL_INTERVAL_SECS: u64 = 2;
 
 // ---------------------------------------------------------------------------------------------
 // Register / verify / login
@@ -291,12 +288,9 @@ struct LoginRow {
     email_verified: bool,
 }
 
-/// Check email + password. Shared by `POST /api/auth/login` and the `/device` page.
-pub async fn check_credentials(
-    state: &AppState,
-    email: &str,
-    password: &str,
-) -> ApiResult<UserRow> {
+/// Check email + password for `POST /api/auth/login`. An unverified account gets a fresh
+/// verification code and an `email_not_verified` error.
+async fn check_credentials(state: &AppState, email: &str, password: &str) -> ApiResult<UserRow> {
     let email = validate::email(email)?;
     if !state.credential_limiter.check(&format!("login:{email}")) {
         return Err(ApiError::too_many_requests());
@@ -596,96 +590,4 @@ pub async fn me(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json
         user: user.dto(),
         teams,
     }))
-}
-
-// ---------------------------------------------------------------------------------------------
-// Device flow ("Continue in browser")
-
-pub async fn device_start(State(state): State<AppState>) -> ApiResult<Json<DeviceStartResponse>> {
-    let device_code = new_token();
-    let now = now_ms();
-    // A collision in the 31^6 user-code space is unlikely but possible; retry a few times.
-    for _ in 0..5 {
-        let user_code = new_user_code();
-        let inserted = sqlx::query(
-            "INSERT INTO device_codes (id, device_code_hash, user_code, status, created_at, expires_at) \
-             VALUES (?, ?, ?, 'pending', ?, ?)",
-        )
-        .bind(new_id())
-        .bind(hash_secret(&device_code))
-        .bind(&user_code)
-        .bind(now)
-        .bind(now + ms(DEVICE_CODE_TTL))
-        .execute(&state.db)
-        .await;
-        match inserted {
-            Ok(_) => {
-                let shown = secrets::format_user_code(&user_code);
-                return Ok(Json(DeviceStartResponse {
-                    device_code,
-                    verify_url: format!("{}/device?code={shown}", state.public_url),
-                    user_code: shown,
-                    expires_in: DEVICE_CODE_TTL.as_secs(),
-                    interval: DEVICE_POLL_INTERVAL_SECS,
-                }));
-            }
-            Err(err) if db::is_unique_violation(&err) => {
-                // Clear out stale codes so the space does not fill up, then retry.
-                sqlx::query("DELETE FROM device_codes WHERE user_code = ? AND expires_at <= ?")
-                    .bind(&user_code)
-                    .bind(now)
-                    .execute(&state.db)
-                    .await?;
-            }
-            Err(err) => return Err(err.into()),
-        }
-    }
-    Err(ApiError::internal("could not allocate a device user code"))
-}
-
-pub async fn device_poll(
-    State(state): State<AppState>,
-    JsonBody(req): JsonBody<DevicePollRequest>,
-) -> ApiResult<Json<DevicePollResponse>> {
-    let row: Option<(String, String, Option<String>, i64)> = sqlx::query_as(
-        "SELECT id, status, user_id, expires_at FROM device_codes WHERE device_code_hash = ?",
-    )
-    .bind(hash_secret(req.device_code.trim()))
-    .fetch_optional(&state.db)
-    .await?;
-    let Some((id, status, user_id, expires_at)) = row else {
-        return Err(ApiError::not_found("Device code"));
-    };
-    let now = now_ms();
-    let response = match status.as_str() {
-        "denied" => DevicePollResponse::Denied,
-        "consumed" => DevicePollResponse::Expired,
-        _ if expires_at <= now => DevicePollResponse::Expired,
-        "pending" => DevicePollResponse::Pending,
-        "approved" => {
-            // Mint the token exactly once even when two polls race.
-            let claimed = sqlx::query(
-                "UPDATE device_codes SET status = 'consumed' WHERE id = ? AND status = 'approved'",
-            )
-            .bind(&id)
-            .execute(&state.db)
-            .await?
-            .rows_affected()
-                == 1;
-            match user_id {
-                Some(user_id) if claimed => {
-                    let user = db::user_by_id(&state.db, &user_id).await?;
-                    let token =
-                        create_session(&state.db, &user_id, state.config.session_ttl).await?;
-                    DevicePollResponse::Ok {
-                        token,
-                        user: user.into(),
-                    }
-                }
-                _ => DevicePollResponse::Expired,
-            }
-        }
-        other => return Err(ApiError::internal(format!("bad device status {other}"))),
-    };
-    Ok(Json(response))
 }

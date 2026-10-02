@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { findDeepLinkInArgv, parseDeepLink } from './deepLink'
 
 describe('parseDeepLink', () => {
-  it('accepts invite and auth links in canonical form', () => {
+  it('accepts invite links in canonical form', () => {
     expect(parseDeepLink('baren://invite/abc123')).toEqual({
       kind: 'invite',
       value: 'abc123',
       url: 'baren://invite/abc123',
     })
-    expect(parseDeepLink('baren://auth/Zx-9_q.~')).toMatchObject({
-      kind: 'auth',
+    expect(parseDeepLink('baren://invite/Zx-9_q.~')).toMatchObject({
+      kind: 'invite',
       value: 'Zx-9_q.~',
     })
   })
@@ -23,14 +23,15 @@ describe('parseDeepLink', () => {
   })
 
   it('keeps simple query parameters, re-encoded', () => {
-    expect(parseDeepLink('baren://auth/code1?state=a%20b')?.url).toBe(
-      'baren://auth/code1?state=a+b',
+    expect(parseDeepLink('baren://invite/code1?state=a%20b')?.url).toBe(
+      'baren://invite/code1?state=a+b',
     )
   })
 
   it.each([
     ['other scheme', 'https://baren.dev/invite/abc'],
     ['unknown kind', 'baren://admin/abc'],
+    ['auth kind (no longer used)', 'baren://auth/abc'],
     ['missing value', 'baren://invite/'],
     ['extra segments', 'baren://invite/abc/def'],
     ['traversal', 'baren://invite/..%2F..%2Fetc'],
@@ -58,8 +59,8 @@ describe('findDeepLinkInArgv', () => {
   })
 
   it('prefers the last valid link and skips invalid ones', () => {
-    const argv = ['app', 'baren://invite/first', 'baren://bogus/x', 'baren://auth/second']
-    expect(findDeepLinkInArgv(argv)?.url).toBe('baren://auth/second')
+    const argv = ['app', 'baren://invite/first', 'baren://bogus/x', 'baren://invite/second']
+    expect(findDeepLinkInArgv(argv)?.url).toBe('baren://invite/second')
   })
 
   it('returns null without a link (dev argv)', () => {

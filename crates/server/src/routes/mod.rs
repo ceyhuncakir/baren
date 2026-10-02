@@ -2,7 +2,6 @@
 
 pub mod assets;
 pub mod auth;
-pub mod device;
 pub mod files;
 pub mod invites;
 pub mod teams;
@@ -35,8 +34,6 @@ pub fn router(state: AppState) -> Router {
         .route("/auth/resend", post(auth::resend))
         .route("/auth/login", post(auth::login))
         .route("/auth/logout", post(auth::logout))
-        .route("/auth/device/start", post(auth::device_start))
-        .route("/auth/device/poll", post(auth::device_poll))
         .route("/auth/providers", get(auth::providers))
         .route("/auth/password/forgot", post(auth::forgot_password))
         .route("/auth/password/reset", post(auth::reset_password))
@@ -75,7 +72,6 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .nest("/api", api)
         .route("/health", get(|| async { "ok" }))
-        .route("/device", get(device::page).post(device::submit))
         .route("/i/{token}", get(invites::landing))
         .route("/ws/files/{id}", get(ws::handler))
         .route("/updates/{*path}", get(updates::serve))

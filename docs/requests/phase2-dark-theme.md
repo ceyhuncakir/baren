@@ -37,7 +37,7 @@ Nothing here edits ARCHITECTURE.md.
     (explicit `theme` options still win; hosts without the tokens get `DEFAULT_THEME`) and
     re-reads them when `<html>`'s `data-theme`/`class` changes, repainting immediately. Size-pill
     text, handles and remote-cursor strokes stay white (on the selection/collaborator colour).
-- **Button variant** `raised` (21 "Open browser again"); `oauth` is kept as a deprecated alias.
+- **Button variant** `raised` (a raised white button); `oauth` is kept as a deprecated alias.
   `GoogleIcon` / `GitHubIcon` and the playground's "Continue with Google/GitHub" specimens are
   removed (accounts are email + password only).
 - **Playground**: `?theme=dark` and a "Toggle light / dark" nav item.
@@ -66,7 +66,6 @@ Nothing here edits ARCHITECTURE.md.
   from the two references (two-background matting: for each pixel of the 247×164 box,
   `1 − α = (C₀₁ − C_D01) / (#EE − #14)`, colour `= (C₀₁ − (1 − α)·#EE) / α`); light mode stays
   identical.
-- `auth/BrowserScreen.tsx`: use `variant="raised"` instead of the deprecated `"oauth"`.
 - Identity colours (`lib/identity.ts` team colours, `@baren/ui` avatar palette) include
   `#1A1A1A`, which is the dark page colour. Avatars and team marks now get a light hairline in
   dark (`--shadow-identity`), so they stay visible; consider a palette without near-black.

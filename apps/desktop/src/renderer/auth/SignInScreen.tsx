@@ -7,7 +7,7 @@ import { FormError } from '../components/FormError'
 import { api } from '../lib/api'
 import { signalAppReady } from '../lib/ready'
 import { useSession } from '../state/session'
-import { AlternativeLinks, useFinishSignIn } from './common'
+import { ContinueOffline, useFinishSignIn } from './common'
 import { authErrorFor, isValidEmail, type AuthField } from './errors'
 import { AuthLayout } from './AuthLayout'
 import css from './Auth.module.css'
@@ -52,7 +52,7 @@ export function SignInScreen() {
   }
 
   return (
-    <AuthLayout footer={<AlternativeLinks browser />}>
+    <AuthLayout footer={<ContinueOffline />}>
       <form className={css.form} onSubmit={(e) => void submit(e)} noValidate>
         <AuthHeading
           className={css.leadCompact}

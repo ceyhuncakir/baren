@@ -1,7 +1,7 @@
 /**
- * Two clients against a real `baren-server` (browser mode, no fixture): sign-in through
- * the device flow (21), an email invite from the share popover and its acceptance, and a
- * shared file whose images reach the other client and render there.
+ * Two clients against a real `baren-server` (browser mode, no fixture): email + password
+ * sign-in, an email invite from the share popover and its acceptance, and a shared file whose
+ * images reach the other client and render there.
  *
  * Opt-in, like the "against a real server" block in screens.spec.ts. Start the server with
  * `MAIL_TRANSPORT=file:<dir>`, then run the tests with `BAREN_E2E_MAIL_DIR=<dir>` and
@@ -120,12 +120,10 @@ async function renderedImageColors(page: Page): Promise<number[][]> {
 const BLUE = [0x33, 0x66, 0xff]
 const RED = [0xff, 0x3b, 0x30]
 
-test.describe('against a real server: device sign-in, email invite, shared images', () => {
+test.describe('against a real server: sign-in, email invite, shared images', () => {
   test.skip(!MAIL_DIR, 'needs BAREN_E2E_MAIL_DIR + VITE_SERVER_URL (see above)')
 
-  test('B signs in through the browser, accepts A’s emailed invite and sees A’s images', async ({
-    browser,
-  }) => {
+  test('B signs in, accepts A’s emailed invite and sees A’s images', async ({ browser }) => {
     test.setTimeout(120_000)
     const stamp = Date.now()
     const emailA = `ada-${stamp}@example.com`
@@ -170,23 +168,13 @@ test.describe('against a real server: device sign-in, email invite, shared image
     expect(landing).toContain(`baren://invite/${inviteToken}`)
     await a.keyboard.press('Escape')
 
-    // --- B signs in through the browser (device flow, artboard 21).
+    // --- B signs in with email + password.
     await b.goto('/')
     await expect(b).toHaveURL(/#\/auth\/sign-in$/)
-    const popup = ctxB.waitForEvent('page')
-    await b.getByRole('button', { name: 'Sign in with browser' }).click()
-    const device = await popup
-    await device.waitForLoadState()
-    expect(device.url()).toContain(`${SERVER}/device?code=`)
-    const userCode = decodeURIComponent(new URL(device.url()).searchParams.get('code') ?? '')
-    expect(userCode).toMatch(/^[A-Z0-9]{3}-[A-Z0-9]{3}$/)
-    await expect(b.getByText(userCode, { exact: true })).toBeVisible()
-    await device.getByLabel('Email').fill(emailB)
-    await device.getByLabel('Password').fill(password)
-    await device.getByRole('button', { name: 'Sign in and approve' }).click()
-    await expect(device.getByRole('heading', { name: "You're signed in" })).toBeVisible()
-    await device.close()
-    await expect(b).toHaveURL(/#\/recents$/, { timeout: 15_000 })
+    await b.getByLabel('Email').fill(emailB)
+    await b.getByLabel('Password', { exact: true }).fill(password)
+    await b.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(b).toHaveURL(/#\/recents$/)
     await expect(b.getByRole('button', { name: 'Account menu: Bora Demir' })).toBeVisible()
 
     // --- B accepts the invite from the deep link the emailed page opens.

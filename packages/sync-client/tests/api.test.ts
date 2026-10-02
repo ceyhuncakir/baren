@@ -67,8 +67,6 @@ describe('createApiClient', () => {
     await api.auth.resendCode('e')
     await api.auth.login('e', 'p')
     await api.auth.logout()
-    await api.auth.deviceStart()
-    await api.auth.devicePoll('dc')
     await api.me()
     await api.teams.list()
     await api.teams.create('T')
@@ -88,8 +86,6 @@ describe('createApiClient', () => {
       'POST /api/auth/resend',
       'POST /api/auth/login',
       'POST /api/auth/logout',
-      'POST /api/auth/device/start',
-      'POST /api/auth/device/poll',
       'GET /api/me',
       'GET /api/teams',
       'POST /api/teams',
@@ -106,8 +102,8 @@ describe('createApiClient', () => {
       'DELETE /api/files/f',
     ])
     // Invite previews work signed out.
-    expect(calls[14]!.headers['authorization']).toBeUndefined()
-    expect(calls[16]!.headers['authorization']).toBe('Bearer t')
+    expect(calls[12]!.headers['authorization']).toBeUndefined()
+    expect(calls[14]!.headers['authorization']).toBe('Bearer t')
   })
 
   it('base64-encodes an initial snapshot and returns snapshots as bytes', async () => {
@@ -159,60 +155,6 @@ describe('createApiClient', () => {
       fetch: (() => Promise.reject(new TypeError('fetch failed'))) as typeof fetch,
     })
     await expect(offline.me()).rejects.toMatchObject({ status: 0, code: 'network_error' })
-  })
-
-  it('waits for device approval', async () => {
-    const replies = [
-      { status: 'pending' },
-      { status: 'pending' },
-      { status: 'ok', token: 't', user: { id: 'u' } },
-    ]
-    const { fetch, calls } = mockFetch(() => json(replies.shift()))
-    const api = createApiClient({ baseUrl: 'http://srv', fetch })
-    const start = {
-      deviceCode: 'dc',
-      userCode: 'ABC-234',
-      verifyUrl: 'x',
-      expiresIn: 600,
-      interval: 2,
-    }
-    const auth = await api.auth.waitForDevice(start, { intervalMs: 1 })
-    expect(auth).toEqual({ token: 't', user: { id: 'u' } })
-    expect(calls).toHaveLength(3)
-    expect(calls[0]!.body).toEqual({ deviceCode: 'dc' })
-  })
-
-  it('rejects when the device request is denied, expires or is aborted', async () => {
-    const start = {
-      deviceCode: 'dc',
-      userCode: 'ABC-234',
-      verifyUrl: 'x',
-      expiresIn: 600,
-      interval: 2,
-    }
-    const denied = createApiClient({
-      baseUrl: 'http://srv',
-      fetch: mockFetch(() => json({ status: 'denied' })).fetch,
-    })
-    await expect(denied.auth.waitForDevice(start, { intervalMs: 1 })).rejects.toMatchObject({
-      code: 'device_denied',
-    })
-    const expired = createApiClient({
-      baseUrl: 'http://srv',
-      fetch: mockFetch(() => json({ status: 'expired' })).fetch,
-    })
-    await expect(expired.auth.waitForDevice(start, { intervalMs: 1 })).rejects.toMatchObject({
-      code: 'device_expired',
-    })
-
-    const pending = createApiClient({
-      baseUrl: 'http://srv',
-      fetch: mockFetch(() => json({ status: 'pending' })).fetch,
-    })
-    const controller = new AbortController()
-    const waiting = pending.auth.waitForDevice(start, { intervalMs: 50, signal: controller.signal })
-    controller.abort()
-    await expect(waiting).rejects.toMatchObject({ code: 'aborted' })
   })
 
   describe('phase 2', () => {

@@ -32,7 +32,7 @@ export function BrandLockup({ className, ...rest }: HTMLAttributes<HTMLDivElemen
   )
 }
 
-/** 48px rounded tile holding a 22px icon (verify email, continue in browser). */
+/** 48px rounded tile holding a 22px icon (verify email). */
 export function IconTile({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return <div className={clsx(styles.tile, className)} {...rest} />
 }

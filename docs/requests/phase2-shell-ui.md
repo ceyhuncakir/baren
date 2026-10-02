@@ -3,7 +3,7 @@
 shell-ui owns `apps/desktop/src/renderer/**` (except `editor/**`, `types/bridge.d.ts`,
 `lib/assets.ts`) and `apps/desktop/tests/visual/screens.spec.ts`. Accounts are email + password
 only: the Google/GitHub buttons, the "or with email" divider and the "Coming soon" wrapper are
-gone from 18/19, with their code (`OAuthButtons`, `.soon`). The device flow (21) stays.
+gone from 18/19, with their code (`OAuthButtons`, `.soon`).
 
 ## What the renderer does now (for the contract / STATUS)
 
@@ -62,9 +62,7 @@ gone from 18/19, with their code (`OAuthButtons`, `.soon`). The device flow (21)
 
 - OAuth leftovers in `packages/ui` (not owned by shell-ui): `GoogleIcon`, `GitHubIcon`, the
   playground's "Continue with Google/GitHub" specimens and the `Button.module.css` comment that
-  mentions them. Nothing in the app uses the two icons any more. The `oauth` button **variant**
-  is still used by 21's "Open browser again" (it is just the raised white button), so keep it,
-  perhaps under a neutral name.
+  mentions them. Nothing in the app uses the two icons any more.
 - New renderer styles to review for dark (tokens only, no literal colours):
   `app/UpdateToast.module.css` (`--shadow-popover`, `--color-selection-subtle`; the success
   disc is `color-mix(in srgb, var(--color-success) 14%, transparent)`),

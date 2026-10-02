@@ -188,36 +188,6 @@ pub struct ChangePasswordRequest {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DeviceStartResponse {
-    /// Secret the app polls with. Never shown to the user.
-    pub device_code: String,
-    /// Short code shown in the app and in the browser, formatted `ABC-123`.
-    pub user_code: String,
-    /// Browser page that approves this request (`<PUBLIC_URL>/device?code=ABC-123`).
-    pub verify_url: String,
-    /// Seconds until the request expires.
-    pub expires_in: u64,
-    /// Minimum seconds between polls.
-    pub interval: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DevicePollRequest {
-    pub device_code: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "status", rename_all = "camelCase")]
-pub enum DevicePollResponse {
-    Pending,
-    Ok { token: String, user: User },
-    Denied,
-    Expired,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct MeResponse {
     pub user: User,
     pub teams: Vec<Team>,
@@ -380,26 +350,6 @@ pub struct AssetInfo {
 mod tests {
     use super::*;
     use serde_json::json;
-
-    #[test]
-    fn device_poll_is_tagged_by_status() {
-        assert_eq!(
-            serde_json::to_value(DevicePollResponse::Pending).unwrap(),
-            json!({ "status": "pending" })
-        );
-        let ok = DevicePollResponse::Ok {
-            token: "t".into(),
-            user: User {
-                id: "u".into(),
-                name: "ceyhun cakir".into(),
-                email: "c@example.com".into(),
-                created_at: 1,
-            },
-        };
-        let v = serde_json::to_value(&ok).unwrap();
-        assert_eq!(v["status"], "ok");
-        assert_eq!(v["user"]["createdAt"], 1);
-    }
 
     #[test]
     fn requests_accept_optional_fields() {

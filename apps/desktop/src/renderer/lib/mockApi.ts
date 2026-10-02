@@ -9,7 +9,6 @@ import {
   type AssetInfo,
   type AuthResponse,
   type CreateInviteResponse,
-  type DeviceStartResponse,
   type Invite,
   type Member,
   type RemoteFile,
@@ -18,7 +17,6 @@ import {
   type User,
 } from '@baren/sync-client/api'
 import {
-  DESIGN_DEVICE_CODE,
   DESIGN_SIGNUP,
   DESIGN_TEAM_ID,
   DESIGN_USER,
@@ -158,21 +156,6 @@ export function createMockApi(options: MockApiOptions = {}): ApiClient {
       async logout() {
         signedIn = false
         return { ok: true }
-      },
-      async deviceStart(): Promise<DeviceStartResponse> {
-        return {
-          deviceCode: nextId('dev'),
-          userCode: DESIGN_DEVICE_CODE,
-          verifyUrl: `${server}/device?code=${DESIGN_DEVICE_CODE}`,
-          expiresIn: 600,
-          interval: 2,
-        }
-      },
-      async devicePoll() {
-        return { status: 'pending' }
-      },
-      async waitForDevice() {
-        return new Promise<AuthResponse>(() => undefined)
       },
     },
     async me() {

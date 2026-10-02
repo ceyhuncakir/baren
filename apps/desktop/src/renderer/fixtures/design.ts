@@ -159,6 +159,3 @@ export const DESIGN_SIGNUP = {
   /** 20 shows "Resend in 0:24": the code went out six seconds ago. */
   codeSentAgo: 6 * SECOND,
 } as const
-
-/** Artboard 21. */
-export const DESIGN_DEVICE_CODE = 'KQ7-4XM'

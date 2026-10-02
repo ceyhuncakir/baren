@@ -24,7 +24,7 @@ export interface CheckboxProps extends Omit<
   shortcut?: ReactNode
   /** md: 16px box (forms); sm: 14px box, 11px label (inspector). */
   size?: 'sm' | 'md'
-  /** 'muted' renders 12px muted consent text (19), top-aligned. */
+  /** 'muted' renders 12px muted text, top-aligned. */
   tone?: 'default' | 'muted'
   indeterminate?: boolean
   onCheckedChange?: (checked: boolean) => void

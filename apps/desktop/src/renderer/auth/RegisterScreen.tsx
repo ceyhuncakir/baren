@@ -2,7 +2,6 @@ import {
   ArrowRightIcon,
   AuthHeading,
   Button,
-  Checkbox,
   Field,
   Input,
   isAcceptablePassword,
@@ -14,12 +13,12 @@ import { paths } from '../app/routes'
 import { FormError } from '../components/FormError'
 import { api } from '../lib/api'
 import { useSession } from '../state/session'
-import { AlternativeLinks } from './common'
+import { ContinueOffline } from './common'
 import { authErrorFor, isValidEmail, type AuthField } from './errors'
 import { AuthLayout } from './AuthLayout'
 import css from './Auth.module.css'
 
-type Errors = Partial<Record<AuthField | 'consent', string>>
+type Errors = Partial<Record<AuthField, string>>
 
 /** Artboard 19. Registration sends a 6-digit code; the verify step finishes sign-up. */
 export function RegisterScreen() {
@@ -28,7 +27,6 @@ export function RegisterScreen() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [consent, setConsent] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
 
@@ -40,7 +38,6 @@ export function RegisterScreen() {
     if (!isValidEmail(email)) next.email = 'Enter a valid email address.'
     if (!isAcceptablePassword(password))
       next.password = 'Use at least 8 characters, including a number.'
-    if (!consent) next.consent = 'Please accept the Terms of Service and Privacy Policy.'
     setErrors(next)
     if (Object.keys(next).length > 0) return
     setBusy(true)
@@ -57,7 +54,7 @@ export function RegisterScreen() {
   }
 
   return (
-    <AuthLayout footer={<AlternativeLinks browser={false} />}>
+    <AuthLayout footer={<ContinueOffline />}>
       <form className={`${css.form} ${css.formTight}`} onSubmit={(e) => void submit(e)} noValidate>
         <AuthHeading
           className={css.leadCompact}
@@ -100,13 +97,7 @@ export function RegisterScreen() {
           </Field>
         </div>
         <div className={css.actions}>
-          <Checkbox
-            tone="muted"
-            checked={consent}
-            onCheckedChange={setConsent}
-            label="I agree to the Terms of Service and Privacy Policy."
-          />
-          <FormError>{errors.consent ?? errors.form}</FormError>
+          <FormError>{errors.form}</FormError>
           <Button
             type="submit"
             size={40}

@@ -56,25 +56,6 @@ export interface ChangePasswordRequest {
   newPassword: string
 }
 
-export interface DeviceStartResponse {
-  /** Secret used to poll. Never show it to the user. */
-  deviceCode: string
-  /** Short code shown in the app and in the browser, e.g. `KQ7-4XM`. */
-  userCode: string
-  /** Browser page that approves the request. */
-  verifyUrl: string
-  /** Seconds until the request expires. */
-  expiresIn: number
-  /** Minimum seconds between polls. */
-  interval: number
-}
-
-export type DevicePollResponse =
-  | { status: 'pending' }
-  | { status: 'ok'; token: string; user: User }
-  | { status: 'denied' }
-  | { status: 'expired' }
-
 export interface Team {
   id: string
   name: string

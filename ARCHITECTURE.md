@@ -85,7 +85,7 @@ brand red. Artboards (1440×900 unless noted):
 | 15 | 15 Editor — Context menu | `renderer/editor` |
 | 16 | 16 Editor — Zoom menu | `renderer/editor` |
 | 17 | 17 Home — Account menu | `renderer/home` |
-| 18–21 | 18 Auth — Sign in, 19 Create account, 20 Verify email, 21 Continue in browser | `renderer/auth` |
+| 18–20 | 18 Auth — Sign in, 19 Create account, 20 Verify email | `renderer/auth` |
 | 22–23 | 22 Auth — Forgot password, 23 Auth — Reset password | `renderer/auth` |
 | 24 | 24 Editor — Image fill | `renderer/editor` |
 | 25 | 25 App — Update ready | `renderer/app` (`UpdateToast`) |
@@ -97,8 +97,7 @@ brand red. Artboards (1440×900 unless noted):
 
 Product decisions that override the designs: **no billing** — no "Billing" tab and no "Pro" badges;
 **no OAuth / social sign-in** — accounts are email + password only (18 and 19 were redrawn without
-the Google/GitHub buttons; the device flow of 21 stays). The user's display name in fixtures is
-"ceyhun cakir".
+the Google/GitHub buttons). The user's display name in fixtures is "ceyhun cakir".
 
 Tokens: `packages/ui/src/styles/tokens.css` holds the design tokens (`design/tokens.css`)
 unchanged, plus a second section of **derived tokens** (owned by `packages/ui`) for values that
@@ -212,7 +211,7 @@ interface BarenBridge {
   export: { html(fileId: string, nodeId: string): Promise<string>; json(fileId: string): Promise<string> }
   auth:   { getToken(): Promise<string | null>; setToken(token: string | null): Promise<void> }  // safeStorage
   shell:  { openExternal(url: string): Promise<void> }   // http(s) only
-  onDeepLink(cb: (url: string) => void): () => void   // baren://invite/<token>, baren://auth/<code>
+  onDeepLink(cb: (url: string) => void): () => void   // baren://invite/<token>
   app: { newWindow(): void; quit(): void; reload(): void; forceReload(): void; toggleDevTools(): void;
          toggleFullScreen(): void; checkForUpdates(): Promise<void>; version(): Promise<string> }
   theme: { initial: ResolvedTheme; preference(): Promise<ThemePreference>;
@@ -278,7 +277,7 @@ Theme and updates are described in "Phase 2" below.
 - Server URL: `import.meta.env.VITE_SERVER_URL ?? 'http://127.0.0.1:8787'`; `@baren/sync-client/api`
   (no Loro) for REST at startup, `@baren/sync-client` for `connectFile`.
 - Routes are hash routes (`#/recents`, `#/files`, `#/archive`, `#/team/members`, `#/team/settings`,
-  `#/auth/sign-in|register|verify|browser|forgot|reset`, `#/invite/<token>`, `#/file/<id>`) because
+  `#/auth/sign-in|register|verify|forgot|reset`, `#/invite/<token>`, `#/file/<id>`) because
   `app://` has no SPA fallback. `#/auth/reset` without a pending reset redirects to `#/auth/forgot`.
   `?fixture=design` (browser only) swaps in fixture data and an in-memory fake server so every
   screen renders without a server — this is how the visual tests run. It also takes
@@ -311,9 +310,6 @@ re-send, update feed) are listed in "Server additions" below.
   emailed; with `MAIL_TRANSPORT=log` it is printed in the server log)
 - `POST /api/auth/verify {email, code}` → `{ token, user }` · `POST /api/auth/login {email,password}` → `{ token, user }`
 - `POST /api/auth/resend {email}` (30 s cooldown) · `POST /api/auth/logout`
-- `POST /api/auth/device/start` → `{ deviceCode, userCode ("KQ7-4XM"), verifyUrl, expiresIn, interval }` ·
-  `POST /api/auth/device/poll {deviceCode}` → `{status:"pending"} | {status:"ok", token, user} | {status:"denied"} | {status:"expired"}` ·
-  browser page `GET /device?code=…` (after approval it links `baren://auth/<userCode>`, which carries no secret)
 - `GET /api/me` → `{ user, teams }` · `GET/POST /api/teams` · `PATCH /api/teams/:id {name?, fileAccess?}` · `DELETE /api/teams/:id` (admin)
 - `Team = { id, name, role, fileAccess: 'members'|'link', memberCount, createdAt }`; registration creates "<first name>'s Team"
 - `GET /api/teams/:id/members` → `Member = { userId, name, email, role, joinedAt, lastSeenAt, online }` ·
@@ -454,7 +450,7 @@ The dark artboards use literal hex values; `design/tokens.dark.css` maps them to
 
 ### Server additions
 
-- **No OAuth / social sign-in.** The device flow (screen 21, "Continue in browser") stays.
+- **No OAuth / social sign-in.** Accounts are email + password only.
 - `GET /api/auth/providers` → `{ email: boolean }`: true only with `MAIL_TRANSPORT=smtp`. The app
   uses it for copy ("check your email" vs "ask the server admin for your code").
 - **Password reset:** `POST /api/auth/password/forgot {email}` → 204 always (6-digit code, stored
@@ -531,7 +527,7 @@ The dark artboards use literal hex values; `design/tokens.dark.css` maps them to
 - Opt-in against a real server (skipped unless `BAREN_E2E_MAIL_DIR` and `VITE_SERVER_URL` are
   set, with `baren-server` running `MAIL_TRANSPORT=file:<dir>`): the "against a real server"
   block in `screens.spec.ts` (register → verify → forgot → reset → sign in; invite email + resend;
-  change password) and `server.spec.ts` (device-flow sign-in, emailed invite accepted, a shared
+  change password) and `server.spec.ts` (email + password sign-in, emailed invite accepted, a shared
   file's images uploaded by one client and rendered by the other, live).
 - `packages/sync-client/tests/e2e-phase2.test.ts` (real binary): mail-file codes, reset, invites,
   assets, update-feed ranges.

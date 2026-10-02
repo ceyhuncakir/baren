@@ -19,7 +19,5 @@ export const LINKS = {
   learn: `${SITE_URL}/learn`,
   agents: `${SITE_URL}/docs/mcp`,
   feedback: `${SITE_URL}/feedback`,
-  terms: `${SITE_URL}/terms`,
-  privacy: `${SITE_URL}/privacy`,
   whatsNew: HELP_LINKS['help.releaseNotes'],
 } as const

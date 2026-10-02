@@ -438,12 +438,12 @@ function ChoiceSection() {
         <Specimen label="disabled">
           <Checkbox label="Disabled" disabled defaultChecked />
         </Specimen>
-        <Specimen label="consent (muted, 12px)" width={368}>
+        <Specimen label="muted, 12px" width={368}>
           <Checkbox
             tone="muted"
             checked={agree}
             onCheckedChange={setAgree}
-            label="I agree to the Terms of Service and Privacy Policy."
+            label="Email me when someone shares a file with me."
           />
         </Specimen>
         <Specimen label="sm inspector + shortcut">

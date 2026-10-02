@@ -9,8 +9,8 @@
  * for the title bar plus the open menu; the full-frame number is logged for information.
  *
  * Known, accepted differences: no Billing tab (02/03) and no "Pro" badges (01–03, 17)
- * (product decision), the text caret in focused fields, the "Sign in with browser ·
- * Continue offline" links added to the auth footer (18/19), the app version next to
+ * (product decision), the text caret in focused fields, the "Continue offline" link added to
+ * the auth footer (18/19), the app version next to
  * "Check for Updates…" (13), and the verify tip (20): the verification email has no link,
  * so the tip no longer promises one.
  */
@@ -430,7 +430,6 @@ test.describe('screens vs references', () => {
     await openScreen(page, '/auth/register')
     await page.getByLabel('Full name').fill('Defne Aydın')
     await page.getByLabel('Work email').fill('defne@example.com')
-    await page.getByText('I agree to the Terms').click()
     await page.getByLabel('Password', { exact: true }).fill('barenpad26x')
     await expect(page.getByText('Good', { exact: true })).toBeVisible()
     await checkScreen(page, testInfo, {
@@ -445,15 +444,6 @@ test.describe('screens vs references', () => {
     await expect(page.getByText('Resend in 0:24')).toBeVisible()
     await checkScreen(page, testInfo, {
       reference: '20-auth-verify-email.png',
-      maxPercent: FULL_FRAME_MAX,
-    })
-  })
-
-  test('21 Auth — Continue in browser', async ({ page }, testInfo) => {
-    await openScreen(page, '/auth/browser')
-    await expect(page.getByText('KQ7-4XM')).toBeVisible()
-    await checkScreen(page, testInfo, {
-      reference: '21-auth-continue-in-browser.png',
       maxPercent: FULL_FRAME_MAX,
     })
   })
@@ -701,9 +691,6 @@ test.describe('screens behaviour', () => {
     await page.getByLabel('Work email').fill('defne@example.com')
     await page.getByLabel('Password', { exact: true }).fill('barenpad26x')
     await page.getByRole('button', { name: 'Create account' }).click()
-    await expect(page.getByText(/accept the Terms/)).toBeVisible()
-    await page.getByText('I agree to the Terms').click()
-    await page.getByRole('button', { name: 'Create account' }).click()
     await expect(page).toHaveURL(/#\/auth\/verify$/)
     await expect(page.getByText(/code to defne@example.com/)).toBeVisible()
     // Pasting the whole code fills every cell and submits.
@@ -877,19 +864,6 @@ test.describe('screens behaviour', () => {
     await expect(change).toHaveCount(0)
   })
 
-  test('continue in browser opens the device page and can be cancelled', async ({ page }) => {
-    await openFixture(page, '/auth/sign-in')
-    await page.getByRole('button', { name: 'Sign in with browser' }).click()
-    await expect(page.getByText('KQ7-4XM')).toBeVisible()
-    expect(await hook<string[]>(page, 'h.openedUrls()')).toEqual([
-      expect.stringContaining('/device?code=KQ7-4XM'),
-    ])
-    await page.getByRole('button', { name: 'Open browser again' }).click()
-    expect(await hook<string[]>(page, 'h.openedUrls()')).toHaveLength(2)
-    await page.getByRole('button', { name: 'Cancel' }).click()
-    await expect(page).toHaveURL(/#\/auth\/sign-in$/)
-  })
-
   test('an invite deep link previews the team and joins it', async ({ page }) => {
     await openFixture(page, '/recents')
     await hook(page, "h.emitDeepLink('baren://invite/tok-inv-mert')")
@@ -1006,7 +980,6 @@ test.describe('against a real server', () => {
     await page.getByLabel('Full name').fill('Eda Ersoy')
     await page.getByLabel('Work email').fill(email)
     await page.getByLabel('Password', { exact: true }).fill('first-passw0rd')
-    await page.getByText('I agree to the Terms').click()
     let sent = Date.now() - 1000
     await page.getByRole('button', { name: 'Create account' }).click()
     await expect(page).toHaveURL(/#\/auth\/verify$/)
@@ -1068,7 +1041,6 @@ test.describe('against a real server', () => {
     await page.getByLabel('Full name').fill('Ozan Kaya')
     await page.getByLabel('Work email').fill(email)
     await page.getByLabel('Password', { exact: true }).fill('first-passw0rd')
-    await page.getByText('I agree to the Terms').click()
     let sent = Date.now() - 1000
     await page.getByRole('button', { name: 'Create account' }).click()
     await page

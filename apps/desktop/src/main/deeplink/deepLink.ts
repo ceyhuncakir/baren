@@ -1,17 +1,17 @@
 /**
- * baren:// deep links: `baren://invite/<token>` and `baren://auth/<code>`.
+ * baren:// deep links: `baren://invite/<token>`.
  *
  * Links arrive from the OS (argv on Linux/Windows, `open-url` on macOS) and are
- * untrusted. Only the two known kinds with a single URL-safe value are
- * accepted; they are forwarded to the renderer in canonical form.
+ * untrusted. Only known kinds with a single URL-safe value are accepted;
+ * they are forwarded to the renderer in canonical form.
  */
 export const DEEP_LINK_SCHEME = 'baren'
-export const DEEP_LINK_KINDS = ['invite', 'auth'] as const
+export const DEEP_LINK_KINDS = ['invite'] as const
 export type DeepLinkKind = (typeof DEEP_LINK_KINDS)[number]
 
 export interface DeepLink {
   kind: DeepLinkKind
-  /** The invite token or auth code. */
+  /** The invite token. */
   value: string
   /** Canonical URL handed to the renderer, e.g. `baren://invite/abc123`. */
   url: string

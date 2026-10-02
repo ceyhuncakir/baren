@@ -1,9 +1,8 @@
 //! Tokens, codes and password hashing.
 //!
-//! - Opaque tokens (sessions, invites, device codes): 32 bytes from the thread CSPRNG,
-//!   base64url without padding (43 chars). Only `sha256(token)` is stored.
-//! - Email verification codes: 6 digits.
-//! - Device user codes: 6 characters from an alphabet without look-alikes, shown as `ABC-123`.
+//! - Opaque tokens (sessions, invites): 32 bytes from the thread CSPRNG, base64url without
+//!   padding (43 chars). Only `sha256(token)` is stored.
+//! - Email verification and password-reset codes: 6 digits.
 //! - Passwords: Argon2id (RFC 9106 / OWASP defaults of the `argon2` crate), hashed on the
 //!   blocking pool so the async runtime never stalls.
 
@@ -31,40 +30,6 @@ pub fn hash_secret(secret: &str) -> Vec<u8> {
 /// Six random digits, zero padded.
 pub fn new_email_code() -> String {
     format!("{:06}", rand::rng().random_range(0..1_000_000u32))
-}
-
-const USER_CODE_ALPHABET: &[u8] = b"ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-pub const USER_CODE_LEN: usize = 6;
-
-/// A device-flow user code in canonical form (no dash, upper case).
-pub fn new_user_code() -> String {
-    let mut rng = rand::rng();
-    (0..USER_CODE_LEN)
-        .map(|_| {
-            let i = rng.random_range(0..USER_CODE_ALPHABET.len());
-            USER_CODE_ALPHABET[i] as char
-        })
-        .collect()
-}
-
-/// Canonicalise what a user typed (`kq7-4xm`, `KQ7 4XM`) to `KQ74XM`.
-pub fn normalize_user_code(input: &str) -> Option<String> {
-    let code: String = input
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .map(|c| c.to_ascii_uppercase())
-        .collect();
-    (code.len() == USER_CODE_LEN && code.bytes().all(|b| USER_CODE_ALPHABET.contains(&b)))
-        .then_some(code)
-}
-
-/// `KQ74XM` → `KQ7-4XM`.
-pub fn format_user_code(code: &str) -> String {
-    if code.len() == USER_CODE_LEN {
-        format!("{}-{}", &code[..3], &code[3..])
-    } else {
-        code.to_string()
-    }
 }
 
 /// Hash a password with Argon2id on the blocking pool.
@@ -128,19 +93,6 @@ mod tests {
             assert_eq!(c.len(), 6);
             assert!(c.bytes().all(|b| b.is_ascii_digit()));
         }
-    }
-
-    #[test]
-    fn user_codes_normalize_and_format() {
-        let code = new_user_code();
-        assert_eq!(normalize_user_code(&code).as_deref(), Some(code.as_str()));
-        let shown = format_user_code(&code);
-        assert_eq!(shown.len(), 7);
-        assert_eq!(normalize_user_code(&shown.to_lowercase()), Some(code));
-        assert_eq!(normalize_user_code("KQ7-4XM").as_deref(), Some("KQ74XM"));
-        assert_eq!(normalize_user_code("KQ7-4X"), None);
-        // `0`, `O`, `1`, `I` and `L` are excluded to avoid look-alikes.
-        assert_eq!(normalize_user_code("KQ0-4XM"), None);
     }
 
     #[tokio::test]

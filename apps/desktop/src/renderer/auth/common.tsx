@@ -36,19 +36,11 @@ export function useFinishSignIn(): (auth: AuthResponse) => Promise<void> {
   )
 }
 
-/** "Sign in with browser · Continue offline" in the legal row. */
-export function AlternativeLinks({ browser }: { browser: boolean }) {
+/** "Continue offline" in the legal row. */
+export function ContinueOffline() {
   const [, navigate] = useLocation()
   return (
     <span className={css.footerLinks}>
-      {browser && (
-        <>
-          <button type="button" className={css.footerLink} onClick={() => navigate(paths.browser)}>
-            Sign in with browser
-          </button>
-          {' · '}
-        </>
-      )}
       <button
         type="button"
         className={css.footerLink}

@@ -1,5 +1,5 @@
-//! Server-rendered pages (`/device`, `/i/:token`), styled with the app's design tokens
-//! (design/tokens.css) and the left column of the auth artboards (18–21).
+//! Server-rendered pages (the `/i/:token` invite landing page), styled with the app's design
+//! tokens (design/tokens.css) and the left column of the auth artboards (18–20, 22–23).
 
 use std::sync::LazyLock;
 
@@ -71,44 +71,18 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 h1 { margin: 0; font-size: 28px; line-height: 34px; font-weight: var(--font-weight-medium); letter-spacing: -0.025em; }
 p { margin: 0; color: var(--color-foreground-muted); font-size: var(--text-md); line-height: 22px; }
 strong { color: var(--color-foreground); font-weight: var(--font-weight-medium); }
-.card {
-  background: var(--color-surface); border-radius: var(--radius-xl);
-  box-shadow: var(--color-border) 0 0 0 1px inset; padding: 16px; display: flex; flex-direction: column; gap: 10px;
-}
-.card .label { color: var(--color-foreground-muted); font-size: var(--text-sm); line-height: 16px; }
-.code { font: var(--font-weight-medium) 26px/32px var(--font-mono); letter-spacing: 0.12em; }
-form { display: flex; flex-direction: column; gap: 16px; margin: 0; }
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-size: var(--text-sm); font-weight: var(--font-weight-medium); line-height: 16px; }
-input[type=email], input[type=password], input[type=text] {
-  height: 40px; padding: 0 12px; border: 0; border-radius: var(--radius-lg); background: var(--color-background);
-  box-shadow: var(--color-border) 0 0 0 1px; color: var(--color-foreground);
-  font: var(--text-base)/16px var(--font-sans); outline: none;
-}
-input:focus { box-shadow: var(--color-selection) 0 0 0 1px, #2F80FF26 0 0 0 4px; }
 .button {
   height: 40px; border: 0; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;
   gap: 8px; font: var(--font-weight-medium) var(--text-base)/16px var(--font-sans); cursor: pointer; text-decoration: none;
   background: var(--color-brand); color: var(--color-brand-foreground); width: 100%;
 }
-.button.secondary { background: var(--color-background); color: var(--color-foreground);
-  box-shadow: var(--color-border) 0 0 0 1px, #0000000A 0 1px 2px; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.row .button { flex: 1; }
-.link { background: none; border: 0; padding: 0; cursor: pointer; color: var(--color-foreground-muted);
-  font: var(--text-base)/16px var(--font-sans); text-decoration: none; }
-.link:hover { color: var(--color-foreground); }
-.error { color: var(--color-danger); font-size: var(--text-base); line-height: 20px; }
-footer { display: flex; align-items: center; justify-content: space-between; }
-footer span { color: var(--color-foreground-muted); font-size: var(--text-sm); }
+footer { display: flex; align-items: center; justify-content: flex-end; }
 footer code { color: var(--color-foreground-subtle); font: var(--text-xs)/14px var(--font-mono); }
 "#;
 
 /// Lucide-style icon paths used by the pages.
 pub mod icons {
-    pub const EXTERNAL: &str = r#"<path d="M21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7"/><path d="M3 9h9"/><path d="M15 3h6v6"/><path d="M21 3l-8 8"/>"#;
     pub const USERS: &str = r#"<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>"#;
-    pub const CHECK: &str = r#"<path d="M20 6 9 17l-5-5"/>"#;
     pub const ALERT: &str =
         r#"<circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>"#;
 }
@@ -131,7 +105,7 @@ pub fn page(status: StatusCode, title: &str, icon: &str, body: &str) -> Response
 <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true">{icon}</svg></div>
 {body}
 </div></main>
-<footer><span>Terms · Privacy</span><code>v{version}</code></footer>
+<footer><code>v{version}</code></footer>
 </body>
 </html>"#,
         title = escape(title),
@@ -143,15 +117,14 @@ pub fn page(status: StatusCode, title: &str, icon: &str, body: &str) -> Response
     headers.insert(
         CONTENT_SECURITY_POLICY,
         HeaderValue::from_static(
-            "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; \
+            "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'none'; \
              frame-ancestors 'none'; base-uri 'none'",
         ),
     );
     headers.insert(X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
     headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
-    // Not `no-referrer`: that makes browsers send `Origin: null` on same-origin form posts,
-    // which the `/device` CSRF check rejects. `same-origin` still yields `null` cross-site.
-    headers.insert("referrer-policy", HeaderValue::from_static("same-origin"));
+    // The invite page's URL carries the invite token: never send it on in a `Referer`.
+    headers.insert("referrer-policy", HeaderValue::from_static("no-referrer"));
     response
 }
 

@@ -8,8 +8,6 @@ import type {
   CreateFileRequest,
   CreateInviteRequest,
   CreateInviteResponse,
-  DevicePollResponse,
-  DeviceStartResponse,
   DownloadedAsset,
   Invite,
   InvitePreview,
@@ -37,12 +35,6 @@ export interface ApiClientOptions {
   fetch?: typeof fetch
 }
 
-export interface WaitForDeviceOptions {
-  /** Poll interval in ms (defaults to the server's `interval`, at least 1 s). */
-  intervalMs?: number
-  signal?: AbortSignal
-}
-
 /** Typed methods for every REST endpoint in ARCHITECTURE.md "Server API" (+ Phase 2). */
 export interface ApiClient {
   auth: {
@@ -52,13 +44,6 @@ export interface ApiClient {
     resendCode(email: string): Promise<OkResponse>
     login(email: string, password: string): Promise<AuthResponse>
     logout(): Promise<OkResponse>
-    deviceStart(): Promise<DeviceStartResponse>
-    devicePoll(deviceCode: string): Promise<DevicePollResponse>
-    /**
-     * Poll until the browser approves (resolves with the session) or the request is denied
-     * or expires (rejects with `ApiError` code `device_denied` / `device_expired`).
-     */
-    waitForDevice(start: DeviceStartResponse, options?: WaitForDeviceOptions): Promise<AuthResponse>
   }
   me(): Promise<MeResponse>
   teams: {
@@ -202,32 +187,6 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       login: (email, password) =>
         request('POST', '/api/auth/login', { body: { email, password }, auth: false }),
       logout: () => request('POST', '/api/auth/logout'),
-      deviceStart: () => request('POST', '/api/auth/device/start', { auth: false }),
-      devicePoll: (deviceCode) =>
-        request('POST', '/api/auth/device/poll', { body: { deviceCode }, auth: false }),
-      async waitForDevice(start, waitOptions = {}) {
-        const interval = waitOptions.intervalMs ?? Math.max(1, start.interval) * 1000
-        for (;;) {
-          let result: DevicePollResponse
-          try {
-            result = await client.auth.devicePoll(start.deviceCode)
-          } catch (err) {
-            // Transient trouble: keep polling until the request itself expires.
-            if (!(err instanceof ApiError) || !err.retryable) throw err
-            result = { status: 'pending' }
-          }
-          switch (result.status) {
-            case 'ok':
-              return { token: result.token, user: result.user }
-            case 'denied':
-              throw new ApiError(403, 'device_denied', 'Sign-in was denied in the browser.')
-            case 'expired':
-              throw new ApiError(410, 'device_expired', 'The sign-in request expired. Try again.')
-            case 'pending':
-              await sleep(interval, waitOptions.signal)
-          }
-        }
-      },
     },
     me: () => request('GET', '/api/me'),
     teams: {

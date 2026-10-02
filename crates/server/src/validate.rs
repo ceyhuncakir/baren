@@ -1,4 +1,4 @@
-//! Input validation shared by the REST handlers and the `/device` page.
+//! Input validation shared by the REST handlers.
 
 use crate::error::{ApiError, ApiResult};
 

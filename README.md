@@ -170,8 +170,7 @@ RELEASE_TARGET=deploy@sync.example.com:/srv/baren/updates/ \
 3. **Both of you create an account** (email + password; there is no Google/GitHub sign-in). The
    6-digit verification code arrives by email. Without SMTP it is in the server log
    (`journalctl -u baren-server`). A forgotten password is reset from **Forgot password?** on the
-   sign-in screen with an emailed code. **Sign in with browser** also works: it opens the server's
-   page, where you sign in and approve the code shown in the app.
+   sign-in screen with an emailed code.
 4. **Invite them to your team.** Go to Team → Members → Invite and enter their email: they get an
    email with a link like `https://sync.example.com/i/<token>` (without SMTP, the link is copied for
    you to send). The page has an **Open in Baren** button that launches the app on the
@@ -315,9 +314,9 @@ BAREN_E2E_MAIL_DIR=/tmp/baren-mail VITE_SERVER_URL=http://127.0.0.1:8899 \
   pnpm test:visual --grep "real server"
 ```
 
-They cover register → emailed code → verify, forgot → reset, sign-in through the browser (device
-flow), an emailed invite accepted by a second user, invite re-send and password change, and a
-shared file whose images one client inserts and the other renders. With the same two variables,
+They cover register → emailed code → verify, forgot → reset, email + password sign-in, an emailed
+invite accepted by a second user, invite re-send and password change, and a shared file whose
+images one client inserts and the other renders. With the same two variables,
 the Phase 3 suites run too (`pnpm test:visual` runs everything):
 
 ```sh

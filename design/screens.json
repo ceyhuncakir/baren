@@ -140,13 +140,6 @@
     "file": "reference/20-auth-verify-email.png"
   },
   {
-    "num": "21",
-    "name": "21 Auth — Continue in browser",
-    "width": 1440,
-    "height": 900,
-    "file": "reference/21-auth-continue-in-browser.png"
-  },
-  {
     "num": "22",
     "name": "22 Auth — Forgot password",
     "width": 1440,

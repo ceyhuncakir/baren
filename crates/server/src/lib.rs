@@ -36,7 +36,7 @@ use state::AppState;
 
 pub const DEFAULT_ADDR: &str = config::DEFAULT_BIND;
 
-/// How often expired sessions, codes and device requests are purged.
+/// How often expired sessions and codes are purged.
 const PURGE_EVERY: Duration = Duration::from_secs(10 * 60);
 
 /// A running server.
@@ -112,7 +112,7 @@ impl Server {
         format!("http://{}", self.addr)
     }
 
-    /// Base URL used in invite and device links.
+    /// Base URL used in invite links.
     pub fn public_url(&self) -> &str {
         &self.state.public_url
     }

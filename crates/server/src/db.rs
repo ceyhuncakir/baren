@@ -64,7 +64,7 @@ pub fn parse_role(value: &str) -> ApiResult<Role> {
 // ---------------------------------------------------------------------------------------------
 // Users
 
-#[derive(Debug, Clone, sqlx::FromRow)]
+#[derive(Debug, Clone)]
 pub struct UserRow {
     pub id: String,
     pub name: String,
@@ -81,14 +81,6 @@ impl From<UserRow> for dto::User {
             created_at: row.created_at,
         }
     }
-}
-
-pub async fn user_by_id(db: &SqlitePool, user_id: &str) -> ApiResult<UserRow> {
-    sqlx::query_as::<_, UserRow>("SELECT id, name, email, created_at FROM users WHERE id = ?")
-        .bind(user_id)
-        .fetch_optional(db)
-        .await?
-        .ok_or_else(|| ApiError::not_found("User"))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -267,7 +259,7 @@ impl From<FileRow> for dto::File {
     }
 }
 
-/// Remove expired sessions, codes (verification and password reset) and device requests.
+/// Remove expired sessions and codes (verification and password reset).
 pub async fn purge_expired(db: &SqlitePool) -> Result<(), sqlx::Error> {
     let now = now_ms();
     sqlx::query("DELETE FROM sessions WHERE expires_at <= ?")
@@ -275,10 +267,6 @@ pub async fn purge_expired(db: &SqlitePool) -> Result<(), sqlx::Error> {
         .execute(db)
         .await?;
     sqlx::query("DELETE FROM email_codes WHERE expires_at <= ?")
-        .bind(now - ms(Duration::from_secs(86_400)))
-        .execute(db)
-        .await?;
-    sqlx::query("DELETE FROM device_codes WHERE expires_at <= ?")
         .bind(now - ms(Duration::from_secs(86_400)))
         .execute(db)
         .await?;
