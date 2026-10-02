@@ -1,0 +1,21 @@
+{
+  "name": "@baren/html",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HTML/CSS ↔ document conversion: write_html import (HTML → Loro nodes) and JSX/HTML export for the MCP tools.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./sources": "./src/sources.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@baren/schema": "workspace:*",
+    "loro-crdt": "^1.16.4",
+    "parse5": "^8.0.1"
+  }
+}

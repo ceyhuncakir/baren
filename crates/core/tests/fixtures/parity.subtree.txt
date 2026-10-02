@@ -1,0 +1,114 @@
+{
+  "rootId": "7@11",
+  "nodes": {
+    "7@11": {
+      "id": "7@11",
+      "type": "frame",
+      "name": "Board",
+      "parentId": "2@11",
+      "children": [
+        "82@11",
+        "20@11",
+        "76@11",
+        "133@11",
+        "143@11"
+      ],
+      "styles": {
+        "backgroundColor": "var(--color-background)",
+        "display": "flex",
+        "left": -120.5,
+        "opacity": 0.25,
+        "zIndex": 0,
+        "gap": "12px",
+        "top": 0,
+        "height": 900,
+        "width": 1440
+      }
+    },
+    "82@11": {
+      "id": "82@11",
+      "type": "rect",
+      "name": "Rect",
+      "parentId": "7@11",
+      "children": [],
+      "styles": {
+        "borderRadius": 1.5e-7,
+        "top": 1152921504606847000,
+        "height": 0.30000000000000004,
+        "width": 1e+21
+      }
+    },
+    "20@11": {
+      "id": "20@11",
+      "type": "text",
+      "name": "Title",
+      "parentId": "7@11",
+      "children": [],
+      "styles": {
+        "lineHeight": "40px",
+        "fontWeight": 600,
+        "color": "#FF0000"
+      },
+      "text": "Hey 👋 <b>\"world\"</b> & ünïcödé — 你好!!\nsecond line"
+    },
+    "76@11": {
+      "id": "76@11",
+      "type": "frame",
+      "name": "",
+      "parentId": "7@11",
+      "children": [
+        "95@11",
+        "105@11"
+      ],
+      "styles": {
+        "flexDirection": "row",
+        "display": "flex"
+      },
+      "locked": true,
+      "hidden": false
+    },
+    "95@11": {
+      "id": "95@11",
+      "type": "image",
+      "name": "Image",
+      "parentId": "76@11",
+      "children": [],
+      "styles": {
+        "backgroundImage": "url(\"baren-asset://af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262\")",
+        "height": "64px",
+        "objectFit": "cover",
+        "width": "64px"
+      },
+      "assetId": "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "assetName": "dolomites-dawn.jpg"
+    },
+    "105@11": {
+      "id": "105@11",
+      "type": "text",
+      "name": "Text",
+      "parentId": "76@11",
+      "children": [],
+      "styles": {},
+      "text": ""
+    },
+    "133@11": {
+      "id": "133@11",
+      "type": "frame",
+      "name": "",
+      "parentId": "7@11",
+      "children": [],
+      "styles": {
+        "ok": "yes"
+      }
+    },
+    "143@11": {
+      "id": "143@11",
+      "type": "text",
+      "name": "",
+      "parentId": "7@11",
+      "children": [],
+      "styles": {},
+      "text": ""
+    }
+  }
+}

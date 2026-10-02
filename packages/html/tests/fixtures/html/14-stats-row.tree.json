@@ -1,0 +1,82 @@
+{
+  "warnings": [],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Stats",
+      "styles": {
+        "display": "flex",
+        "gap": "16px"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "name": "Stat",
+          "styles": {
+            "backgroundColor": "var(--color-surface)",
+            "borderRadius": "12px",
+            "display": "flex",
+            "flexBasis": "0",
+            "flexDirection": "column",
+            "flexGrow": "1",
+            "flexShrink": "1",
+            "gap": "4px",
+            "padding": "20px"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Revenue",
+              "styles": {
+                "color": "var(--color-foreground-muted)",
+                "fontFamily": "Inter",
+                "fontSize": "12px",
+                "fontWeight": 500,
+                "letterSpacing": "0.06em",
+                "textTransform": "uppercase",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Revenue"
+            },
+            {
+              "type": "frame",
+              "name": "Frame",
+              "styles": {
+                "alignItems": "baseline",
+                "display": "flex",
+                "gap": "8px"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "name": "$48,210",
+                  "styles": {
+                    "color": "var(--color-foreground)",
+                    "fontFamily": "Inter",
+                    "fontSize": "28px",
+                    "fontVariantNumeric": "tabular-nums",
+                    "fontWeight": 600,
+                    "whiteSpace": "pre-wrap"
+                  },
+                  "text": "$48,210"
+                },
+                {
+                  "type": "text",
+                  "name": "+12.4%",
+                  "styles": {
+                    "color": "#16A34A",
+                    "fontFamily": "Inter",
+                    "fontSize": "12px",
+                    "fontWeight": 600,
+                    "whiteSpace": "pre-wrap"
+                  },
+                  "text": "+12.4%"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

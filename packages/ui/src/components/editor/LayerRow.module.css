@@ -1,0 +1,180 @@
+/*
+ * Layer row (05/06/14): 28px, indent 16px per level from 6px, chevron slot 12,
+ * type icon slot 16, name ellipsis, 36px trailing lock/eye slot shown on hover.
+ *  hover            --color-muted
+ *  selected         --color-selection-subtle (top level) / -strong (nested), medium name, blue icon
+ *  ancestor         --color-selection-faint (rows inside the selection's parent)
+ */
+
+.row {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding-right: 10px;
+  padding-left: calc(6px + var(--depth, 0) * 16px);
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: var(--color-foreground);
+  cursor: default;
+  user-select: none;
+  outline: none;
+  contain: layout style;
+}
+
+.row:hover:not([data-state='selected']),
+.row[data-hover]:not([data-state='selected']) {
+  background: var(--color-muted);
+}
+
+.row[data-state='ancestor'] {
+  background: var(--color-selection-faint);
+}
+
+.row[data-state='selected'] {
+  background: var(--color-selection-subtle);
+}
+
+.row[data-state='selected'][data-nested] {
+  background: var(--color-selection-strong);
+}
+
+.row:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.row[data-dragging] {
+  opacity: 0.4;
+}
+
+.chevron {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 28px;
+  padding: 0;
+  color: var(--color-foreground-subtle);
+}
+
+.row:hover .chevron,
+.row[data-hover] .chevron,
+.chevron[aria-expanded='true'] {
+  color: var(--color-foreground-muted);
+}
+
+.chevron:hover {
+  color: var(--color-foreground);
+}
+
+.typeIcon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  color: var(--color-foreground-muted);
+}
+
+.row[data-state='selected'] .typeIcon {
+  color: var(--color-selection);
+}
+
+.name {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row[data-state='selected'][data-nested] .name {
+  font-weight: var(--font-weight-medium);
+}
+
+.row[data-hidden] .name,
+.row[data-hidden] .typeIcon {
+  color: var(--color-foreground-subtle);
+}
+
+.trailing {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 36px;
+  height: 28px;
+}
+
+.trailButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0;
+  color: var(--color-foreground-muted);
+  visibility: hidden;
+}
+
+.trailButton:hover {
+  color: var(--color-foreground);
+}
+
+.row:hover .trailButton,
+.row[data-hover] .trailButton,
+.row:focus-within .trailButton,
+.trailButton[aria-pressed='true'] {
+  visibility: visible;
+}
+
+.trailButton:focus-visible {
+  visibility: visible;
+  outline: none;
+  color: var(--color-selection);
+}
+
+.renameInput {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 20px;
+  margin: 0 -4px;
+  padding: 0 3px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--color-background);
+  box-shadow: 0 0 0 1px var(--color-selection);
+  font: inherit;
+  color: var(--color-foreground);
+  outline: none;
+}
+
+.renameInput:focus-visible {
+  outline: none;
+}
+
+/* Drag-and-drop indicators. */
+.drop {
+  position: absolute;
+  right: 0;
+  left: calc(24px + var(--depth, 0) * 16px);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-selection);
+  pointer-events: none;
+}
+
+.dropBefore {
+  top: -1px;
+}
+
+.dropAfter {
+  bottom: -1px;
+}
+
+.row[data-drop='inside'] {
+  box-shadow: inset 0 0 0 1.5px var(--color-selection);
+}

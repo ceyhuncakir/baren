@@ -1,0 +1,69 @@
+# electron-builder config — https://www.electron.build/configuration
+appId: dev.baren.app
+productName: Baren
+executableName: baren
+copyright: Copyright © 2026 baren
+directories:
+  output: release/${version}
+  # icon.png (1024x1024, the Baren seal on its cream tile; master in design/brand/) is converted per platform.
+  buildResources: resources
+files:
+  - out/**/*
+  - package.json
+  # Linux window icon (src/main imports it with `?asset`, resolved next to out/).
+  - resources/icon.png
+  - '!**/*.{map,ts,tsx}'
+  - '!**/{.vscode,tests,test-results,playwright-report}/**'
+  # The Rust core (napi addon built by `pnpm build:native`), loaded by the main
+  # process from <resources>/app.asar.unpacked/native/. Missing → JS fallback core.
+  - from: ../../crates/napi
+    to: native
+    filter:
+      - '*.node'
+# Native addons cannot be loaded from inside the asar archive.
+asarUnpack:
+  - '**/*.node'
+# Our only native module is the prebuilt napi addon; nothing to rebuild against Electron headers.
+npmRebuild: false
+protocols:
+  - name: Baren
+    schemes:
+      - baren
+linux:
+  target:
+    - AppImage
+    - rpm
+    - deb
+  category: Graphics
+  maintainer: baren <hello@baren.dev>
+  synopsis: Local-first multiplayer design tool
+  # Deep links: the .desktop file declares the baren:// handler (deb/rpm register it on install;
+  # AppImage builds call setAsDefaultProtocolClient at runtime).
+  mimeTypes:
+    - x-scheme-handler/baren
+  desktop:
+    entry:
+      # Electron sets WM_CLASS from app.name (package.json productName).
+      StartupWMClass: Baren
+      Terminal: 'false'
+appImage:
+  artifactName: baren-${version}-${arch}.${ext}
+deb:
+  artifactName: baren_${version}_${arch}.${ext}
+rpm:
+  artifactName: baren-${version}.${arch}.${ext}
+mac:
+  target: dmg
+  category: public.app-category.graphics-design
+  darkModeSupport: true
+win:
+  target: nsis
+# Auto-update (electron-updater, generic provider). Makes electron-builder write
+# latest-linux.yml next to the artifacts and resources/app-update.yml into the app (electron-updater
+# reads its cache directory name from it). The app's feed itself is fixed at build time from
+# VITE_UPDATE_URL / VITE_SERVER_URL (src/main/updates/feed.ts); scripts/release.mjs passes the same
+# URL here with -c.publish.url=<feed>. Nothing is uploaded by electron-builder (--publish never):
+# the release script rsyncs the files to the server's UPDATES_DIR.
+publish:
+  provider: generic
+  url: http://127.0.0.1:8787/updates/

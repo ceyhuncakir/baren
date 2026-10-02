@@ -1,0 +1,80 @@
+/* Home shell (01–03, 17): 240px sidebar + main column. */
+
+.home {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.main {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-background);
+}
+
+/* "Get started ›": the trailing chevron sits 4px from the label, not 6. */
+.getStarted.getStarted {
+  gap: 4px;
+}
+
+.footer {
+  padding: 4px 4px 0;
+}
+
+/* Account menu (17): the hairline under the header has 3px above it, not 5. */
+.headerSeparator.headerSeparator {
+  padding-top: 3px;
+}
+
+/* "Using agents" with agents (36): 36 px rows, 6 px above and 10 px below the list. */
+.agentRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 2px;
+  padding-top: 6px;
+}
+
+.agentRow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+}
+
+.agentText {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.agentName,
+.agentActivity {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agentName {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.agentActivity,
+.agentMore {
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.agentMore {
+  padding: 2px 0 0 30px;
+}

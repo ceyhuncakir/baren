@@ -1,0 +1,13 @@
+Verify your email
+
+Hi {{first_name}}, enter this code in Baren to finish setting up your account.
+
+    {{code}}
+
+Expires in {{minutes}} minutes.
+
+Didn't create an account? You can safely ignore this email — nobody can sign in without this code.
+
+--
+You're receiving this email because someone signed up for Baren with {{to}}.
+Baren · Local-first design, together.

@@ -1,0 +1,66 @@
+/* Underline tabs from Team settings (02/03): pill label + 2px underline, gap 6. */
+
+.list {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  outline: none;
+}
+
+.tabLabel {
+  display: inline-grid;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) linear,
+    color var(--duration-fast) linear;
+}
+
+/* Reserve medium-weight width (no layout shift when switching tabs). */
+.tabLabel::after {
+  content: attr(data-text);
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: var(--font-weight-medium);
+}
+
+.underline {
+  align-self: stretch;
+  flex-shrink: 0;
+  height: 2px;
+  background: transparent;
+}
+
+.tab:hover .tabLabel,
+.tab[data-hover] .tabLabel {
+  color: var(--color-foreground);
+}
+
+.tab[aria-selected='true'] .tabLabel {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.tab[aria-selected='true'] .underline {
+  background: var(--color-foreground);
+}
+
+.tab:focus-visible .tabLabel {
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.tab:disabled .tabLabel {
+  color: var(--color-foreground-subtle);
+}

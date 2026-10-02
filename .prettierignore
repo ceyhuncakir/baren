@@ -1,0 +1,14 @@
+node_modules
+target
+dist
+out
+release
+pnpm-lock.yaml
+# Reference designs and generated fixtures
+design/
+# The binding contract is edited by hand only
+ARCHITECTURE.md
+crates/napi/index.js
+crates/napi/index.d.ts
+# Email-safe HTML (whitespace and the <!-- footer --> split marker matter)
+crates/server/templates/

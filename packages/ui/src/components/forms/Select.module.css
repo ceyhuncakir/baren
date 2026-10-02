@@ -1,0 +1,88 @@
+/*
+ * Select triggers.
+ *  filled 32 (03 "Anyone with the link"): input bg, r6, pad 0 8 0 10, gap 8, chevron 13
+ *  filled 26 (02 role "Editor"): pad 0 6 0 8, gap 4, chevron 12, hugs content
+ *  ghost 24 (08 "can edit ⌄"): 12px muted, gap 2, chevron 10
+ */
+
+.trigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-input);
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: var(--color-foreground);
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) linear;
+}
+
+.trigger:hover,
+.trigger[data-hover],
+.trigger[aria-expanded='true'] {
+  background: var(--color-muted);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.trigger:disabled {
+  color: var(--color-foreground-subtle);
+  pointer-events: none;
+}
+
+.s26 {
+  height: 26px;
+  gap: 4px;
+  padding: 0 6px 0 8px;
+}
+
+.ghost {
+  height: 24px;
+  gap: 2px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-sm);
+  color: var(--color-foreground-muted);
+}
+
+.ghost:hover,
+.ghost[data-hover],
+.ghost[aria-expanded='true'] {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.placeholder {
+  color: var(--color-foreground-subtle);
+}
+
+.leading {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--color-foreground-muted);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-foreground-muted);
+}

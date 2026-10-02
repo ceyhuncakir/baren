@@ -1,0 +1,21 @@
+{
+  "name": "@baren/sync-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript client for the baren server REST API and WebSocket live sync.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./api": "./src/api-entry.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:e2e": "vitest run tests/e2e.test.ts tests/e2e-phase2.test.ts"
+  },
+  "dependencies": {
+    "@baren/schema": "workspace:*",
+    "loro-crdt": "^1.16.4"
+  }
+}

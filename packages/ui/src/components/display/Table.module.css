@@ -1,0 +1,143 @@
+/* Members table (02): header 32px, rows 64px, hairlines; columns 1fr / 160 / 160 / 32. */
+
+.table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--table-columns, 1fr 160px 160px 32px);
+  align-items: center;
+  height: 64px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.header {
+  height: 32px;
+}
+
+.headerCell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  text-align: left;
+}
+
+button.headerCell:hover {
+  color: var(--color-foreground);
+}
+
+.sortAsc {
+  transform: rotate(180deg);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.memberText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.memberNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.memberName {
+  overflow: hidden;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberSuffix {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.memberSub {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Compact list rows (share popover, 08): 44px, avatar 28, 12/11px text, 76px trailing. */
+.personRow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 8px;
+}
+
+.personText {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.personName {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personSub {
+  overflow: hidden;
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personTrailing {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  width: 76px;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}

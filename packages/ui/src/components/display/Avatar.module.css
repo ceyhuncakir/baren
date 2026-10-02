@@ -1,0 +1,126 @@
+/*
+ * Avatars: 22 (sidebar/inspector, 11px), 28 (share popover, 11px), 32 (account menu, 14px),
+ * 36 (members table, 14px). Team marks: 18 square r4, 10px.
+ */
+.avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--avatar-bg, var(--color-avatar));
+  /* Identity colours include near-black (#1A1A1A): in dark a hairline keeps the disc visible. */
+  box-shadow: var(--shadow-identity);
+  color: var(--avatar-fg, var(--color-on-accent));
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-semibold);
+  user-select: none;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.s18 {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  line-height: 12px;
+}
+.s22 {
+  width: 22px;
+  height: 22px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+}
+.s28 {
+  width: 28px;
+  height: 28px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+}
+.s32 {
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-md);
+  line-height: 18px;
+}
+.s36 {
+  width: 36px;
+  height: 36px;
+  font-size: var(--text-md);
+  line-height: 18px;
+}
+
+.square {
+  border-radius: var(--radius-sm);
+}
+.s28.square,
+.s32.square,
+.s36.square {
+  border-radius: var(--radius-md);
+}
+
+/* Pending invite (02): dashed ring + mail icon. */
+.pending {
+  background: transparent;
+  box-shadow: none;
+  border: 1px dashed var(--color-dot);
+  color: var(--color-foreground-muted);
+}
+
+/* Group ("Everyone at …", 08): muted square with an icon. */
+.muted {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+/* General access globe (08). */
+.accent {
+  background: var(--color-selection-subtle);
+  color: var(--color-selection);
+}
+
+.stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+.stack > * + * {
+  margin-left: -4px;
+  box-shadow:
+    0 0 0 2px var(--color-background),
+    var(--shadow-identity);
+}
+
+/* MCP agents (34–36): a rounded square (r6 at every size) in the agent accent, white sparkle.
+   Not clipped, so the presence dot can sit on the corner. */
+.agent {
+  overflow: visible;
+  border-radius: var(--radius-md);
+  background: var(--color-agent);
+  box-shadow: none;
+  color: var(--color-on-accent);
+}
+
+/* An agent that is not active (36 "Last active 2 hours ago"). */
+.idle {
+  background: var(--color-muted);
+  color: var(--color-foreground-muted);
+}
+
+/* Presence dot (36): 8 px success, 2 px background ring, bottom-right offset −3. */
+.presence {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  box-shadow: 0 0 0 2px var(--color-background);
+}

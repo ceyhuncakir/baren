@@ -1,0 +1,116 @@
+/* Spinner (21) */
+.spinner {
+  flex-shrink: 0;
+  animation: spin 800ms linear infinite;
+}
+.spinnerTrack {
+  stroke: var(--color-muted);
+}
+.spinnerArc {
+  stroke: var(--color-foreground);
+}
+.spinnerInverse .spinnerTrack {
+  stroke: color-mix(in srgb, var(--color-brand-foreground) 25%, transparent);
+}
+.spinnerInverse .spinnerArc {
+  stroke: var(--color-brand-foreground);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2400ms;
+  }
+}
+
+/* Kbd (04 "Press A to draw…") */
+.kbd {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  box-shadow:
+    0 0 0 1px var(--color-border),
+    0 1px 0 var(--color-border);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+/* Divider */
+.divider {
+  flex-shrink: 0;
+  height: 1px;
+  border: 0;
+  background: var(--color-border);
+}
+.vertical {
+  width: 1px;
+  height: auto;
+  align-self: stretch;
+}
+.labeled {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-subtle);
+  white-space: nowrap;
+}
+.labeled::before,
+.labeled::after {
+  content: '';
+  flex: 1 1 0;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* Password strength (19) */
+.strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+}
+.strengthBars {
+  display: flex;
+  flex: 1 1 0;
+  gap: 4px;
+}
+.strengthBar {
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-muted);
+  transition: background-color var(--duration-base) linear;
+}
+.strengthBar[data-filled] {
+  background: var(--strength-color);
+}
+.strengthLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--strength-color);
+  white-space: nowrap;
+}
+.level1 {
+  --strength-color: var(--color-destructive);
+}
+.level2 {
+  --strength-color: var(--color-warning);
+}
+.level3,
+.level4 {
+  --strength-color: var(--color-success-strong);
+}

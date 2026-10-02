@@ -1,0 +1,154 @@
+/*
+ * Checkbox: auth consent (19) 16px r4, inspector "Clip content" (06) 14px r3.
+ * Radio: 16px; checked = 5px foreground ring, unchecked = 1px control border (14 specimen).
+ */
+
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
+}
+
+.top {
+  align-items: flex-start;
+}
+
+.sm {
+  gap: 8px;
+}
+
+.native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.box {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 1px var(--color-control-border);
+  /* The check mark is cut out of the foreground fill. */
+  color: var(--color-background);
+  transition:
+    background-color var(--duration-fast) linear,
+    box-shadow var(--duration-fast) linear;
+}
+
+.sm .box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.top .box {
+  margin-top: 1px;
+}
+
+.mark {
+  opacity: 0;
+}
+
+.native:checked + .box,
+.native:indeterminate + .box {
+  background: var(--color-foreground);
+  box-shadow: none;
+}
+
+.native:checked + .box .mark,
+.native:indeterminate + .box .mark {
+  opacity: 1;
+}
+
+.root:hover .native:not(:checked):not(:indeterminate):not(:disabled) + .box,
+.root[data-hover] .native:not(:checked) + .box {
+  box-shadow: inset 0 0 0 1px var(--color-foreground-subtle);
+}
+
+.native:focus-visible + .box {
+  box-shadow:
+    inset 0 0 0 1px var(--color-control-border),
+    var(--shadow-focus);
+}
+
+.native:checked:focus-visible + .box {
+  box-shadow: var(--shadow-focus);
+}
+
+.native:disabled + .box {
+  opacity: 0.45;
+}
+
+.native:disabled ~ .text {
+  color: var(--color-foreground-subtle);
+}
+
+/* Radio */
+.radio .box {
+  border-radius: var(--radius-full);
+}
+
+.radio .native:checked + .box {
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 5px var(--color-foreground);
+}
+
+.radio .native:checked:focus-visible + .box {
+  box-shadow:
+    inset 0 0 0 5px var(--color-foreground),
+    var(--shadow-focus);
+}
+
+/* Labels */
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.mutedText {
+  font-size: var(--text-sm);
+  line-height: 18px;
+  color: var(--color-foreground-muted);
+}
+
+.sm .text {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+}
+
+.description {
+  font-size: var(--text-sm);
+  color: var(--color-foreground-muted);
+}
+
+.shortcut {
+  color: var(--color-foreground-subtle);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.groupRow {
+  flex-direction: row;
+  gap: 16px;
+}

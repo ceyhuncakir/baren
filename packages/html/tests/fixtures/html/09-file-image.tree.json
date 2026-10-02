@@ -1,0 +1,86 @@
+{
+  "warnings": [],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Profile",
+      "styles": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "12px"
+      },
+      "children": [
+        {
+          "type": "image",
+          "name": "Ana",
+          "styles": {
+            "borderRadius": "50%",
+            "flexShrink": "0",
+            "height": "40px",
+            "objectFit": "cover",
+            "width": "40px"
+          },
+          "assetId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "2px"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Ana Lima",
+              "styles": {
+                "color": "var(--color-foreground)",
+                "fontFamily": "Inter",
+                "fontSize": "14px",
+                "fontWeight": 600,
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Ana Lima"
+            },
+            {
+              "type": "text",
+              "name": "Product designer",
+              "styles": {
+                "color": "var(--color-foreground-muted)",
+                "fontFamily": "Inter",
+                "fontSize": "12px",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Product designer"
+            }
+          ]
+        },
+        {
+          "type": "image",
+          "name": "Cover",
+          "styles": {
+            "borderRadius": "8px",
+            "height": "80px",
+            "width": "120px"
+          },
+          "assetId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        {
+          "type": "frame",
+          "name": "Banner",
+          "styles": {
+            "backgroundColor": "#EEE",
+            "backgroundImage": "url(\"baren-asset://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\")",
+            "backgroundPosition": "center",
+            "backgroundRepeat": "no-repeat",
+            "backgroundSize": "cover",
+            "borderRadius": "8px",
+            "height": "90px",
+            "width": "160px"
+          }
+        }
+      ]
+    }
+  ]
+}

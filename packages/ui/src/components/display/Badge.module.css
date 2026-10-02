@@ -1,0 +1,71 @@
+/*
+ * Badges: "Invited" (02, muted), usage chips "fill · 38" (07, input), counts (07 "13").
+ * Product decision: no "Pro" badge usage anywhere (no billing).
+ */
+.badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+  white-space: nowrap;
+}
+
+.outline {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  font-weight: var(--font-weight-medium);
+}
+
+.muted {
+  background: var(--color-muted);
+}
+
+.input {
+  padding: 2px 6px;
+  background: var(--color-input);
+}
+
+.selection {
+  background: var(--color-selection-subtle);
+  color: var(--color-selection);
+  font-weight: var(--font-weight-medium);
+}
+
+.count {
+  padding: 0;
+  color: var(--color-foreground-subtle);
+}
+
+.dot {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--dot-color, var(--color-dot));
+}
+
+.success {
+  --dot-color: var(--color-success);
+}
+.neutral {
+  --dot-color: var(--color-dot);
+}
+.accent {
+  --dot-color: var(--color-selection);
+}
+.danger {
+  --dot-color: var(--color-destructive);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}

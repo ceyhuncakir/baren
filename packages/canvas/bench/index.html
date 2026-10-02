@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@baren/canvas bench</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: system-ui, sans-serif;
+      }
+      #stage {
+        position: absolute;
+        inset: 0;
+      }
+      #hud {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        z-index: 10;
+        margin: 0;
+        padding: 6px 8px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        font:
+          11px/1.4 ui-monospace,
+          monospace;
+        border-radius: 4px;
+        pointer-events: none;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <pre id="hud"></pre>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

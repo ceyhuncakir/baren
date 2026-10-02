@@ -1,0 +1,46 @@
+{
+  "warnings": [
+    {
+      "code": "rich-text-flattened",
+      "path": "div[1] > p[1]"
+    }
+  ],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Notice",
+      "styles": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "8px",
+        "width": "360px"
+      },
+      "children": [
+        {
+          "type": "text",
+          "name": "Your files are stored on this computer and sync wh",
+          "styles": {
+            "color": "var(--color-foreground)",
+            "fontFamily": "Inter",
+            "fontSize": "14px",
+            "lineHeight": "22px",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "Your files are stored on this computer and sync when you share them."
+        },
+        {
+          "type": "text",
+          "name": "Last synced 2 minutes ago · Details",
+          "styles": {
+            "color": "var(--color-foreground-subtle)",
+            "fontFamily": "Inter",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "Last synced 2 minutes ago · Details"
+        }
+      ]
+    }
+  ]
+}

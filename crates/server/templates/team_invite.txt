@@ -1,0 +1,16 @@
+Join {{team_name}} on Baren
+
+{{inviter_name}} invited you to design together. You'll join as {{role}} and {{access}}.
+
+{{team_name}} — invited by {{inviter_name}} · {{members}}
+
+Join {{team_name}}:
+{{url}}
+
+{{expiry}}
+
+Not expecting this? You can ignore this email — you won't be added to the team unless you accept.
+
+--
+You're receiving this email because {{inviter_name}} ({{inviter_email}}) invited {{to}} to a team on Baren.
+Baren · Local-first design, together.

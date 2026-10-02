@@ -1,0 +1,51 @@
+/* Slider (06 Radius): 4px track, 14px thumb that stays inside the track. */
+
+.slider {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+  height: 26px;
+  min-height: 26px;
+  touch-action: none;
+  cursor: default;
+}
+
+.track {
+  position: relative;
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-track);
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--ratio, 0) * (100% - 14px));
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 7px;
+  background: var(--color-thumb);
+  box-shadow: var(--shadow-thumb);
+  outline: none;
+}
+
+.thumb:hover,
+.thumb[data-hover] {
+  box-shadow: var(--shadow-thumb-hover);
+}
+
+.thumb:focus-visible {
+  box-shadow:
+    var(--shadow-thumb),
+    0 0 0 3px var(--color-selection-halo),
+    0 0 0 1px var(--color-selection);
+}
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

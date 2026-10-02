@@ -1,0 +1,133 @@
+{
+  "loroCrdtVersion": "1.16.4",
+  "snapshot": {
+    "name": "Sample",
+    "pageIds": [
+      "2@1",
+      "79@1"
+    ],
+    "nodes": {
+      "2@1": {
+        "id": "2@1",
+        "type": "page",
+        "name": "Page 1",
+        "parentId": null,
+        "children": [
+          "7@1"
+        ],
+        "styles": {},
+        "background": "#EEEEEE"
+      },
+      "7@1": {
+        "id": "7@1",
+        "type": "frame",
+        "name": "01 Home",
+        "parentId": "2@1",
+        "children": [
+          "20@1",
+          "51@1"
+        ],
+        "styles": {
+          "backgroundColor": "var(--color-background)",
+          "display": "flex",
+          "left": 0,
+          "padding": "48px",
+          "flexDirection": "column",
+          "gap": "12px",
+          "top": 0,
+          "height": 900,
+          "width": 1440
+        }
+      },
+      "20@1": {
+        "id": "20@1",
+        "type": "text",
+        "name": "Title",
+        "parentId": "7@1",
+        "children": [],
+        "styles": {
+          "fontSize": "22px",
+          "fontFamily": "Inter",
+          "lineHeight": "28px",
+          "color": "var(--color-foreground)"
+        },
+        "text": "Recents — ceyhun cakir"
+      },
+      "51@1": {
+        "id": "51@1",
+        "type": "frame",
+        "name": "Row",
+        "parentId": "7@1",
+        "children": [
+          "57@1",
+          "65@1",
+          "71@1"
+        ],
+        "styles": {
+          "display": "flex",
+          "gap": 8
+        }
+      },
+      "57@1": {
+        "id": "57@1",
+        "type": "rect",
+        "name": "Swatch",
+        "parentId": "51@1",
+        "children": [],
+        "styles": {
+          "backgroundColor": "#2F80FF",
+          "borderRadius": "6px",
+          "height": "32px",
+          "width": "32px"
+        }
+      },
+      "65@1": {
+        "id": "65@1",
+        "type": "svg",
+        "name": "Icon",
+        "parentId": "51@1",
+        "children": [],
+        "styles": {},
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\"><circle cx=\"8\" cy=\"8\" r=\"6\"/></svg>",
+        "locked": true
+      },
+      "71@1": {
+        "id": "71@1",
+        "type": "image",
+        "name": "Photo",
+        "parentId": "51@1",
+        "children": [],
+        "styles": {
+          "height": "64px",
+          "width": "64px"
+        },
+        "assetId": "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+        "hidden": true
+      },
+      "79@1": {
+        "id": "79@1",
+        "type": "page",
+        "name": "Page 2",
+        "parentId": null,
+        "children": [],
+        "styles": {},
+        "background": "#FFFFFF"
+      }
+    },
+    "tokens": {
+      "--color-primary": {
+        "type": "color",
+        "value": "#141414",
+        "description": "Primary ink"
+      },
+      "--spacing-2": {
+        "type": "spacing",
+        "value": "8px"
+      },
+      "--opacity-muted": {
+        "type": "opacity",
+        "value": 0.6
+      }
+    }
+  }
+}

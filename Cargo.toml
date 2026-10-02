@@ -1,0 +1,50 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/napi", "crates/server", "crates/proto"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+# Internal crates
+baren-core = { path = "crates/core" }
+baren-proto = { path = "crates/proto" }
+
+# CRDT — keep on the same 1.16.x release line as the `loro-crdt` npm package (see docs/versions.md).
+loro = "1.16.2"
+
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+thiserror = "2.0.21"
+anyhow = "1.0.104"
+tokio = { version = "1.53.1", features = ["full"] }
+axum = { version = "0.8.9", features = ["ws"] }
+tower-http = { version = "0.7.1", features = ["cors", "trace"] }
+sqlx = { version = "0.9.0", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
+# 0.39 is the newest rusqlite whose libsqlite3-sys (0.37) is compatible with sqlx-sqlite 0.9
+# (<0.38); both link the native `sqlite3` library so they must share one libsqlite3-sys.
+rusqlite = { version = "0.39.0", features = ["bundled"] }
+blake3 = "1.8.7"
+argon2 = "0.6.0"
+rand = "0.10.3"
+sha2 = "0.11.0"
+base64 = "0.23.1"
+uuid = { version = "1.26.1", features = ["v4", "v7", "serde"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+napi = { version = "3.14.0", default-features = false, features = ["napi8", "async"] }
+napi-derive = "3.6.10"
+napi-build = "2.6.0"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+[profile.dev.package."*"]
+# Optimise dependencies (loro, sqlite, argon2) even in debug builds.
+opt-level = 2

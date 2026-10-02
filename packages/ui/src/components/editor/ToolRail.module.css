@@ -1,0 +1,62 @@
+/* Tool rail (04–16): 44px, surface, 32px tools r6, active = raised (white) + ring + 1px shadow. */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  width: var(--container-tool-rail);
+  padding-top: 8px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.tool {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--color-foreground-muted);
+  transition:
+    background-color var(--duration-fast) linear,
+    color var(--duration-fast) linear;
+}
+
+.tool:hover,
+.tool[data-hover] {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.tool[aria-pressed='true'] {
+  background: var(--color-segment-active);
+  box-shadow: var(--shadow-tool-active);
+  color: var(--color-foreground);
+}
+
+.tool:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.tool[aria-pressed='true']:focus-visible {
+  box-shadow:
+    var(--shadow-tool-active),
+    inset 0 0 0 1px var(--color-selection);
+}
+
+.tool:disabled {
+  color: var(--color-foreground-subtle);
+  pointer-events: none;
+}
+
+.divider {
+  flex-shrink: 0;
+  width: 20px;
+  height: 1px;
+  background: var(--color-border);
+}

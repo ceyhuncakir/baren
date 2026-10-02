@@ -1,0 +1,23 @@
+[package]
+name = "baren-core"
+description = "Local backend: Loro documents, SQLite persistence, assets, export."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "baren_core"
+path = "src/lib.rs"
+
+[dependencies]
+loro.workspace = true
+rusqlite.workspace = true
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+# Time-ordered file ids (UUIDv7). Already resolved in Cargo.lock for the workspace.
+uuid.workspace = true
+imagesize = "0.15.0"

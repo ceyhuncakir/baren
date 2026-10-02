@@ -1,0 +1,8 @@
+<!-- One button, then a bar of clones of it with new styles; then the duplicates' labels change. -->
+<button layer-name="Chip" style="display: flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background-color: var(--color-muted); font-family: Inter; font-size: 13px; color: var(--color-foreground);">All</button>
+<!-- next -->
+<div layer-name="Chips" style="display: flex; gap: 8px;">
+  <x-baren-clone node-id="{{$0}}" style="background-color: var(--color-primary); color: #FFFFFF;"></x-baren-clone>
+  <x-baren-clone node-id="{{$0}}" layer-name="Chip 2" />
+  <x-baren-clone node-id="{{$0}}" style="padding: 0 16px;" layer-name="Chip 3" />
+</div>

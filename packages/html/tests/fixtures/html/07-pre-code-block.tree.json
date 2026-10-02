@@ -1,0 +1,31 @@
+{
+  "warnings": [],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Code",
+      "styles": {
+        "backgroundColor": "#111114",
+        "borderRadius": "10px",
+        "display": "flex",
+        "flexDirection": "column",
+        "paddingBlock": "16px",
+        "paddingInline": "20px"
+      },
+      "children": [
+        {
+          "type": "text",
+          "name": "claude mcp add --transport http \\",
+          "styles": {
+            "color": "#E6E6E6",
+            "fontFamily": "'JetBrains Mono', monospace",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "whiteSpace": "pre"
+          },
+          "text": "claude mcp add --transport http \\\n  baren http://127.0.0.1:29170/mcp \\\n  --header \"Authorization: Bearer <token>\""
+        }
+      ]
+    }
+  ]
+}

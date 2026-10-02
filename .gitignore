@@ -1,0 +1,15 @@
+node_modules/
+target/
+dist/
+out/
+*.node
+.DS_Store
+test-results/
+playwright-report/
+*.db
+*.db-*
+release/
+.vite/
+*.tsbuildinfo
+# the sync server's default asset store next to ./baren.db (ASSETS_DIR)
+/baren-assets/

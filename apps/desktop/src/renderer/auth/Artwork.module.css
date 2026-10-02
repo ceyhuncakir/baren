@@ -1,0 +1,39 @@
+/*
+ * Auth artwork (18–23): the panel's ground with the artwork in an inset, rounded shell. The
+ * artwork keeps its own colours in both themes; `cover` anchored top-right keeps the seal in
+ * view at any window size.
+ */
+
+.artwork {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px;
+  background: var(--color-background);
+  pointer-events: none;
+}
+
+.shell {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right top;
+}
+
+/* Hairline edge, drawn over the artwork. */
+.shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-foreground) 6%, transparent);
+}

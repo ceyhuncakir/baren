@@ -1,0 +1,54 @@
+/*
+ * Switch (34 "MCP server"): 28 × 16, radius full, padding 2, 12 px knob with --shadow-thumb.
+ * On: --color-foreground track, --color-background knob (right). Off: --color-track track,
+ * --color-thumb knob (left). The knob slides in 140 ms.
+ */
+
+.root {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: 28px;
+  height: 16px;
+  padding: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-track);
+  transition: background-color var(--duration-base) var(--ease-out);
+}
+
+.knob {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-thumb);
+  box-shadow: var(--shadow-thumb);
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+}
+
+.on {
+  background: var(--color-foreground);
+}
+
+.on .knob {
+  background: var(--color-background);
+  transform: translateX(12px);
+}
+
+.root:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.root:disabled {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .knob {
+    transition: none;
+  }
+}

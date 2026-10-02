@@ -1,0 +1,82 @@
+{
+  "warnings": [],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Button bar",
+      "styles": {
+        "alignItems": "center",
+        "borderTopColor": "var(--color-border)",
+        "borderTopStyle": "solid",
+        "borderTopWidth": "1px",
+        "display": "flex",
+        "gap": "8px",
+        "justifyContent": "flex-end",
+        "paddingBlock": "16px",
+        "paddingInline": "24px"
+      },
+      "children": [
+        {
+          "type": "text",
+          "name": "Cancel",
+          "styles": {
+            "alignItems": "center",
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "var(--color-border)",
+            "borderRadius": "8px",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "color": "var(--color-foreground)",
+            "display": "flex",
+            "fontFamily": "Inter",
+            "fontSize": "14px",
+            "fontWeight": 500,
+            "height": "36px",
+            "justifyContent": "center",
+            "paddingBlock": "0",
+            "paddingInline": "16px",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "Cancel"
+        },
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {
+            "alignItems": "center",
+            "backgroundColor": "var(--color-primary)",
+            "borderRadius": "8px",
+            "color": "#FFFFFF",
+            "display": "flex",
+            "fontFamily": "Inter",
+            "fontSize": "14px",
+            "fontWeight": 500,
+            "gap": "6px",
+            "height": "36px",
+            "paddingBlock": "0",
+            "paddingInline": "16px"
+          },
+          "children": [
+            {
+              "type": "svg",
+              "name": "SVG",
+              "styles": {
+                "height": "16px",
+                "width": "16px"
+              },
+              "svg": "<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M20 6 9 17l-5-5\"></path></svg>"
+            },
+            {
+              "type": "text",
+              "name": "Save changes",
+              "styles": {
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Save changes"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "warnings": [
+    {
+      "code": "stylesheet-ignored",
+      "path": "style[1]"
+    },
+    {
+      "code": "class-ignored",
+      "path": "div[2]"
+    },
+    {
+      "code": "discouraged-property",
+      "path": "div[2]",
+      "property": "display"
+    },
+    {
+      "code": "discouraged-property",
+      "path": "div[2]",
+      "property": "gridTemplateColumns"
+    },
+    {
+      "code": "discouraged-property",
+      "path": "div[2]",
+      "property": "margin"
+    },
+    {
+      "code": "position-converted",
+      "path": "div[2] > div[1]",
+      "property": "position"
+    },
+    {
+      "code": "unsupported-property",
+      "path": "div[2] > div[1]",
+      "property": "transition"
+    },
+    {
+      "code": "unsupported-property",
+      "path": "div[2] > div[1]",
+      "property": "cursor"
+    },
+    {
+      "code": "table-as-flex",
+      "path": "div[2] > table[2]"
+    },
+    {
+      "code": "list-markers-dropped",
+      "path": "div[2] > ul[3]"
+    },
+    {
+      "code": "unsupported-property",
+      "path": "div[2] > ul[3] > li[1]",
+      "property": "listStyle"
+    },
+    {
+      "code": "block-flow",
+      "path": "div[2] > ul[3]"
+    },
+    {
+      "code": "discouraged-property",
+      "path": "div[2] > div[4]",
+      "property": "display"
+    },
+    {
+      "code": "discouraged-property",
+      "path": "div[2] > div[4]",
+      "property": "marginTop"
+    },
+    {
+      "code": "unknown-property",
+      "path": "div[2] > div[4]",
+      "property": "colour"
+    }
+  ],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Frame",
+      "styles": {
+        "display": "grid",
+        "gap": "16px",
+        "gridTemplateColumns": "1fr 1fr",
+        "marginBlock": "0",
+        "marginInline": "auto",
+        "position": "relative"
+      },
+      "children": [
+        {
+          "type": "text",
+          "name": "Fixed",
+          "styles": {
+            "position": "absolute",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "Fixed"
+        },
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {
+            "borderCollapse": "collapse",
+            "display": "flex",
+            "flexDirection": "column"
+          },
+          "children": [
+            {
+              "type": "frame",
+              "name": "Frame",
+              "styles": {
+                "display": "flex",
+                "flexDirection": "column"
+              },
+              "children": [
+                {
+                  "type": "frame",
+                  "name": "Frame",
+                  "styles": {
+                    "display": "flex"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "name": "A",
+                      "styles": {
+                        "paddingBlock": "4px",
+                        "paddingInline": "8px",
+                        "whiteSpace": "pre-wrap"
+                      },
+                      "text": "A"
+                    },
+                    {
+                      "type": "text",
+                      "name": "B",
+                      "styles": {
+                        "paddingBlock": "4px",
+                        "paddingInline": "8px",
+                        "whiteSpace": "pre-wrap"
+                      },
+                      "text": "B"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {},
+          "children": [
+            {
+              "type": "text",
+              "name": "One",
+              "styles": {
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "One"
+            },
+            {
+              "type": "text",
+              "name": "Two",
+              "styles": {
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Two"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "Inline",
+          "styles": {
+            "display": "inline-block",
+            "marginTop": "12px",
+            "whiteSpace": "pre-wrap",
+            "width": "64px"
+          },
+          "text": "Inline"
+        }
+      ]
+    }
+  ]
+}

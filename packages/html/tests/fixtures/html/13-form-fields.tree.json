@@ -1,0 +1,139 @@
+{
+  "warnings": [
+    {
+      "code": "rich-text-flattened",
+      "path": "form[1] > p[5]"
+    }
+  ],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Sign in",
+      "styles": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": "12px",
+        "boxShadow": "0 8px 24px rgba(0, 0, 0, 0.08)",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "16px",
+        "padding": "32px",
+        "width": "360px"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "6px"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Email",
+              "styles": {
+                "color": "var(--color-foreground)",
+                "fontFamily": "Inter",
+                "fontSize": "13px",
+                "fontWeight": 500,
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Email"
+            },
+            {
+              "type": "frame",
+              "name": "Frame",
+              "styles": {
+                "alignItems": "center",
+                "borderColor": "var(--color-border)",
+                "borderRadius": "8px",
+                "borderStyle": "solid",
+                "borderWidth": "1px",
+                "color": "var(--color-foreground)",
+                "display": "flex",
+                "fontFamily": "Inter",
+                "fontSize": "14px",
+                "height": "36px",
+                "paddingBlock": "0",
+                "paddingInline": "12px"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "name": "you@example.com",
+                  "styles": {
+                    "opacity": "0.5",
+                    "whiteSpace": "pre-wrap"
+                  },
+                  "text": "you@example.com"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {
+            "borderColor": "var(--color-border)",
+            "borderRadius": "8px",
+            "borderStyle": "solid",
+            "borderWidth": "1px",
+            "height": "36px",
+            "paddingBlock": "0",
+            "paddingInline": "12px"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Work",
+              "styles": {
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Work"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "Continue",
+          "styles": {
+            "alignItems": "center",
+            "backgroundColor": "var(--color-primary)",
+            "borderRadius": "8px",
+            "color": "#FFFFFF",
+            "display": "flex",
+            "fontFamily": "Inter",
+            "fontSize": "14px",
+            "fontWeight": 600,
+            "height": "40px",
+            "justifyContent": "center",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "Continue"
+        },
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {
+            "backgroundColor": "#E5E5E5",
+            "height": "1px"
+          }
+        },
+        {
+          "type": "text",
+          "name": "No account? Create one",
+          "styles": {
+            "color": "var(--color-foreground-subtle)",
+            "fontFamily": "Inter",
+            "fontSize": "12px",
+            "textAlign": "center",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "No account? Create one"
+        }
+      ]
+    }
+  ]
+}

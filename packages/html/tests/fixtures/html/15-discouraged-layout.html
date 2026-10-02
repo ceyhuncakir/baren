@@ -1,0 +1,8 @@
+<!-- What agents should not write: margins, grid, tables, classes, a stylesheet and a fixed header. -->
+<style>.title { color: red }</style>
+<div class="wrapper" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 auto;">
+  <div style="position: fixed; top: 0; transition: opacity .2s; cursor: pointer;">Fixed</div>
+  <table style="border-collapse: collapse;"><tr><td style="padding: 4px 8px;">A</td><td style="padding: 4px 8px;">B</td></tr></table>
+  <ul><li style="list-style: none;">One</li><li>Two</li></ul>
+  <div style="display: inline-block; margin-top: 12px; width: 4rem; colour: blue;">Inline</div>
+</div>

@@ -1,0 +1,184 @@
+/* Recents / Files / Archive (artboard 01): header 36/56/32, grid with 56px side gutters. */
+
+.screen {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-background);
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 36px 56px 32px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scroll {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 56px 48px;
+  contain: strict;
+}
+
+/* ---- Grid ---- */
+
+.gridInner {
+  position: relative;
+  width: 100%;
+}
+
+.gridRow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  will-change: transform;
+}
+
+/* ---- List ---- */
+
+.listHeader,
+.listRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px 180px 32px;
+  align-items: center;
+  column-gap: 16px;
+}
+
+.listHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 32px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+.listInner {
+  position: relative;
+  width: 100%;
+}
+
+.listSlot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.listRow {
+  height: 48px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.listMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  height: 100%;
+  text-align: left;
+}
+
+.listMain:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+  border-radius: var(--radius-sm);
+}
+
+.listThumb {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 30px;
+  overflow: clip;
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
+  color: var(--color-foreground-muted);
+}
+
+.listThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.listName {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listAccessory {
+  color: var(--color-foreground-muted);
+}
+
+.listCell {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  color: var(--color-foreground-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- States ---- */
+
+.loading {
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 96px;
+}
+
+.empty {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 96px 56px 0;
+  text-align: center;
+}
+
+.empty > :last-child:not(:first-child):not(p) {
+  margin-top: 10px;
+}
+
+.emptyTitle {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-medium);
+  line-height: 20px;
+  color: var(--color-foreground);
+}
+
+.emptyBody {
+  max-width: 360px;
+  font-size: var(--text-base);
+  line-height: 18px;
+  color: var(--color-foreground-muted);
+}

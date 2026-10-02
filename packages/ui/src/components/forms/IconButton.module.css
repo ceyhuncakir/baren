@@ -1,0 +1,53 @@
+/*
+ * Square icon buttons: panel toggle 26 (r4), popover close 24 (r4), members search 30,
+ * row actions 32×28 (r6), inspector icon actions 22×26.
+ */
+.iconButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--color-foreground-muted);
+  transition:
+    background-color var(--duration-fast) linear,
+    color var(--duration-fast) linear;
+}
+
+.radiusSm {
+  border-radius: var(--radius-sm);
+}
+
+.toneDefault {
+  color: var(--color-foreground);
+}
+
+.iconButton:hover,
+.iconButton[data-hover],
+.iconButton[aria-expanded='true'],
+.iconButton[aria-pressed='true'],
+.iconButton[data-active] {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.iconButton:active {
+  background: var(--color-muted-hover);
+}
+
+.iconButton:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.iconButton:disabled {
+  color: var(--color-foreground-subtle);
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Bare: no hover background (inline icons inside fields, e.g. password reveal). */
+.bare:hover,
+.bare[data-hover] {
+  background: transparent;
+}

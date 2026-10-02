@@ -1,0 +1,19 @@
+{
+  "name": "@baren/schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Document model (Loro) types and helpers shared by renderer, canvas, sync client and Rust core.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "fixture": "node scripts/make-fixture.mjs"
+  },
+  "dependencies": {
+    "loro-crdt": "^1.16.4"
+  }
+}

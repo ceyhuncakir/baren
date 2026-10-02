@@ -1,0 +1,119 @@
+{
+  "warnings": [],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Settings card",
+      "styles": {
+        "backgroundColor": "var(--color-background)",
+        "borderColor": "var(--color-border)",
+        "borderRadius": "var(--radius-lg)",
+        "borderStyle": "solid",
+        "borderWidth": "1px",
+        "boxShadow": "0 1px 2px rgba(0, 0, 0, 0.06)",
+        "display": "flex",
+        "flexDirection": "column",
+        "paddingBlock": "8px",
+        "paddingInline": "0",
+        "width": "420px"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "name": "Card header",
+          "styles": {
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "4px",
+            "paddingBottom": "16px",
+            "paddingInline": "20px",
+            "paddingTop": "12px"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Notifications",
+              "styles": {
+                "color": "var(--color-foreground)",
+                "fontFamily": "Inter",
+                "fontSize": "16px",
+                "fontWeight": 600,
+                "lineHeight": "22px",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Notifications"
+            },
+            {
+              "type": "text",
+              "name": "Choose what reaches your inbox.",
+              "styles": {
+                "color": "var(--color-foreground-muted)",
+                "fontFamily": "Inter",
+                "fontSize": "13px",
+                "lineHeight": "18px",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Choose what reaches your inbox."
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "name": "Row",
+          "styles": {
+            "alignItems": "center",
+            "borderTopColor": "var(--color-border)",
+            "borderTopStyle": "solid",
+            "borderTopWidth": "1px",
+            "display": "flex",
+            "gap": "16px",
+            "justifyContent": "space-between",
+            "paddingBlock": "12px",
+            "paddingInline": "20px"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Comments on my files",
+              "styles": {
+                "color": "var(--color-foreground)",
+                "fontFamily": "Inter",
+                "fontSize": "14px",
+                "lineHeight": "20px",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Comments on my files"
+            },
+            {
+              "type": "frame",
+              "name": "Switch",
+              "styles": {
+                "alignItems": "center",
+                "backgroundColor": "var(--color-primary)",
+                "borderRadius": "9999px",
+                "display": "flex",
+                "flexShrink": "0",
+                "height": "18px",
+                "justifyContent": "flex-end",
+                "padding": "2px",
+                "width": "32px"
+              },
+              "children": [
+                {
+                  "type": "frame",
+                  "name": "Knob",
+                  "styles": {
+                    "backgroundColor": "#FFFFFF",
+                    "borderRadius": "50%",
+                    "height": "14px",
+                    "width": "14px"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

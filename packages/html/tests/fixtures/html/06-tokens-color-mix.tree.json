@@ -1,0 +1,68 @@
+{
+  "warnings": [
+    {
+      "code": "unknown-token",
+      "path": "div[1] > a[3]",
+      "property": "color"
+    }
+  ],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Banner",
+      "styles": {
+        "--banner-accent": "var(--color-primary)",
+        "alignItems": "center",
+        "backgroundColor": "color-mix(in srgb, var(--banner-accent) 8%, transparent)",
+        "borderColor": "color-mix(in srgb, var(--banner-accent) 24%, transparent)",
+        "borderRadius": "var(--radius-md)",
+        "borderStyle": "solid",
+        "borderWidth": "1px",
+        "display": "flex",
+        "gap": "12px",
+        "paddingBlock": "var(--spacing-3)",
+        "paddingInline": "var(--spacing-4)"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "name": "Dot",
+          "styles": {
+            "backgroundColor": "var(--banner-accent)",
+            "borderRadius": "var(--radius-full)",
+            "flexShrink": "0",
+            "height": "8px",
+            "width": "8px"
+          }
+        },
+        {
+          "type": "text",
+          "name": "Your trial ends in 3 days.",
+          "styles": {
+            "color": "var(--color-foreground)",
+            "flexBasis": "0%",
+            "flexGrow": "1",
+            "flexShrink": "1",
+            "fontFamily": "var(--font-sans)",
+            "fontSize": "var(--text-sm)",
+            "lineHeight": "var(--leading-sm)",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "Your trial ends in 3 days."
+        },
+        {
+          "type": "text",
+          "name": "Upgrade",
+          "styles": {
+            "color": "var(--color-brand-accent)",
+            "fontFamily": "var(--font-sans)",
+            "fontSize": "var(--text-sm)",
+            "fontWeight": "var(--font-weight-semibold)",
+            "whiteSpace": "pre-wrap"
+          },
+          "text": "Upgrade"
+        }
+      ]
+    }
+  ]
+}

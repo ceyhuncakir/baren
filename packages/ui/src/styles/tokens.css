@@ -1,0 +1,411 @@
+/*
+ * Design tokens for Baren.
+ *
+ * Section 1 is a verbatim copy of the design tokens (design/tokens.css). Do not rename
+ * these; the canvas and the theme panel refer to them by name.
+ *
+ * Section 2 holds values that appear literally in the reference artboards but have no
+ * token there (selection tints, destructive red, shadows, control sizes). They are
+ * named with the same namespaces so components never hard-code a hex value.
+ *
+ * Section 3 is the dark theme (`<html data-theme="dark">`, ARCHITECTURE.md "Dark theme"):
+ * the values of design/tokens.dark.css (artboards D01, D06, D18) plus dark values for the
+ * derived tokens that have no artboard.
+ *
+ * Section 4 is the document scope. Design content never follows the app theme: the canvas
+ * content root (`.ic-root`, whose inline style carries the document's own tokens) and any
+ * other element that renders design content (`[data-design-content]`, e.g. the off-screen
+ * thumbnail renderer) re-declare the light values of sections 1–2, so a document that uses
+ * `var(--color-background)` without defining it renders the light value, not the app's. Tokens
+ * the document defines are inline on `.ic-root` and win over these rules.
+ *
+ * Section 5 is canvas chrome: colours drawn under and over the document (the canvas ground,
+ * selection, handles, labels). They are declared on :root only, so the document scope
+ * inherits the app's resolved values instead of resetting them.
+ *
+ * Stylesheets use only these tokens. The exceptions are design content that must look the
+ * same in both themes (the colour picker's spectrum) and
+ * `transparent` in color-mix() / gradients.
+ */
+
+:root,
+.ic-root,
+[data-design-content] {
+  /* 1. Base tokens ------------------------------------------------------ */
+  --color-background: #ffffff;
+  --color-surface: #f7f7f7;
+  --color-canvas: #eeeeee;
+  --color-muted: #ebebeb;
+  --color-input: #f3f3f3;
+  --color-border: #e5e5e5;
+  --color-foreground: #1a1a1a;
+  --color-foreground-muted: #666666;
+  --color-foreground-subtle: #999999;
+  --color-primary: #141414;
+  --color-primary-foreground: #ffffff;
+  --color-selection: #2f80ff;
+  --color-avatar: #f04e1e;
+  /* design/tokens.css says "Inter"; the bundled variable font registers as "Inter Variable". */
+  --font-sans: 'Inter Variable', Inter, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-xl: 22px;
+  --text-2xl: 24px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --tracking-display: -0.02em;
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0em;
+  --leading-sm: 16px;
+  --leading-base: 20px;
+  --leading-xl: 28px;
+  --opacity-muted: 60%;
+  --breakpoint-desktop: 1440px;
+  --container-sidebar: 240px;
+  --container-inspector: 264px;
+  --container-content: 1040px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-12: 48px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* 2. Values used literally in the artboards ---------------------------- */
+
+  /* Selection tints: layer/token row selected (06, 07), nested selected (14),
+     rows inside the selected node's parent (14). */
+  --color-selection-subtle: #e3eeff;
+  --color-selection-strong: #dce9ff;
+  --color-selection-faint: #f2f6ff;
+  /* Focus halo around inputs and code cells (18, 19, 20). */
+  --color-selection-halo: #2f80ff26;
+  /* Component accent (Phase 3, artboards 31–32): main/instance icons, override dots, the
+     Components row of the selection's main (faint) and of a selected main (subtle). */
+  --color-component: #7b4dff;
+  --color-component-faint: #f6f3ff;
+  --color-component-subtle: #eee8ff;
+  /* Agent accent (Phase 4, artboards 34–36): the one colour that means "an agent is doing
+     this" — agent avatars, the "… is working" badge and the working-edge sweep (--color-agent),
+     the 2 px ring around an artboard an agent is editing (-ring, 32 %) and its glow (-glow,
+     18 %). Text and glyphs on it use --color-on-accent. */
+  --color-agent: #d21f75;
+  --color-agent-ring: #d21f7552;
+  --color-agent-glow: #d21f752e;
+
+  --color-destructive: #c0233c;
+  --color-destructive-border: #f0c3cb;
+  --color-destructive-subtle: #fdf0f2;
+  /* Pressed destructive button. */
+  --color-destructive-active: #fbe1e6;
+  /* Pressed title-bar close button (red fill). */
+  --color-destructive-strong: #a51d33;
+  --color-success: #22a55b;
+  --color-success-strong: #16833f;
+  --color-warning: #ca8a04;
+
+  /* Unchecked radio/checkbox border (14 canvas specimen). */
+  --color-control-border: #cfcfcf;
+  /* Alignment dots, offline status dot, pending-invite dashed border. */
+  --color-dot: #bdbdbd;
+  /* Slider track (06 Radius). */
+  --color-track: #e2e2e2;
+  /* Slider thumb / knob (06 Radius). */
+  --color-thumb: #ffffff;
+  /* Raised "on" state inside a muted/input track: Segmented active pill (Design/Theme, the
+     theme switch, inspector fill-type and flex-direction tabs) and the active tool in the
+     tool rail; white in light, lighter than the track in dark (D06). The view toggle on its
+     surface track (01) uses --color-background instead (D01). */
+  --color-segment-active: #ffffff;
+  /* Hover tint for controls that already sit on --color-muted. */
+  --color-muted-hover: #e2e2e2;
+  /* Pressed secondary button. */
+  --color-muted-active: #dadada;
+  /* Hover on --color-surface rows (sidebar nav), lighter than the selected --color-muted. */
+  --color-surface-hover: #f0f0f0;
+  /* Hover on filled (--color-input) fields. */
+  --color-input-hover: #efefef;
+  --color-border-hover: #d4d4d4;
+  --color-primary-hover: #2b2b2b;
+  --color-primary-active: #000000;
+  /* Brand (the seal's vermilion): primary buttons, text links, brand moments. */
+  --color-brand: #d0391e;
+  --color-brand-hover: #bb331b;
+  --color-brand-active: #a62d18;
+  --color-brand-foreground: #ffffff;
+  --color-brand-subtle: #faebe8;
+  --color-link: #c4361c;
+  /* Text and glyphs on saturated fills (--color-selection, --color-avatar, --color-destructive):
+     the size pill, avatar initials, selection handles. White in both themes. */
+  --color-on-accent: #ffffff;
+  /* Solid-fill glyph in the inspector's fill-type tabs (06). */
+  --color-glyph-muted: #9a9a9a;
+  /* Transparency checkerboard behind colour previews (colour picker alpha bar). */
+  --color-checker: #e5e5e5;
+  --color-checker-alt: #ffffff;
+  /* Overlay scrollbars. */
+  --color-scrollbar: #00000026;
+  --color-scrollbar-hover: #00000040;
+  /* Backdrop behind modal dialogs (subtle: the editor's floating dialog). */
+  --color-scrim: #00000029;
+  --color-scrim-subtle: #0000001f;
+
+  --text-3xl: 28px;
+  --leading-3xl: 34px;
+  --tracking-heading: -0.025em;
+
+  --radius-field: 5px;
+  --radius-menu: 10px;
+
+  --shadow-menu: 0 0 0 1px #00000014, 0 12px 32px -8px #00000033, 0 2px 6px #0000000f;
+  --shadow-popover: 0 0 0 1px #00000014, 0 12px 32px -8px #0000002e, 0 4px 8px -4px #00000014;
+  --shadow-toast: 0 12px 32px -8px #00000059, 0 2px 6px #0000001f;
+  --shadow-segment: 0 1px 2px #00000014;
+  --shadow-tool-active: 0 0 0 1px var(--color-border), 0 1px 2px #0000000f;
+  --shadow-control: 0 0 0 1px var(--color-border), 0 1px 2px #0000000a;
+  --shadow-ring: 0 0 0 1px var(--color-border);
+  --shadow-focus: 0 0 0 1px var(--color-selection), 0 0 0 4px var(--color-selection-halo);
+  --shadow-focus-error: 0 0 0 1px var(--color-destructive), 0 0 0 4px #c0233c1f;
+  --shadow-thumb: 0 0 0 1px #0000001f, 0 1px 3px #00000026;
+  --shadow-thumb-hover: 0 0 0 1px #0000002e, 0 1px 3px #00000033;
+  /* Hairlines inside colour swatches (document colours on chrome): -swatch on near-white
+     colours (needsSwatchBorder), -swatch-base on every other swatch (none in light; in dark it
+     keeps near-black colours visible on dark panels). */
+  --shadow-swatch: inset 0 0 0 1px #00000026;
+  --shadow-swatch-base: 0 0 #0000;
+  /* Hairline inside image wells (inspector image preview, 24). */
+  --shadow-well: inset 0 0 0 1px #0000000f;
+  /* Hairline around identity colours (avatars, team marks); none in light. */
+  --shadow-identity: 0 0 #0000;
+  /* White-ringed handles on colour areas (colour picker). */
+  --color-handle: #ffffff;
+  --shadow-handle: 0 0 0 1px #00000040;
+  --shadow-handle-subtle: 0 0 0 1px #00000033;
+
+  --size-titlebar: 36px;
+  --size-panel-header: 44px;
+  --container-tool-rail: 44px;
+
+  --duration-fast: 80ms;
+  --duration-base: 140ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* 3. Dark theme ----------------------------------------------------------- */
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Base tokens: core values fixed by the contract. */
+  --color-background: #1a1a1a;
+  --color-surface: #202020;
+  --color-canvas: #141414;
+  --color-muted: #2a2a2a;
+  --color-input: #262626;
+  --color-border: #2e2e2e;
+  --color-foreground: #ededed;
+  --color-foreground-muted: #a0a0a0;
+  --color-foreground-subtle: #6b6b6b;
+  --color-primary: #f2f2f2;
+  --color-primary-foreground: #111111;
+  --color-selection: #3b8cff;
+  --color-avatar: #f04e1e;
+
+  /* Derived (design/tokens.dark.css). Selection tints are --color-selection over
+     --color-surface at 20 / 28 / 10 %. */
+  --color-selection-subtle: #25364d;
+  --color-selection-strong: #283e5e;
+  --color-selection-faint: #232b36;
+  --color-selection-halo: #3b8cff40;
+  --color-component: #9b7dff;
+  --color-component-faint: #2c2936;
+  --color-component-subtle: #39334d;
+  --color-agent: #ec5a9c;
+  --color-agent-ring: #ec5a9c59;
+  --color-agent-glow: #ec5a9c33;
+
+  --color-destructive: #f05a72;
+  --color-destructive-border: #5a2933;
+  --color-destructive-subtle: #2f1f23;
+  --color-destructive-active: #3a2329;
+  --color-destructive-strong: #d9445e;
+  --color-success: #34c26f;
+  --color-success-strong: #4cc27a;
+  --color-warning: #e0a526;
+
+  --color-control-border: #4a4a4a;
+  --color-dot: #5c5c5c;
+  --color-track: #333333;
+  --color-thumb: #d9d9d9;
+  --color-segment-active: #363636;
+  --color-muted-hover: #323232;
+  --color-muted-active: #383838;
+  --color-surface-hover: #252525;
+  --color-input-hover: #2b2b2b;
+  --color-border-hover: #3d3d3d;
+  --color-primary-hover: #dadada;
+  --color-primary-active: #c4c4c4;
+  /* Brand (the seal's vermilion): primary buttons, text links, brand moments. */
+  --color-brand: #d0391e;
+  --color-brand-hover: #bb331b;
+  --color-brand-active: #a62d18;
+  --color-brand-foreground: #ffffff;
+  --color-brand-subtle: #3e231e;
+  --color-link: #ff7155;
+  --color-on-accent: #ffffff;
+  --color-glyph-muted: #a0a0a0;
+  --color-scrollbar: #ffffff24;
+  --color-scrollbar-hover: #ffffff3d;
+  --color-scrim: #00000099;
+  --color-scrim-subtle: #00000080;
+
+  /* Dark grounds swallow black shadows: rings become a faint light hairline and drop
+     shadows get ~3× the alpha. --shadow-ring and --shadow-focus only reference other
+     tokens and need no override. */
+  --shadow-menu: 0 0 0 1px #ffffff14, 0 12px 32px -8px #000000b3, 0 2px 6px #00000066;
+  --shadow-popover: 0 0 0 1px #ffffff14, 0 12px 32px -8px #000000a6, 0 4px 8px -4px #00000066;
+  --shadow-toast: 0 12px 32px -8px #000000b3, 0 2px 6px #00000080;
+  --shadow-segment: 0 1px 2px #00000066;
+  --shadow-tool-active: 0 0 0 1px var(--color-border), 0 1px 2px #00000052;
+  --shadow-control: 0 0 0 1px var(--color-border), 0 1px 2px #00000040;
+  --shadow-focus-error: 0 0 0 1px var(--color-destructive), 0 0 0 4px #f05a7233;
+  --shadow-thumb: 0 0 0 1px #00000066, 0 1px 3px #00000080;
+  --shadow-thumb-hover: 0 0 0 1px #00000080, 0 1px 3px #00000099;
+  --shadow-swatch-base: inset 0 0 0 1px #ffffff26;
+  --shadow-well: inset 0 0 0 1px #ffffff0f;
+  --shadow-identity: inset 0 0 0 1px #ffffff1f;
+
+  /* Canvas chrome (section 5). */
+  --color-overlay-marquee: #3b8cff1f;
+}
+
+/* Until the renderer sets data-theme (its first paint), follow prefers-color-scheme: the main
+   process sets nativeTheme.themeSource from the app preference, so in Electron this already is
+   the app theme and the first frame has the right colours. Same declarations as the block above
+   (tokens.test.ts keeps them identical). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    /* Base tokens: core values fixed by the contract. */
+    --color-background: #1a1a1a;
+    --color-surface: #202020;
+    --color-canvas: #141414;
+    --color-muted: #2a2a2a;
+    --color-input: #262626;
+    --color-border: #2e2e2e;
+    --color-foreground: #ededed;
+    --color-foreground-muted: #a0a0a0;
+    --color-foreground-subtle: #6b6b6b;
+    --color-primary: #f2f2f2;
+    --color-primary-foreground: #111111;
+    --color-selection: #3b8cff;
+    --color-avatar: #f04e1e;
+
+    /* Derived (design/tokens.dark.css). Selection tints are --color-selection over
+       --color-surface at 20 / 28 / 10 %. */
+    --color-selection-subtle: #25364d;
+    --color-selection-strong: #283e5e;
+    --color-selection-faint: #232b36;
+    --color-selection-halo: #3b8cff40;
+    --color-component: #9b7dff;
+    --color-component-faint: #2c2936;
+    --color-component-subtle: #39334d;
+    --color-agent: #ec5a9c;
+    --color-agent-ring: #ec5a9c59;
+    --color-agent-glow: #ec5a9c33;
+
+    --color-destructive: #f05a72;
+    --color-destructive-border: #5a2933;
+    --color-destructive-subtle: #2f1f23;
+    --color-destructive-active: #3a2329;
+    --color-destructive-strong: #d9445e;
+    --color-success: #34c26f;
+    --color-success-strong: #4cc27a;
+    --color-warning: #e0a526;
+
+    --color-control-border: #4a4a4a;
+    --color-dot: #5c5c5c;
+    --color-track: #333333;
+    --color-thumb: #d9d9d9;
+    --color-segment-active: #363636;
+    --color-muted-hover: #323232;
+    --color-muted-active: #383838;
+    --color-surface-hover: #252525;
+    --color-input-hover: #2b2b2b;
+    --color-border-hover: #3d3d3d;
+    --color-primary-hover: #dadada;
+    --color-primary-active: #c4c4c4;
+    /* Brand (the seal's vermilion): primary buttons, text links, brand moments. */
+    --color-brand: #d0391e;
+    --color-brand-hover: #bb331b;
+    --color-brand-active: #a62d18;
+    --color-brand-foreground: #ffffff;
+    --color-brand-subtle: #3e231e;
+    --color-link: #ff7155;
+    --color-on-accent: #ffffff;
+    --color-glyph-muted: #a0a0a0;
+    --color-scrollbar: #ffffff24;
+    --color-scrollbar-hover: #ffffff3d;
+    --color-scrim: #00000099;
+    --color-scrim-subtle: #00000080;
+
+    /* Dark grounds swallow black shadows: rings become a faint light hairline and drop
+       shadows get ~3× the alpha. --shadow-ring and --shadow-focus only reference other
+       tokens and need no override. */
+    --shadow-menu: 0 0 0 1px #ffffff14, 0 12px 32px -8px #000000b3, 0 2px 6px #00000066;
+    --shadow-popover: 0 0 0 1px #ffffff14, 0 12px 32px -8px #000000a6, 0 4px 8px -4px #00000066;
+    --shadow-toast: 0 12px 32px -8px #000000b3, 0 2px 6px #00000080;
+    --shadow-segment: 0 1px 2px #00000066;
+    --shadow-tool-active: 0 0 0 1px var(--color-border), 0 1px 2px #00000052;
+    --shadow-control: 0 0 0 1px var(--color-border), 0 1px 2px #00000040;
+    --shadow-focus-error: 0 0 0 1px var(--color-destructive), 0 0 0 4px #f05a7233;
+    --shadow-thumb: 0 0 0 1px #00000066, 0 1px 3px #00000080;
+    --shadow-thumb-hover: 0 0 0 1px #00000080, 0 1px 3px #00000099;
+    --shadow-swatch-base: inset 0 0 0 1px #ffffff26;
+    --shadow-well: inset 0 0 0 1px #ffffff0f;
+    --shadow-identity: inset 0 0 0 1px #ffffff1f;
+
+    /* Canvas chrome (section 5). */
+    --color-overlay-marquee: #3b8cff1f;
+  }
+}
+
+/* 4. Document scope (see the header): light tokens are re-declared above; these restore the
+   inherited properties a document would otherwise pick up from dark chrome. Text without its
+   own line height uses the font's normal line height, as in a browser, the exported HTML and
+   get_jsx (and what the inspector's "Auto" means), not the chrome's 16px: a 56px heading in a
+   16px line box would overlap the next layer (Phase 4 integration, contract §17.6). */
+.ic-root,
+[data-design-content] {
+  color-scheme: light;
+  color: #1a1a1a;
+  line-height: normal;
+}
+
+/* 5. Canvas chrome (on :root only; resolved against the app theme and inherited unchanged by
+   the document scope). Read by @baren/canvas: the page ground when the page has the
+   default background, and the Canvas 2D overlay. */
+:root {
+  --color-canvas-ground: var(--color-canvas);
+  --color-overlay-selection: var(--color-selection);
+  --color-overlay-label: var(--color-foreground-muted);
+  --color-overlay-label-active: var(--color-selection);
+  --color-overlay-handle: #ffffff;
+  --color-overlay-snap: #ff3b5c;
+  --color-overlay-marquee: #2f80ff14;
+  /* Main components and instances on the canvas (31). */
+  --color-overlay-component: var(--color-component);
+  /* Agent badge and working-edge sweep (35); the ring and glow use --color-agent-ring/-glow. */
+  --color-overlay-agent: var(--color-agent);
+}

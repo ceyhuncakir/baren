@@ -1,0 +1,341 @@
+/*
+ * Connect your agent (artboards 34 / D34): a 480 px dialog centred over --color-scrim-subtle,
+ * the Share popover's surface (--radius-xl, --shadow-popover). Blocks after the header are
+ * separated by 1 px --color-border rules; the footer sits on --color-surface.
+ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--color-scrim-subtle);
+  animation: fade var(--duration-base) var(--ease-out);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 480px;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  border-radius: var(--radius-xl);
+  background: var(--color-background);
+  box-shadow: var(--shadow-popover);
+  outline: none;
+  animation: rise var(--duration-base) var(--ease-out);
+}
+
+/* 1. Header ------------------------------------------------------------- */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 14px 2px 16px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.description {
+  padding-right: 32px;
+  font-size: var(--text-sm);
+  line-height: 18px;
+  color: var(--color-foreground-muted);
+}
+
+/* 2. Server row ----------------------------------------------------------- */
+
+.server {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.serverIcon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.serverText {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.serverName {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.serverDetail {
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+/* 3. Setup ------------------------------------------------------------------ */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Server off: setup and capabilities stay visible, dimmed and inert. */
+.dimmed {
+  opacity: 0.5;
+}
+
+.snippet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.hint {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.code {
+  position: relative;
+  display: flex;
+  padding: 10px 64px 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-input);
+}
+
+.codeText {
+  min-width: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 18px;
+  color: var(--color-foreground);
+  white-space: pre;
+  scrollbar-width: none;
+}
+
+.codeActions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+}
+
+.reveal:hover {
+  background: var(--color-muted);
+}
+
+.copy {
+  background: var(--color-background);
+  box-shadow: var(--shadow-ring);
+}
+
+.copy:hover {
+  background: var(--color-surface-hover);
+}
+
+.stdioHint {
+  padding-top: 4px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.tokenRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 16px;
+  padding-top: 2px;
+}
+
+.tokenNote {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.lock {
+  flex-shrink: 0;
+  color: var(--color-foreground-subtle);
+}
+
+.confirmActions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+/* "Regenerate token", "Cancel", "Regenerate": 11/500 muted text buttons (31 "Reset overrides"). */
+.textButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.textButton:hover {
+  color: var(--color-foreground);
+}
+
+.textButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-selection);
+}
+
+.textButton:disabled {
+  color: var(--color-foreground-subtle);
+}
+
+.textButtonStrong {
+  color: var(--color-destructive);
+}
+
+.textButtonStrong:hover {
+  color: var(--color-destructive-strong);
+}
+
+/* 4. Capabilities ------------------------------------------------------------ */
+
+.capabilities {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.capability {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.capabilityIcon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+/* 5. Footer ------------------------------------------------------------------- */
+
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.statusText {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusError {
+  color: var(--color-destructive);
+}
+
+.footerActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.learnMore {
+  padding: 0 10px;
+  color: var(--color-foreground-muted);
+}
+
+.learnMore:hover {
+  color: var(--color-foreground);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel {
+    animation: none;
+  }
+}

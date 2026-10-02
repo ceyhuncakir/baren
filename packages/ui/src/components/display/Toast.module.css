@@ -1,0 +1,89 @@
+/* Simple toasts (not in the artboards; built from the menu shadow and primary color). */
+
+.viewport {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  max-width: 480px;
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-toast);
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: var(--color-primary-foreground);
+  pointer-events: auto;
+  animation: toastIn 160ms var(--ease-out);
+}
+
+.toast:not(:has(.close)):not(:has(.action)) {
+  padding-right: 12px;
+}
+
+.icon {
+  display: flex;
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--color-primary-foreground) 80%, transparent);
+}
+
+.message {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.action {
+  flex-shrink: 0;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-primary-foreground) 12%, transparent);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-foreground);
+}
+
+.action:hover {
+  background: color-mix(in srgb, var(--color-primary-foreground) 20%, transparent);
+}
+
+.close {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  color: color-mix(in srgb, var(--color-primary-foreground) 60%, transparent);
+}
+
+.close:hover {
+  background: color-mix(in srgb, var(--color-primary-foreground) 12%, transparent);
+  color: var(--color-primary-foreground);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

@@ -1,0 +1,199 @@
+/* Team settings (02, 03): an 800px column centered in the 1200px main area. */
+
+.screen {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.headerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 800px;
+  max-width: 100%;
+  padding-top: 36px;
+}
+
+.scroll {
+  display: flex;
+  flex: 1 1 0;
+  justify-content: center;
+  min-height: 0;
+  padding: 0 24px 48px;
+  overflow-y: auto;
+}
+
+.membersPanel,
+.settingsPanel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 800px;
+  max-width: 100%;
+  height: fit-content;
+}
+
+.membersPanel {
+  padding-top: 24px;
+}
+
+.settingsPanel {
+  padding-top: 12px;
+}
+
+/* ---- Members (02) ---- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 28px;
+}
+
+.count {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search {
+  width: 220px;
+}
+
+.inviteLinks {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inlineLink {
+  color: inherit;
+  border-radius: 2px;
+}
+
+.inlineLink:hover {
+  color: var(--color-foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.inlineLink:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-selection);
+}
+
+.status {
+  padding: 24px 0;
+  font-size: var(--text-base);
+  color: var(--color-foreground-muted);
+}
+
+/* ---- Settings rows (03) ---- */
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.rowHint {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+.control {
+  flex-shrink: 0;
+  width: 240px;
+}
+
+/* ---- Empty / signed-out ---- */
+
+.empty {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 120px 56px 0;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-medium);
+  line-height: 20px;
+}
+
+.emptyBody {
+  max-width: 380px;
+  margin-bottom: 10px;
+  font-size: var(--text-base);
+  line-height: 18px;
+  color: var(--color-foreground-muted);
+}
+
+/* ---- Invite dialog ---- */
+
+.linkRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.linkRow > :first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.dialogHint {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+/* Invite dialog: who the invite went to, above the link. */
+.inviteNote {
+  font-size: var(--text-sm);
+  line-height: 18px;
+  color: var(--color-foreground-muted);
+}

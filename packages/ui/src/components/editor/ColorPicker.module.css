@@ -1,0 +1,97 @@
+/*
+ * Color picker (07): 140px saturation/value area r6, 10px hue bar r5, optional alpha bar.
+ * The saturation/value and hue gradients are colour-model math, not chrome: their literal
+ * stops are the same in both themes.
+ */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  user-select: none;
+}
+
+.area {
+  position: relative;
+  flex-shrink: 0;
+  height: 140px;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(to top, #000000, transparent),
+    linear-gradient(to right, #ffffff, var(--hue-color, #ff0000));
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.areaHandle {
+  position: absolute;
+  top: calc((1 - var(--v, 1)) * 100%);
+  left: calc(var(--s, 1) * 100%);
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid var(--color-handle);
+  border-radius: 6px;
+  box-shadow: var(--shadow-handle);
+  outline: none;
+}
+
+.bar {
+  position: relative;
+  flex-shrink: 0;
+  height: 10px;
+  border-radius: 5px;
+  touch-action: none;
+}
+
+.hue {
+  background: linear-gradient(
+    to right,
+    #ff0000 0%,
+    #ffff00 16.67%,
+    #00ff00 33.33%,
+    #00ffff 50%,
+    #0000ff 66.67%,
+    #ff00ff 83.33%,
+    #ff0000 100%
+  );
+}
+
+.alpha {
+  background:
+    linear-gradient(to right, transparent, var(--opaque-color, #000000)),
+    repeating-conic-gradient(var(--color-checker) 0% 25%, var(--color-checker-alt) 0% 50%) 0 0 / 8px
+      8px;
+}
+
+.barHandle {
+  position: absolute;
+  top: -2px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-handle);
+  border-radius: 7px;
+  box-shadow: var(--shadow-handle-subtle);
+  outline: none;
+}
+
+.hueHandle {
+  left: calc(var(--h-ratio, 0) * (100% - 14px));
+  background: var(--color-current, #ff0000);
+}
+
+.alphaHandle {
+  left: calc(var(--a, 1) * (100% - 14px));
+  background:
+    linear-gradient(var(--color-current-alpha, #000000), var(--color-current-alpha, #000000)),
+    repeating-conic-gradient(var(--color-checker) 0% 25%, var(--color-checker-alt) 0% 50%) 0 0 / 6px
+      6px;
+}
+
+.areaHandle:focus-visible,
+.barHandle:focus-visible {
+  box-shadow:
+    var(--shadow-handle),
+    0 0 0 3px var(--color-selection);
+}

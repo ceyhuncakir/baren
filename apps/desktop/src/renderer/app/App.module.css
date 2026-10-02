@@ -1,0 +1,81 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.body {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.editor {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.editor > * {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* macOS: native traffic lights sit at (14, 11) in the 36px bar. */
+.trafficLights {
+  width: 72px;
+  height: 100%;
+}
+
+/* Keyboard shortcuts dialog. */
+.shortcutList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 32px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-base);
+  line-height: 16px;
+}
+
+.shortcutRow:last-child {
+  border-bottom: 0;
+}
+
+/* Wrapper around the menu bar (a real box, so the title bar's no-drag rule applies to it). */
+.menuBarSlot {
+  display: flex;
+  align-items: center;
+}
+
+/* Update ready (25): 6px selection dot at the top-right of "Help" (the last title). */
+.menuBarSlot[data-update-ready] [data-menubar-item]:last-child {
+  position: relative;
+}
+
+.menuBarSlot[data-update-ready] [data-menubar-item]:last-child::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-brand);
+  box-shadow: 0 0 0 1.5px var(--color-surface);
+}

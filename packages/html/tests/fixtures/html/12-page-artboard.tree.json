@@ -1,0 +1,80 @@
+{
+  "warnings": [
+    {
+      "code": "artboard-size-defaulted",
+      "path": "div[1]"
+    }
+  ],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "Pricing — Desktop",
+      "styles": {
+        "alignItems": "center",
+        "backgroundColor": "#FAFAF9",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "48px",
+        "height": "fit-content",
+        "left": "0px",
+        "paddingBlock": "96px",
+        "paddingInline": "0",
+        "top": "0px",
+        "width": "1440px"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "name": "Frame",
+          "styles": {
+            "alignItems": "center",
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "12px"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Simple pricing",
+              "styles": {
+                "color": "#1C1917",
+                "fontFamily": "Inter",
+                "fontSize": "48px",
+                "fontWeight": 700,
+                "letterSpacing": "-0.02em",
+                "lineHeight": "56px",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "Simple pricing"
+            },
+            {
+              "type": "text",
+              "name": "One plan for every team.",
+              "styles": {
+                "color": "#57534E",
+                "fontFamily": "Inter",
+                "fontSize": "18px",
+                "lineHeight": "28px",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "One plan for every team."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "name": "Pricing — Phone",
+      "styles": {
+        "backgroundColor": "#FAFAF9",
+        "display": "flex",
+        "flexDirection": "column",
+        "height": "844px",
+        "left": "1520px",
+        "top": "0px",
+        "width": "390px"
+      }
+    }
+  ]
+}

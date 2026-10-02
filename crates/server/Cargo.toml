@@ -1,0 +1,47 @@
+[package]
+name = "baren-server"
+description = "Baren server: accounts, email, teams, invites, assets, live rooms and the update feed."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "baren_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "baren-server"
+path = "src/main.rs"
+
+[dependencies]
+baren-proto.workspace = true
+loro.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+axum.workspace = true
+tower-http.workspace = true
+sqlx.workspace = true
+argon2.workspace = true
+rand.workspace = true
+sha2.workspace = true
+base64.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+blake3.workspace = true
+# Both already in Cargo.lock (through axum / tokio-tungstenite): streaming asset and update
+# bodies to and from disk.
+tokio-util = { version = "0.7.19", default-features = false, features = ["io"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["std"] }
+lettre = { version = "0.11.23", default-features = false, features = ["builder", "hostname", "pool", "smtp-transport", "tokio1", "tokio1-rustls", "aws-lc-rs", "rustls-platform-verifier", "file-transport", "tracing"] }
+url = "2.5.8"
+
+[dev-dependencies]
+# Both already in Cargo.lock through axum's `ws` feature: the WebSocket client for tests.
+tokio-tungstenite = { version = "0.29.0", default-features = false, features = ["connect"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["sink", "std"] }

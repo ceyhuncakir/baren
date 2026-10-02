@@ -1,0 +1,122 @@
+/*
+ * Dark theme token values for Baren (Phase 2).
+ *
+ * Source of truth for the dark artboards:
+ *   D01 Home — Recents (dark), D06 Editor — Selection & inspector (dark), D18 Auth — Sign in (dark)
+ * (design/reference/D01-*.png, D06-*.png, D18-*.png).
+ *
+ * Same token names as design/tokens.css (section 1) and the derived tokens of
+ * packages/ui/src/styles/tokens.css (section 2). Only colour- and shadow-bearing tokens change;
+ * type, spacing, radius, sizes and motion tokens are theme-independent and are not repeated.
+ *
+ * Section 1 values are the core values fixed by ARCHITECTURE.md (Phase 2 contract, "Dark theme").
+ * Section 2 values were tuned here (contrast checked against #1A1A1A / #202020).
+ * Section 3 lists two NEW derived tokens the dark artboards rely on (light values given in the
+ * comments so packages/ui can add them to :root without changing light mode).
+ *
+ * Design content never follows this file: the canvas renders documents with their own tokens.
+ * In the D-artboards, artboards/thumbnails/showcase boards are pixel-identical to light mode;
+ * only chrome (title bar, sidebars, panels, inspector, canvas ground, labels, selection) changes.
+ */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* 1. Base tokens — core values (fixed by the contract) ---------------- */
+  --color-background: #1a1a1a;
+  --color-surface: #202020;
+  --color-canvas: #141414;
+  --color-muted: #2a2a2a;
+  --color-input: #262626;
+  --color-border: #2e2e2e;
+  --color-foreground: #ededed;          /* 14.9:1 on background */
+  --color-foreground-muted: #a0a0a0;    /* 6.7:1 on background, 6.2:1 on surface */
+  --color-foreground-subtle: #6b6b6b;   /* placeholders, shortcut hints, disabled */
+  --color-primary: #f2f2f2;
+  --color-primary-foreground: #111111;  /* 16.9:1 on primary */
+  --color-brand: #d0391e;
+  --color-brand-hover: #bb331b;
+  --color-brand-active: #a62d18;
+  --color-brand-foreground: #ffffff;
+  --color-brand-subtle: #3e231e;
+  --color-link: #ff7155;
+  --color-selection: #3b8cff;
+  --color-avatar: #f04e1e;
+
+  /* 2. Derived tokens ----------------------------------------------------- */
+
+  /* Selection tints = --color-selection blended over --color-surface (rows live on the
+     surface-coloured panels): 20% subtle, 28% strong, 10% faint. Light mode uses ~13/17/7%
+     over white; dark grounds need more blue to read. */
+  --color-selection-subtle: #25364d;    /* selected layer / token row (06, 07) */
+  --color-selection-strong: #283e5e;    /* nested selected row (14) */
+  --color-selection-faint: #232b36;     /* rows inside the selected node's parent (14) */
+  --color-selection-halo: #3b8cff40;    /* focus halo (light: 15% alpha, dark: 25%) */
+
+  --color-destructive: #f05a72;         /* 5.3:1 on background */
+  --color-destructive-border: #5a2933;
+  --color-destructive-subtle: #2f1f23;
+  --color-success: #34c26f;
+  --color-success-strong: #4cc27a;      /* "Good" strength label text, 7.7:1 */
+  --color-warning: #e0a526;
+
+  --color-control-border: #4a4a4a;      /* unchecked radio/checkbox */
+  --color-dot: #5c5c5c;                 /* alignment dots, offline dot, pending-invite dash */
+  --color-track: #333333;               /* slider track */
+  --color-muted-hover: #323232;         /* hover on controls that sit on --color-muted */
+  --color-surface-hover: #252525;       /* hover on surface rows (between surface and muted) */
+  --color-border-hover: #3d3d3d;
+  --color-primary-hover: #dadada;
+
+  /* Shadows: dark grounds swallow black shadows, so rings become a faint light hairline and
+     drop shadows get ~3x the alpha. Tokens that only reference other tokens
+     (--shadow-ring, --shadow-focus) need no override. */
+  --shadow-menu: 0 0 0 1px #ffffff14, 0 12px 32px -8px #000000b3, 0 2px 6px #00000066;
+  --shadow-popover: 0 0 0 1px #ffffff14, 0 12px 32px -8px #000000a6, 0 4px 8px -4px #00000066;
+  --shadow-segment: 0 1px 2px #00000066;
+  --shadow-tool-active: 0 0 0 1px var(--color-border), 0 1px 2px #00000052;
+  --shadow-control: 0 0 0 1px var(--color-border), 0 1px 2px #00000040;
+  --shadow-focus-error: 0 0 0 1px var(--color-destructive), 0 0 0 4px #f05a7233;
+  --shadow-thumb: 0 0 0 1px #00000066, 0 1px 3px #00000080;
+
+  /* 3. NEW derived tokens (proposed; see docs/requests/phase2-design.md) ---- */
+
+  /* Raised "on" state inside a track: Segmented active pill (Design/Theme, view toggle),
+     inspector fill-type and flex-direction tabs, active tool in the tool rail.
+     Light value: #ffffff (today these use --color-background, which in dark would render the
+     active pill darker than its track). */
+  --color-segment-active: #363636;
+
+  /* Slider thumb / toggle knob (Slider.module.css currently hard-codes #ffffff).
+     Light value: #ffffff. */
+  --color-thumb: #d9d9d9;
+
+  /* 4. Phase 3 component accent (docs/phase3/design-tokens.md; artboards 31–33) --------
+     Light values: #7b4dff / #f6f3ff / #eee8ff. --color-overlay-component on :root follows
+     var(--color-component) in both themes. */
+  --color-component: #9b7dff;          /* 5.61:1 on #1a1a1a */
+  --color-component-faint: #2c2936;    /* row tint behind main/instance rows */
+  --color-component-subtle: #39334d;
+
+  /* 5. Phase 4 agent accent (docs/phase4/design-tokens.md; artboards 34–36, D34, D35) --------
+     Light values: #d21f75 / #d21f7552 / #d21f752e. --color-overlay-agent on :root follows
+     var(--color-agent) in both themes. */
+  --color-agent: #ec5a9c;              /* agent avatars, "… is working" badge, sweep */
+  --color-agent-ring: #ec5a9c59;       /* 2 px ring around an artboard an agent is editing */
+  --color-agent-glow: #ec5a9c33;       /* its glow */
+}
+
+/*
+ * Literal colours in the light artboards and what they become in dark (chrome only):
+ *   #FFFFFF text/strokes on --color-primary (button labels, arrows)  -> var(--color-primary-foreground)
+ *   (the app mark is the Baren seal image; it keeps its own colors in dark mode)
+ *   #FFFFFF check mark on a checked checkbox (--color-foreground bg)  -> var(--color-background)
+ *   #FFFFFF text on --color-avatar / --color-selection (size label)   -> unchanged #FFFFFF
+ *   #FFFFFF selection handles (white fill, selection border)          -> unchanged #FFFFFF
+ *   #000000 sidebar nav labels in 01                                  -> var(--color-foreground)
+ *   #9A9A9A solid-fill glyph in the fill-type tabs                    -> var(--color-foreground-muted)
+ *   #BDBDBD alignment dots                                            -> var(--color-dot)
+ *   #E2E2E2 slider track                                              -> var(--color-track)
+ *   #E3EEFF / #DCE9FF / #F2F6FF row tints                             -> --color-selection-subtle/-strong/-faint
+ *   colour swatches of document tokens/colours (token chip, selection colours) -> unchanged (document data)
+ */

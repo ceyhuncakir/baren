@@ -1,0 +1,61 @@
+/* Preferences dialog: label/detail on the left, control on the right, hairline between rows. */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row:first-child {
+  padding-top: 0;
+}
+
+.row:last-child {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.rowDetail {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+/* MCP server row: "Agent settings…" next to the Switch. */
+.controls {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+}

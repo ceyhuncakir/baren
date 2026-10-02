@@ -1,0 +1,143 @@
+/*
+ * Update card (artboard 25): 340 wide, 14 padding, radius 10, popover shadow; anchored
+ * 16px right of the 240px sidebar / left panel and 16px above the window's bottom edge.
+ */
+
+.toast {
+  position: fixed;
+  bottom: 16px;
+  left: 256px;
+  z-index: 1050;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: 14px;
+  border-radius: var(--radius-menu);
+  background: var(--color-background);
+  box-shadow: var(--shadow-popover);
+  font-size: var(--text-sm);
+  line-height: 16px;
+  animation: updateIn 160ms var(--ease-out);
+}
+
+/* 28px disc: brand tint with the glyph in the brand colour. */
+.icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+.icon[data-tone='success'] {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success-strong);
+}
+
+.icon[data-tone='danger'] {
+  background: var(--color-destructive-subtle);
+  color: var(--color-destructive);
+}
+
+.content {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 1px;
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.body {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Restart: 28 high, 12 side padding (the shared 28px button has 10). */
+.primary.primary {
+  padding: 0 12px;
+}
+
+/* Later / Hide / Close: muted ghost. */
+.later.later {
+  color: var(--color-foreground-muted);
+}
+
+.later.later:hover {
+  color: var(--color-foreground);
+}
+
+/* Download progress: 4px track with the selection colour. */
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.track {
+  position: relative;
+  flex: 1 1 0;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--color-muted);
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  background: var(--color-brand);
+  transition: width 200ms linear;
+}
+
+.percent {
+  min-width: 32px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@keyframes updateIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .fill {
+    transition: none;
+  }
+}

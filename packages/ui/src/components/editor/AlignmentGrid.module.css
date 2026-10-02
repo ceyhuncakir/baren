@@ -1,0 +1,91 @@
+/* Flex alignment box (06): 84×58, --color-input r5, padding 10/14, 3×3 dots (--color-dot). */
+
+.grid {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 84px;
+  height: 58px;
+  padding: 10px 14px;
+  border-radius: var(--radius-field);
+  background: var(--color-input);
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  outline: none;
+}
+
+/* Column alignment inside its cell mirrors justify-content: space-between of the design. */
+.x0 {
+  justify-content: flex-start;
+}
+.x1 {
+  justify-content: center;
+}
+.x2 {
+  justify-content: flex-end;
+}
+.y0 {
+  align-items: flex-start;
+}
+.y1 {
+  align-items: center;
+}
+.y2 {
+  align-items: flex-end;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-dot);
+  transition: background-color var(--duration-fast) linear;
+}
+
+.bar {
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--color-selection);
+}
+
+.barColumn {
+  width: 14px;
+  height: 3px;
+}
+
+.barRow {
+  width: 3px;
+  height: 14px;
+}
+
+/* Vertical bars overflow their (short) cell, anchored to the alignment edge. */
+.y0 .barRow {
+  margin-bottom: -11px;
+}
+.y1 .barRow {
+  margin: -6px 0;
+}
+.y2 .barRow {
+  margin-top: -11px;
+}
+
+.cell:hover .dot,
+.cell[data-hover] .dot {
+  background: var(--color-foreground-muted);
+}
+
+.cell:focus-visible .dot {
+  background: var(--color-selection);
+}
+
+.cell:focus-visible .bar {
+  box-shadow: 0 0 0 2px var(--color-selection-halo);
+}

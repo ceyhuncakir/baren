@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+  - crates/napi
+
+# pnpm 10 blocks dependency lifecycle scripts unless allow-listed.
+# esbuild verifies its platform binary in postinstall. electron 44 has no postinstall, so the
+# root package.json postinstall downloads its binary (electron-vite needs it); listed for older majors.
+onlyBuiltDependencies:
+  - electron
+  - esbuild

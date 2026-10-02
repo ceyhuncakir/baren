@@ -1,0 +1,232 @@
+/*
+ * Buttons. Sizes/paddings from the artboards:
+ *  26 Share (outline, 12px)        28 Connect your agent / Copy (outline, 12px)
+ *  30 New file / Invite (primary, 13px, 10px leading pad), sidebar card (secondary, 12px)
+ *  32 Invite in share popover (12px), Delete team (destructive, 13px)
+ *  40 auth: Sign in (primary), Open browser again (raised), radius 8
+ */
+
+.button {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  white-space: nowrap;
+  text-decoration: none;
+  user-select: none;
+  cursor: default;
+  transition:
+    background-color var(--duration-fast) linear,
+    box-shadow var(--duration-fast) linear,
+    color var(--duration-fast) linear;
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  pointer-events: none;
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* Sizes */
+.s26 {
+  height: 26px;
+  padding: 0 10px;
+}
+.s28 {
+  height: 28px;
+  padding: 0 10px;
+}
+.s30 {
+  height: 30px;
+}
+.s32 {
+  height: 32px;
+}
+.s40 {
+  height: 40px;
+  padding: 0 16px;
+  gap: 8px;
+  border-radius: var(--radius-lg);
+}
+.s30.leading,
+.s32.leading {
+  padding-left: 10px;
+}
+
+.text12 {
+  font-size: var(--text-sm);
+}
+.text13 {
+  font-size: var(--text-base);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* Variants */
+.primary {
+  background: var(--color-brand);
+  color: var(--color-brand-foreground);
+}
+.primary:hover,
+.primary[data-hover] {
+  background: var(--color-brand-hover);
+}
+.primary:active,
+.primary[data-active] {
+  background: var(--color-brand-active);
+}
+.primary:disabled,
+.primary[aria-disabled='true'] {
+  background: var(--color-muted);
+  color: var(--color-foreground-subtle);
+}
+
+.secondary {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+.secondary:hover,
+.secondary[data-hover] {
+  background: var(--color-muted-hover);
+}
+.secondary:active,
+.secondary[data-active] {
+  background: var(--color-muted-active);
+}
+.secondary:disabled {
+  color: var(--color-foreground-subtle);
+}
+
+.outline {
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-foreground);
+}
+.outline:hover,
+.outline[data-hover] {
+  background: var(--color-surface);
+}
+.outline:active,
+.outline[data-active],
+.outline[data-pressed],
+.outline[aria-expanded='true'] {
+  background: var(--color-muted);
+}
+.outline:disabled {
+  color: var(--color-foreground-subtle);
+}
+
+/* Raised white button on the page (21 "Open browser again"). */
+.raised {
+  gap: 10px;
+  background: var(--color-background);
+  box-shadow: var(--shadow-control);
+  color: var(--color-foreground);
+}
+.raised:hover,
+.raised[data-hover] {
+  background: var(--color-surface);
+}
+.raised:active,
+.raised[data-active] {
+  background: var(--color-muted);
+}
+.raised:disabled {
+  color: var(--color-foreground-subtle);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-foreground);
+}
+.ghost:hover,
+.ghost[data-hover],
+.ghost[aria-expanded='true'],
+.ghost[data-pressed] {
+  background: var(--color-muted);
+}
+.ghost:active,
+.ghost[data-active] {
+  background: var(--color-muted-hover);
+}
+.ghost:disabled {
+  color: var(--color-foreground-subtle);
+}
+
+.destructive {
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 1px var(--color-destructive-border);
+  color: var(--color-destructive);
+}
+.destructive:hover,
+.destructive[data-hover] {
+  background: var(--color-destructive-subtle);
+}
+.destructive:active,
+.destructive[data-active] {
+  background: var(--color-destructive-active);
+}
+.destructive:disabled {
+  opacity: 0.5;
+}
+
+/* Text links ("Create an account", "Change email", "Cancel" — 13px medium). */
+.link,
+.linkMuted {
+  height: auto;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+.link {
+  color: var(--color-link);
+}
+.link:hover,
+.link[data-hover] {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* "Export", "Forgot password?", "Copy sign-in link" — regular weight, muted. */
+.linkMuted {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-foreground-muted);
+}
+.linkMuted:hover,
+.linkMuted[data-hover] {
+  color: var(--color-foreground);
+}
+.link:disabled,
+.linkMuted:disabled {
+  color: var(--color-foreground-subtle);
+}
+
+.loading {
+  color: transparent !important;
+}
+.spinnerOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

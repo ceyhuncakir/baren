@@ -1,0 +1,91 @@
+/* 6-digit verification code (20): 50×56 cells, r8, mono 22/28 medium, 3 + dash + 3. */
+
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-medium);
+}
+
+.cell {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+  box-shadow: var(--shadow-ring);
+  font-size: var(--text-xl);
+  line-height: 28px;
+  color: var(--color-foreground);
+  transition: box-shadow var(--duration-fast) linear;
+}
+
+.cell[data-active] {
+  box-shadow: var(--shadow-focus);
+}
+
+.invalid .cell {
+  box-shadow: 0 0 0 1px var(--color-destructive);
+}
+
+.invalid .cell[data-active] {
+  box-shadow: var(--shadow-focus-error);
+}
+
+.disabled .cell {
+  background: var(--color-surface);
+  color: var(--color-foreground-subtle);
+}
+
+.caret {
+  width: 2px;
+  height: 24px;
+  background: var(--color-foreground);
+  animation: blink 1060ms steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}
+
+.dash {
+  flex-shrink: 0;
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-foreground-subtle);
+}
+
+/* One real input spans all cells: paste, autofill and IME work natively. */
+.input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+  opacity: 0;
+  cursor: text;
+}
+
+.input:focus-visible {
+  outline: none;
+}

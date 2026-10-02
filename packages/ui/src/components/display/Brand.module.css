@@ -1,0 +1,104 @@
+/* Baren seal app mark: 18px (editor file header), 26px (auth). */
+.mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.mark18 {
+  width: 18px;
+  height: 18px;
+}
+
+.mark26 {
+  width: 26px;
+  height: 26px;
+}
+
+.markImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wordmark {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: 18px;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-foreground);
+}
+
+/* 48px icon tile at the top of auth steps (20, 21). */
+.tile {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-foreground);
+}
+
+/* Info callout (20). */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  line-height: 18px;
+  color: var(--color-foreground-muted);
+}
+
+.calloutIcon {
+  display: flex;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Auth headings (18–21): 28/34 medium, -0.025em; lead 14/22 muted. */
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.headingTitle {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-3xl);
+  letter-spacing: var(--tracking-heading);
+  color: var(--color-foreground);
+}
+
+.headingLead {
+  font-size: var(--text-md);
+  line-height: 22px;
+  color: var(--color-foreground-muted);
+}
+
+/* Page titles (01 "Recents" 22/28, 02 "ceyhun's Team settings" 24/30). */
+.pageTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-xl);
+  letter-spacing: var(--tracking-display);
+  color: var(--color-foreground);
+}
+
+.pageTitleLg {
+  font-size: var(--text-2xl);
+  line-height: 30px;
+}

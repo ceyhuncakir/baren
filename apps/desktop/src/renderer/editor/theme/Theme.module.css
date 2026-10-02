@@ -1,0 +1,38 @@
+/* Token name / value field (artboard 07): 28px input field, JetBrains Mono 11px,
+   namespace ("--color-") in the subtle color. Mirrors @baren/ui's TokenNameField. */
+
+.nameField {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-field);
+  background: var(--color-input);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground);
+}
+
+.nameField:focus-within {
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.namespace {
+  flex-shrink: 0;
+  color: var(--color-foreground-subtle);
+}
+
+.nameInput {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+}

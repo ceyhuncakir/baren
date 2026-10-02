@@ -1,0 +1,108 @@
+{
+  "warnings": [],
+  "roots": [
+    {
+      "type": "frame",
+      "name": "File row",
+      "styles": {
+        "alignItems": "center",
+        "display": "flex",
+        "gap": "12px",
+        "height": "48px",
+        "paddingBlock": "0",
+        "paddingInline": "16px"
+      },
+      "children": [
+        {
+          "type": "frame",
+          "name": "Icon slot",
+          "styles": {
+            "alignItems": "center",
+            "backgroundColor": "var(--color-muted)",
+            "borderRadius": "6px",
+            "display": "flex",
+            "flexShrink": "0",
+            "height": "32px",
+            "justifyContent": "center",
+            "width": "32px"
+          },
+          "children": [
+            {
+              "type": "svg",
+              "name": "SVG",
+              "styles": {
+                "height": "16px",
+                "width": "16px"
+              },
+              "svg": "<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--color-foreground-muted)\" stroke-width=\"1.75\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"></path><path d=\"M14 2v6h6\"></path></svg>"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "name": "Text",
+          "styles": {
+            "display": "flex",
+            "flexBasis": "0%",
+            "flexDirection": "column",
+            "flexGrow": "1",
+            "flexShrink": "1",
+            "minWidth": "0"
+          },
+          "children": [
+            {
+              "type": "text",
+              "name": "Quarterly report.pdf",
+              "styles": {
+                "color": "var(--color-foreground)",
+                "fontFamily": "Inter",
+                "fontSize": "14px",
+                "fontWeight": 500,
+                "lineHeight": "20px",
+                "overflow": "hidden",
+                "textOverflow": "ellipsis",
+                "whiteSpace": "nowrap"
+              },
+              "text": "Quarterly report.pdf"
+            },
+            {
+              "type": "text",
+              "name": "2.4 MB · Edited 3h ago",
+              "styles": {
+                "color": "var(--color-foreground-subtle)",
+                "fontFamily": "Inter",
+                "fontSize": "12px",
+                "lineHeight": "16px",
+                "whiteSpace": "pre-wrap"
+              },
+              "text": "2.4 MB · Edited 3h ago"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "Size",
+          "styles": {
+            "color": "var(--color-foreground-muted)",
+            "flexShrink": "0",
+            "fontFamily": "'JetBrains Mono'",
+            "fontSize": "12px",
+            "textAlign": "right",
+            "whiteSpace": "pre-wrap",
+            "width": "64px"
+          },
+          "text": "2.4 MB"
+        },
+        {
+          "type": "frame",
+          "name": "Action slot",
+          "styles": {
+            "flexShrink": "0",
+            "height": "24px",
+            "width": "24px"
+          }
+        }
+      ]
+    }
+  ]
+}

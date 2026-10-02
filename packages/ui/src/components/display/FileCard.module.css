@@ -1,0 +1,92 @@
+/* File card (01): 257×226, border 1px, r8, padding 4; meta 8/8/10; thumbnail 164 r6 canvas. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  text-align: left;
+  transition:
+    border-color var(--duration-fast) linear,
+    box-shadow var(--duration-fast) linear;
+}
+
+.card:hover,
+.card[data-hover] {
+  border-color: var(--color-border-hover);
+}
+
+.card[data-selected],
+.card:focus-visible {
+  outline: none;
+  border-color: var(--color-selection);
+  box-shadow: 0 0 0 1px var(--color-selection);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 8px 10px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.title {
+  overflow: hidden;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--color-foreground-muted);
+}
+
+.subtitle {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thumb {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 164px;
+  overflow: clip;
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 4 × 257 + 3 × 20 = 1088 = Recents content width (1200 − 2 × 56). */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}

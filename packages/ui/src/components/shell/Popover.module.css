@@ -1,0 +1,38 @@
+/* Popover panel: share popover (08). Radius xl, softer shadow than menus. */
+
+.popover {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground);
+  outline: none;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 0 16px;
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 10px 16px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}

@@ -1,0 +1,6 @@
+/*
+ * The one stylesheet apps import: `import '@baren/ui/styles.css'`.
+ * Component styles are CSS Modules that ship with the components themselves.
+ */
+@import './tokens.css';
+@import './global.css';

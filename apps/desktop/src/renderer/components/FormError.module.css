@@ -1,0 +1,5 @@
+.error {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-destructive);
+}

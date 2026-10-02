@@ -1,0 +1,110 @@
+/*
+ * Segmented controls.
+ *  muted  : Design/Theme mode switch (06, items 24, 12px), theme switch (17, items 22, 11px)
+ *  surface: grid/list view toggle (01: surface + 1px border, items 26×24)
+ *  input  : inspector icon toggles (06 fill type 26×22, flex direction, text align), r5
+ */
+
+.root {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--color-muted);
+}
+
+.surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.input {
+  border-radius: var(--radius-field);
+  background: var(--color-input);
+}
+
+.fullWidth {
+  display: flex;
+  width: 100%;
+}
+
+.fullWidth .item {
+  flex: 1 1 0;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+  white-space: nowrap;
+  transition: color var(--duration-fast) linear;
+}
+
+.h22 .item {
+  height: 22px;
+}
+
+.text11 .item {
+  font-size: var(--text-xs);
+  line-height: 14px;
+}
+
+.iconOnly .item {
+  padding: 0;
+}
+
+.item:hover,
+.item[data-hover] {
+  color: var(--color-foreground);
+}
+
+.item[aria-checked='true'] {
+  background: var(--color-segment-active);
+  box-shadow: var(--shadow-segment);
+  color: var(--color-foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+/* On the surface track (01 view toggle) the "on" item is the page background (D01). */
+.surface .item[aria-checked='true'] {
+  background: var(--color-background);
+}
+
+.item[aria-checked='true']:focus-visible {
+  box-shadow:
+    var(--shadow-segment),
+    inset 0 0 0 1px var(--color-selection);
+}
+
+.item:disabled {
+  color: var(--color-foreground-subtle);
+  pointer-events: none;
+}
+
+/* Reserve the medium-weight width so selecting a segment never shifts the layout. */
+.label {
+  display: inline-grid;
+}
+
+.label::after {
+  content: attr(data-text);
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: var(--font-weight-medium);
+  user-select: none;
+}

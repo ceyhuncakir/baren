@@ -1,0 +1,465 @@
+{
+  "name": "Phase 3 parity",
+  "pageIds": [
+    "2@31"
+  ],
+  "nodes": {
+    "2@31": {
+      "id": "2@31",
+      "type": "page",
+      "name": "Page 1",
+      "parentId": null,
+      "children": [
+        "10@31",
+        "41@31",
+        "170@31"
+      ],
+      "styles": {},
+      "background": "#EEEEEE"
+    },
+    "10@31": {
+      "id": "10@31",
+      "type": "frame",
+      "name": "Badge",
+      "parentId": "2@31",
+      "children": [
+        "21@31",
+        "30@31"
+      ],
+      "styles": {
+        "backgroundColor": "#2F80FF",
+        "display": "flex",
+        "left": 0,
+        "height": 20,
+        "rotate": "3deg",
+        "top": 600,
+        "width": 60
+      },
+      "componentKey": "gbnm57osa12md46b"
+    },
+    "21@31": {
+      "id": "21@31",
+      "type": "text",
+      "name": "Label",
+      "parentId": "10@31",
+      "children": [],
+      "styles": {
+        "color": "#FFFFFF"
+      },
+      "text": "NEW",
+      "nodeKey": "a9eanuax21"
+    },
+    "30@31": {
+      "id": "30@31",
+      "type": "rect",
+      "name": "Dot",
+      "parentId": "10@31",
+      "children": [],
+      "styles": {
+        "height": 6,
+        "width": 6
+      },
+      "nodeKey": "exk079syxr"
+    },
+    "41@31": {
+      "id": "41@31",
+      "type": "frame",
+      "name": "Card",
+      "parentId": "2@31",
+      "children": [
+        "52@31",
+        "69@31",
+        "77@31",
+        "96@31",
+        "104@31",
+        "138@31"
+      ],
+      "styles": {
+        "flexDirection": "column",
+        "backgroundColor": "var(--ink)",
+        "display": "flex",
+        "left": 0,
+        "height": 160,
+        "top": 0,
+        "width": 240
+      },
+      "componentKey": "crqeyomd1z6yt9h6"
+    },
+    "52@31": {
+      "id": "52@31",
+      "type": "text",
+      "name": "Title",
+      "parentId": "41@31",
+      "children": [],
+      "styles": {
+        "fontSize": "24px",
+        "fontWeight": 600,
+        "color": "#FFFFFF"
+      },
+      "text": "Card title",
+      "nodeKey": "zu8bpu6lx1"
+    },
+    "69@31": {
+      "id": "69@31",
+      "type": "rect",
+      "name": "Icon",
+      "parentId": "41@31",
+      "children": [],
+      "styles": {
+        "backgroundColor": "red",
+        "borderRadius": 4,
+        "height": 16,
+        "width": 20
+      },
+      "nodeKey": "hg08twk63h"
+    },
+    "77@31": {
+      "id": "77@31",
+      "type": "frame",
+      "name": "Body",
+      "parentId": "41@31",
+      "children": [
+        "82@31"
+      ],
+      "styles": {
+        "padding": 4
+      },
+      "nodeKey": "hlayw0ymv8"
+    },
+    "82@31": {
+      "id": "82@31",
+      "type": "text",
+      "name": "Label",
+      "parentId": "77@31",
+      "children": [],
+      "styles": {},
+      "text": "Body text",
+      "nodeKey": "lj0wvys0yx"
+    },
+    "96@31": {
+      "id": "96@31",
+      "type": "image",
+      "name": "Photo",
+      "parentId": "41@31",
+      "children": [],
+      "styles": {
+        "height": 32,
+        "objectFit": "cover",
+        "width": 32
+      },
+      "assetId": "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+      "nodeKey": "oyd062yx66"
+    },
+    "104@31": {
+      "id": "104@31",
+      "type": "vector",
+      "name": "Glyph",
+      "parentId": "41@31",
+      "children": [],
+      "styles": {
+        "fill": "none",
+        "height": 20,
+        "stroke": "#000000",
+        "strokeWidth": 1.5,
+        "width": 40
+      },
+      "nodeKey": "zlvrlgisrk",
+      "vector": {
+        "fillRule": "evenodd",
+        "subpaths": [
+          {
+            "id": "closed01",
+            "closed": true,
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 20,
+                "y": 0,
+                "out": [
+                  5,
+                  5
+                ]
+              },
+              {
+                "x": 20,
+                "y": 20,
+                "in": [
+                  0,
+                  -5
+                ],
+                "mode": "smooth"
+              }
+            ]
+          },
+          {
+            "id": "open0001",
+            "closed": false,
+            "points": [
+              {
+                "x": 25.5,
+                "y": 0.3333333333333333
+              },
+              {
+                "x": 40,
+                "y": 20
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "138@31": {
+      "id": "138@31",
+      "type": "instance",
+      "name": "",
+      "parentId": "41@31",
+      "children": [],
+      "styles": {
+        "flexShrink": 0
+      },
+      "componentKey": "gbnm57osa12md46b",
+      "nodeKey": "j4ml78b5wd",
+      "mainId": "10@31",
+      "overrides": {
+        "a9eanuax21": {
+          "text": "Hot"
+        }
+      }
+    },
+    "170@31": {
+      "id": "170@31",
+      "type": "frame",
+      "name": "Board",
+      "parentId": "2@31",
+      "children": [
+        "179@31",
+        "208@31",
+        "228@31",
+        "248@31",
+        "260@31",
+        "270@31"
+      ],
+      "styles": {
+        "backgroundColor": "#FFFFFF",
+        "left": 500,
+        "top": 0,
+        "height": 600,
+        "width": 800
+      }
+    },
+    "179@31": {
+      "id": "179@31",
+      "type": "group",
+      "name": "Group",
+      "parentId": "170@31",
+      "children": [
+        "188@31",
+        "198@31"
+      ],
+      "styles": {
+        "left": 10,
+        "position": "absolute",
+        "top": 10,
+        "height": 60,
+        "width": 120
+      }
+    },
+    "188@31": {
+      "id": "188@31",
+      "type": "rect",
+      "name": "Rectangle",
+      "parentId": "179@31",
+      "children": [],
+      "styles": {
+        "backgroundColor": "#F04E1E",
+        "left": 0,
+        "position": "absolute",
+        "height": 60,
+        "top": 0,
+        "width": 60
+      }
+    },
+    "198@31": {
+      "id": "198@31",
+      "type": "rect",
+      "name": "Rectangle",
+      "parentId": "179@31",
+      "children": [],
+      "styles": {
+        "left": 60,
+        "position": "absolute",
+        "top": 20,
+        "height": 40,
+        "rotate": "15deg",
+        "width": 60
+      }
+    },
+    "208@31": {
+      "id": "208@31",
+      "type": "group",
+      "name": "Rotated",
+      "parentId": "170@31",
+      "children": [
+        "219@31"
+      ],
+      "styles": {
+        "left": 200,
+        "position": "absolute",
+        "opacity": 0.5,
+        "height": 50,
+        "rotate": "-30deg",
+        "top": 10,
+        "width": 50
+      }
+    },
+    "219@31": {
+      "id": "219@31",
+      "type": "rect",
+      "name": "Rectangle",
+      "parentId": "208@31",
+      "children": [],
+      "styles": {
+        "left": 0,
+        "position": "absolute",
+        "top": 0,
+        "height": 50,
+        "width": 50
+      }
+    },
+    "228@31": {
+      "id": "228@31",
+      "type": "vector",
+      "name": "Line",
+      "parentId": "170@31",
+      "children": [],
+      "styles": {
+        "left": 300,
+        "overflow": "hidden",
+        "rotate": 45,
+        "stroke": "var(--ink)",
+        "top": 300,
+        "position": "absolute",
+        "height": 1,
+        "width": 100
+      },
+      "vector": {
+        "fillRule": "nonzero",
+        "subpaths": [
+          {
+            "id": "line0001",
+            "closed": false,
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 100,
+                "y": 0.0004
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "248@31": {
+      "id": "248@31",
+      "type": "instance",
+      "name": "",
+      "parentId": "170@31",
+      "children": [],
+      "styles": {
+        "left": 400,
+        "position": "absolute",
+        "top": 40,
+        "rotate": "10deg",
+        "width": 260
+      },
+      "componentKey": "crqeyomd1z6yt9h6",
+      "mainId": "41@31",
+      "overrides": {
+        "": {
+          "styles": {
+            "backgroundColor": "#222222",
+            "opacity": 0.9
+          }
+        },
+        "zu8bpu6lx1": {
+          "text": "Instance title"
+        },
+        "oyd062yx66": {
+          "assetId": "0000000000000000000000000000000000000000000000000000000000000000",
+          "assetName": "zero.png"
+        },
+        "j4ml78b5wd": {
+          "styles": {
+            "flexShrink": 1,
+            "opacity": 0.5
+          }
+        },
+        "j4ml78b5wd/exk079syxr": {
+          "styles": {
+            "backgroundColor": "yellow"
+          }
+        },
+        "hg08twk63h": {
+          "styles": {
+            "height": 18,
+            "backgroundColor": "green",
+            "borderRadius": null
+          }
+        },
+        "lj0wvys0yx": {
+          "hidden": true
+        }
+      }
+    },
+    "260@31": {
+      "id": "260@31",
+      "type": "instance",
+      "name": "",
+      "parentId": "170@31",
+      "children": [],
+      "styles": {
+        "left": 20,
+        "position": "absolute",
+        "top": 400
+      },
+      "componentKey": "2edwunqd8h813y4t",
+      "mainId": "149@31"
+    },
+    "270@31": {
+      "id": "270@31",
+      "type": "instance",
+      "name": "",
+      "parentId": "170@31",
+      "children": [],
+      "styles": {
+        "left": 100,
+        "position": "absolute",
+        "top": 400
+      },
+      "componentKey": "zzzzzzzzzzzzzzzz"
+    }
+  },
+  "tokens": {
+    "--ink": {
+      "type": "color",
+      "value": "#141414"
+    }
+  },
+  "components": {
+    "crqeyomd1z6yt9h6": {
+      "mainId": "41@31"
+    },
+    "2edwunqd8h813y4t": {
+      "mainId": "149@31"
+    },
+    "gbnm57osa12md46b": {
+      "mainId": "10@31"
+    }
+  }
+}

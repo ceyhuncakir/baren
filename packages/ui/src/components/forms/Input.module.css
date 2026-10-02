@@ -1,0 +1,264 @@
+/*
+ * Text inputs.
+ *  outline (auth 18/19): 40px, radius 8, 1px ring --color-border, focus ring + 4px halo
+ *  filled  (team settings 03, share popover 08): 32px, radius 6, --color-input, no ring
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.labelAction {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+.errorText {
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-destructive);
+}
+
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+  box-shadow: var(--shadow-ring);
+  color: var(--color-foreground);
+  cursor: text;
+  transition: box-shadow var(--duration-fast) linear;
+}
+
+.control:hover,
+.control[data-hover] {
+  box-shadow: 0 0 0 1px var(--color-border-hover);
+}
+
+.control:focus-within,
+.control[data-focus] {
+  box-shadow: var(--shadow-focus);
+}
+
+.control[data-invalid] {
+  box-shadow: 0 0 0 1px var(--color-destructive);
+}
+
+.control[data-invalid]:focus-within {
+  box-shadow: var(--shadow-focus-error);
+}
+
+.control[data-disabled] {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-ring);
+  color: var(--color-foreground-subtle);
+  cursor: default;
+}
+
+.filled {
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-input);
+  box-shadow: none;
+}
+
+.filled:hover,
+.filled[data-hover] {
+  box-shadow: none;
+  background: var(--color-input-hover);
+}
+
+.filled:focus-within,
+.filled[data-focus] {
+  background: var(--color-input);
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.filled[data-invalid],
+.filled[data-invalid]:focus-within {
+  box-shadow: inset 0 0 0 1px var(--color-destructive);
+}
+
+.s28 {
+  height: 28px;
+}
+.s32 {
+  height: 32px;
+}
+.s40 {
+  height: 40px;
+}
+
+.input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: inherit;
+  outline: none;
+  text-overflow: ellipsis;
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--color-foreground-subtle);
+  opacity: 1;
+}
+
+.input:disabled {
+  color: var(--color-foreground-subtle);
+}
+
+/* Password dots: 14px with 0.18em tracking (artboard 19). Placeholder stays 13px. */
+.input[type='password']:not(:placeholder-shown) {
+  font-size: var(--text-md);
+  letter-spacing: 0.18em;
+}
+
+.text12 .input {
+  font-size: var(--text-sm);
+}
+
+.adornment {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  color: var(--color-foreground-muted);
+}
+
+.reveal {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: -4px;
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground-subtle);
+}
+
+.reveal:hover {
+  color: var(--color-foreground-muted);
+}
+
+.reveal:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+/* Multiline (theme token description, 07): 11px/16 on --color-input. */
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: var(--color-input);
+  font-size: var(--text-xs);
+  line-height: 16px;
+  color: var(--color-foreground);
+  resize: vertical;
+  outline: none;
+}
+
+.textarea:focus,
+.textarea:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.textarea::placeholder {
+  color: var(--color-foreground-subtle);
+}
+
+/* Search fields: sidebar (01, 30px) and theme tokens (07, 28px). */
+.search {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-muted);
+  color: var(--color-foreground-muted);
+  cursor: text;
+}
+
+.search:focus-within {
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.search .input::placeholder {
+  color: var(--color-foreground-muted);
+}
+
+.search .input {
+  color: var(--color-foreground);
+}
+
+.searchCompact {
+  height: 28px;
+  padding: 0 8px;
+}
+
+.searchCompact .input {
+  font-size: var(--text-sm);
+}
+
+.searchShortcut {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-subtle);
+  white-space: nowrap;
+}
+
+.input[type='search'] {
+  appearance: none;
+}
+
+.input[type='search']::-webkit-search-cancel-button,
+.input[type='search']::-webkit-search-decoration {
+  appearance: none;
+  display: none;
+}

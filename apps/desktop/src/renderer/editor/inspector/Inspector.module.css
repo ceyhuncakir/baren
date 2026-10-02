@@ -1,0 +1,524 @@
+/* Inspector body (artboards 04, 06, 07, 14). Section/field visuals come from @baren/ui. */
+
+.scroll {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.avatars {
+  display: flex;
+  align-items: center;
+}
+
+.avatars > * + * {
+  margin-left: -4px;
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+/* Hug/Fit/Fill shown as the field text (not a muted placeholder). */
+.modeField input::placeholder {
+  color: var(--color-foreground);
+}
+
+.mixedField input::placeholder {
+  color: var(--color-foreground-muted);
+}
+
+.clipRow {
+  display: flex;
+  align-items: center;
+  height: 20px;
+}
+
+.colorPopover {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 240px;
+  padding: 12px;
+}
+
+.tokenMenuSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  box-shadow: var(--shadow-swatch), var(--shadow-swatch-base);
+}
+
+.effectRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.effectGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.removeButton {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground-muted);
+}
+
+.removeButton:hover {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.spacer {
+  flex: 1 1 0;
+}
+
+.fillTools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.fillTools > button {
+  margin-right: 0;
+}
+
+.fillTypeIcon {
+  display: block;
+  width: 12px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.share {
+  display: flex;
+  flex-direction: column;
+}
+
+.shareInvite {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px 14px;
+}
+
+.shareInviteField {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.shareInviteControl.shareInviteControl {
+  padding-right: 4px;
+}
+
+.sharePeople {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 8px;
+}
+
+.shareAccess {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.shareAccessLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.shareAccessRow {
+  height: auto;
+  padding: 0;
+}
+
+.shareAccessName {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.roleSelect {
+  margin-right: -6px;
+}
+
+.statusLine {
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.usageChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.description {
+  min-height: 52px;
+}
+
+.empty {
+  padding: 16px 12px;
+  font-size: var(--text-sm);
+  line-height: 16px;
+  color: var(--color-foreground-muted);
+}
+
+.paintRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.anchor {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Page / MCP sections (04): the title row is 16px, not the 20px section header. */
+.compactHeader > :first-child {
+  height: 16px;
+}
+
+/* Image fill / image layer controls (artboard 24). */
+.imagePreview {
+  display: flex;
+  flex-shrink: 0;
+  height: 120px;
+  overflow: clip;
+  border-radius: 5px;
+  background-color: var(--color-input);
+  box-shadow: var(--shadow-well);
+}
+
+.imagePreviewImage {
+  flex: 1 1 0;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.imageMeta {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 14px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+}
+
+.imageName {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imageSize {
+  flex-shrink: 0;
+  color: var(--color-foreground-muted);
+}
+
+.imageRow {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.imageFit.imageFit {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.imageButton,
+.imageButtonWide {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 84px;
+  height: 26px;
+  border-radius: 5px;
+  background-color: var(--color-background);
+  box-shadow: var(--shadow-control);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.imageButtonWide {
+  flex: 1 1 0;
+  width: auto;
+  color: var(--color-foreground);
+}
+
+.imageButton:hover,
+.imageButtonWide:hover {
+  background-color: var(--color-surface);
+}
+
+.imageButton:focus-visible,
+.imageButtonWide:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Component section and override markers (artboard 31). */
+.overrideDot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 3px;
+  background: var(--color-component);
+  vertical-align: middle;
+}
+
+.componentKind {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 14px;
+  color: var(--color-foreground-subtle);
+}
+
+.componentWell {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  padding: 0 6px 0 8px;
+  border-radius: var(--radius-field);
+  background: var(--color-input);
+  text-align: left;
+}
+
+.componentWell:hover {
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.componentWell:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.componentIcon {
+  flex-shrink: 0;
+  color: var(--color-component);
+}
+
+.componentName {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.componentChevron {
+  flex-shrink: 0;
+  color: var(--color-foreground-muted);
+}
+
+.overridesRow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+}
+
+.overridesDot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-component);
+}
+
+.overridesCount {
+  color: var(--color-foreground);
+}
+
+.overridesKinds {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-foreground-subtle);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overridesNone {
+  flex: 1 1 0;
+  color: var(--color-foreground-subtle);
+}
+
+.resetButton {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.resetButton:hover:not(:disabled) {
+  color: var(--color-foreground);
+}
+
+.resetButton:disabled {
+  opacity: 0.5;
+}
+
+.componentStatus {
+  flex: 1 1 0;
+  color: var(--color-foreground-muted);
+}
+
+.componentActions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.componentButton,
+.detachButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 26px;
+  border-radius: var(--radius-field);
+  background: var(--color-background);
+  box-shadow: var(--shadow-control);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 14px;
+  color: var(--color-foreground);
+}
+
+.componentButton {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.detachButton {
+  flex-shrink: 0;
+  width: 76px;
+  color: var(--color-foreground-muted);
+}
+
+.componentButton:hover:not(:disabled),
+.detachButton:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.componentButton:disabled,
+.detachButton:disabled {
+  opacity: 0.5;
+}
+
+.componentButton:focus-visible,
+.detachButton:focus-visible,
+.resetButton:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Vector stroke (artboard 30): Cap / Join rows with a 40 px label column. */
+.strokeLabel {
+  flex-shrink: 0;
+  width: 40px;
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}
+
+.strokeField {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.strokeField > .paintRow,
+.strokeField > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* MCP section, connected (35): one 32 px row per agent — avatar 22, name 12/500, activity 11. */
+.agentRow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+}
+
+.agentText {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.agentName,
+.agentActivity {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agentName {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+}
+
+.agentActivity {
+  font-size: var(--text-xs);
+  line-height: 14px;
+  color: var(--color-foreground-muted);
+}

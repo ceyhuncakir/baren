@@ -1,0 +1,117 @@
+/* Title bar shared by every window (all artboards): 36px, surface, hairline bottom. */
+
+.titleBar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: var(--size-titlebar);
+  padding: 0 4px 0 8px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 16px;
+  /* Frameless window: the bar drags the window; interactive children opt out. */
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.side {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+  gap: 2px;
+}
+
+.end {
+  justify-content: flex-end;
+}
+
+.side > * {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.title {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  color: var(--color-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Menu bar (File · Edit · View · Window · Help). */
+.menuBar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.menuBarItem {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  line-height: 16px;
+  color: var(--color-foreground);
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.menuBarItem:hover,
+.menuBarItem[aria-expanded='true'],
+.menuBarItem[data-hover] {
+  background: var(--color-muted);
+}
+
+.menuBarItem:focus-visible {
+  outline: none;
+  background: var(--color-muted);
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+/* Linux window controls: 32×28 hit areas, 4px radius. */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.control {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground);
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  transition: background-color var(--duration-fast) linear;
+}
+
+.control:hover,
+.control[data-hover] {
+  background: var(--color-muted);
+}
+
+.control:active {
+  background: var(--color-muted-hover);
+}
+
+.close:hover,
+.close[data-hover] {
+  background: var(--color-destructive);
+  color: var(--color-on-accent);
+}
+
+.close:active {
+  background: var(--color-destructive-strong);
+  color: var(--color-on-accent);
+}
