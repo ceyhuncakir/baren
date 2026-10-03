@@ -18,6 +18,8 @@ export interface TestHooks {
   openedUrls(): readonly string[]
   /** Creates `count` local files named `<prefix> <i>` and reloads the file list. */
   createFiles(count: number, prefix: string): Promise<void>
+  /** Creates a local file, linked to a team file when `remote` is given; returns its id. */
+  createFile(name: string, remote?: { teamId: string; remoteId: string }): Promise<string>
   /** Pushes an auto-update status, as the main process would. */
   setUpdateStatus(status: UpdateState | UpdateStatus): void
   /** How many times `updates.install()` ran while an update was ready. */
@@ -44,6 +46,12 @@ export function installTestHooks(): void {
     async createFiles(count, prefix) {
       for (let i = 0; i < count; i++) await bridge.files.create(`${prefix} ${i}`)
       await useFiles.getState().load()
+    },
+    async createFile(name, remote) {
+      const meta = await bridge.files.create(name)
+      if (remote) await bridge.files.setRemote(meta.id, remote.teamId, remote.remoteId)
+      await useFiles.getState().load()
+      return meta.id
     },
     setUpdateStatus: (status) => controls.setUpdateStatus(status),
     updateInstalls: () => controls.updateInstalls(),

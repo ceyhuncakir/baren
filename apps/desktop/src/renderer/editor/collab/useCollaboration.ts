@@ -52,7 +52,7 @@ export function useCollaboration(session: EditorSession): void {
       const account = await loadIdentity(session.fixture).catch(() => null)
       if (cancelled) return
       session.teams = account?.teams ?? []
-      store.setState({ identity: account?.identity ?? null })
+      store.setState({ identity: account?.identity ?? null, accountLoaded: true })
       if (!account || session.fixture.enabled) return
       if (!remoteId) {
         // Not in a team yet: share it into the current one (this effect then runs again).

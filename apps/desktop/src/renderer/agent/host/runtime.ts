@@ -13,11 +13,12 @@ import { DocIndex } from '../docIndex'
 import { AgentGeometry } from '../geometry'
 import { createDomMeasurer, StageHost } from '../measure'
 import { createResolvedStylesProbe } from '../render/styles'
+import { knownRole, rolePending, type RoleState } from '../role'
 import { Dispatcher } from './dispatch'
 
 /** Requests wait this long for a visible window's canvas to mount (contract §11.2). */
 const CANVAS_WAIT_MS = 2_000
-/** Writes to a shared file wait this long for the collaboration role (contract §11.2). */
+/** Writes to a shared file wait at most this long for a role still on its way (contract §11.2). */
 const ROLE_WAIT_MS = 3_000
 
 function delay(ms: number): Promise<void> {
@@ -91,10 +92,17 @@ export function createHostEnv(
     },
     age: () => Date.now() - openedAt,
     readOnly: async () => {
+      // Writes wait only while a role can still arrive (agent/role.ts); offline or signed out,
+      // edits stay local like the user's own.
+      const state = (): RoleState => ({
+        ...store.getState(),
+        teams: session.teams,
+        teamId: session.file?.teamId ?? null,
+      })
       if (store.getState().remoteId !== null && !session.fixture.enabled) {
-        await waitFor(() => store.getState().self !== null, ROLE_WAIT_MS)
+        await waitFor(() => knownRole(state()) !== null || !rolePending(state()), ROLE_WAIT_MS)
       }
-      return store.getState().self?.role === 'viewer'
+      return knownRole(state()) === 'viewer'
     },
     flush: () => session.persistence.flush(),
     resolvedStyles: createResolvedStylesProbe(ctx, stage),

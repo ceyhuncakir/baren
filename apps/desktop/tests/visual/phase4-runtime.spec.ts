@@ -561,6 +561,63 @@ test.describe('agent runtime: components, permissions, presence', () => {
     expect((await call(page, 'get_basic_info')).ok).toBe(true)
   })
 
+  test('writes to a team file do not wait for a live connection that is not coming', async ({
+    page,
+  }) => {
+    // Offline (signed out), a team file has no live room: the role is not coming, so writes
+    // must not wait for it (they waited 3 s each).
+    type Hooks = {
+      __barenTest: {
+        createFile(name: string, remote?: { teamId: string; remoteId: string }): Promise<string>
+      }
+      __barenAgent: {
+        dispatch(tool: string, args: unknown): Promise<{ ok: boolean; result?: unknown }>
+        hosts(): unknown[]
+      }
+      __barenEditor?: { canvas: unknown }
+    }
+    await page.goto('/?editorTestHook=1#/auth/sign-in')
+    await page.getByRole('button', { name: 'Continue offline' }).click()
+    await page.waitForURL(/#\/recents/)
+    const fileId = await page.evaluate(() =>
+      (window as unknown as Hooks).__barenTest.createFile('Team file', {
+        teamId: 'team-1',
+        remoteId: 'remote-1',
+      }),
+    )
+    await page.evaluate((hash) => (location.hash = hash), `#/file/${fileId}`)
+    await page.waitForFunction(() => {
+      const w = window as unknown as Hooks
+      return w.__barenEditor?.canvas != null && w.__barenAgent.hosts().length > 0
+    })
+    const timed = (tool: string, args: unknown) =>
+      page.evaluate(
+        async ([t, a]) => {
+          const started = performance.now()
+          const res = await (window as unknown as Hooks).__barenAgent.dispatch(t, a)
+          return { ok: res.ok, result: res.result, ms: performance.now() - started }
+        },
+        [tool, args] as const,
+      )
+    const board = await timed('create_artboard', {
+      name: 'A',
+      styles: { width: '400px', height: '300px' },
+    })
+    const boardId = (board.result as { id: string }).id
+    const html = await timed('write_html', {
+      targetNodeId: boardId,
+      mode: 'insert-children',
+      html: '<p style="font-size:20px">Hi</p>',
+    })
+    const styles = await timed('update_styles', {
+      updates: [{ nodeIds: [boardId], styles: { backgroundColor: '#FF0000' } }],
+    })
+    for (const call of [board, html, styles]) {
+      expect(call.ok).toBe(true)
+      expect(call.ms).toBeLessThan(1_000)
+    }
+  })
+
   test('agent presence shows in the inspector header and as a canvas agent entry', async ({
     page,
   }) => {

@@ -66,6 +66,8 @@ export interface EditorState {
   /** Layers header (shown with the Components section). */
   layersExpanded: boolean
   identity: Identity | null
+  /** The signed-in account (or its absence) is known: `identity` and `session.teams` are set. */
+  accountLoaded: boolean
   syncStatus: SyncStatus | 'local'
   /** Server file this document is linked to (`FileMeta.remoteId`); live sync runs while set. */
   remoteId: string | null
@@ -106,6 +108,7 @@ export function createEditorStore(
     componentsExpanded: true,
     layersExpanded: true,
     identity: null,
+    accountLoaded: false,
     syncStatus: 'local',
     remoteId: null,
     peers: [],
