@@ -494,14 +494,17 @@ function clipTo(
 export function drawThumbnail(
   canvas: HTMLCanvasElement | OffscreenCanvas,
   ops: readonly ThumbOp[],
-  scale: number,
+  /** Canvas px per world px, per axis. */
+  scaleXY: { x: number; y: number },
 ): void {
   const ctx = canvas.getContext('2d', { alpha: true }) as
     OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null
   if (!ctx) return
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.setTransform(scale, 0, 0, scale, 0, 0)
+  ctx.setTransform(scaleXY.x, 0, 0, scaleXY.y, 0, 0)
+  // Hairline widths: the axes differ by less than a canvas pixel.
+  const scale = Math.min(scaleXY.x, scaleXY.y)
   ctx.imageSmoothingQuality = 'medium'
   for (const op of ops) {
     ctx.globalAlpha = op.alpha

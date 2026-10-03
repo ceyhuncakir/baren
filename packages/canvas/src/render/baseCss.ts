@@ -14,6 +14,7 @@ const CSS = `
 .ic-img{display:block;-webkit-user-drag:none;}
 .ic-img-missing{background:#E3E3E3 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%23A3A3A3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21'/%3E%3C/svg%3E") center/24px 24px no-repeat;}
 .ic-standin{position:absolute;left:0;top:0;overflow:hidden;pointer-events:none;}
+.ic-standin.ic-thumbed{background:none!important;}
 .ic-standin>.ic-thumb{position:absolute;left:0;top:0;width:100%;height:100%;-webkit-user-drag:none;}
 .ic-overlay{position:absolute;left:0;top:0;pointer-events:none;}
 .ic-measure{position:absolute;left:0;top:0;width:0;height:0;overflow:hidden;visibility:hidden;contain:strict;pointer-events:none;}

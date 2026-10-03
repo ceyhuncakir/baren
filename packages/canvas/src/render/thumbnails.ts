@@ -31,7 +31,9 @@ export class Thumbnails {
       Math.max(1, Math.ceil(w * scale)),
       Math.max(1, Math.ceil(h * scale)),
     )
-    drawThumbnail(canvas, ops, scale)
+    // Fill the canvas exactly (it is rounded up): a partly painted last row or column would
+    // let the stand-in's own background show through along the edge.
+    drawThumbnail(canvas, ops, { x: canvas.width / w, y: canvas.height / h })
     const version = rec.contentVersion
     rec.thumbVersion = version
     void canvas.convertToBlob({ type: 'image/png' }).then(
@@ -58,7 +60,11 @@ export class Thumbnails {
         img.alt = ''
         img.decoding = 'async'
         img.draggable = false
-        rec.standin.appendChild(img)
+        // The thumbnail paints the artboard's background itself: once it shows, the stand-in's
+        // own background would only show through the image's softened edges.
+        const standin = rec.standin
+        img.addEventListener('load', () => standin.classList.add('ic-thumbed'), { once: true })
+        standin.appendChild(img)
         rec.thumb = img
       }
       const old = rec.thumbUrl

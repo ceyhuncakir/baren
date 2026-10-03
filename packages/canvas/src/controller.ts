@@ -688,6 +688,7 @@ class Canvas implements CanvasController, InputHost {
       background === undefined || background.toUpperCase() === DEFAULT_PAGE_BACKGROUND
         ? `var(--color-canvas-ground, ${DEFAULT_PAGE_BACKGROUND})`
         : background
+    this.overlay.groundChanged()
   }
 
   private drawOverlay(): void {

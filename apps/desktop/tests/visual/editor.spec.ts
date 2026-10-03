@@ -707,6 +707,102 @@ async function nodesOfType(page: Page, type: string): Promise<ImageNode[]> {
   }, type)
 }
 
+test.describe('editor zoomed out', () => {
+  test('no line of the artboard background along edges that fall inside a pixel', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000)
+    // A light artboard under full-width dark sections (an agent's landing page), dark theme.
+    // Its own background used to show as a light line along the right and bottom edges.
+    type Hook = {
+      __barenAgent: {
+        dispatch(t: string, a: unknown): Promise<{ result: { id: string } }>
+        hosts(): unknown[]
+      }
+      __barenEditor: {
+        canvas: {
+          getNodeFrame(id: string): { x: number; y: number; width: number; height: number }
+          setViewport(v: { x: number; y: number; zoom: number }): void
+          getStats(): CanvasStatsLike
+        }
+      }
+    }
+    await openEditor(page, EMPTY_FILE.replace('?fixture=design', '?fixture=design&theme=dark'))
+    await page.waitForFunction(() => (window as unknown as Hook).__barenAgent.hosts().length > 0)
+    const board = await page.evaluate(async () => {
+      const agent = (window as unknown as Hook).__barenAgent
+      const b = await agent.dispatch('create_artboard', {
+        name: 'Landing',
+        styles: { width: '1440px', height: 'fit-content' },
+      })
+      for (const [name, color] of [
+        ['CTA', '#FF8933'],
+        ['Footer', '#000000'],
+      ])
+        await agent.dispatch('write_html', {
+          targetNodeId: b.result.id,
+          mode: 'insert-children',
+          html: `<div layer-name="${name}" style="display:flex;padding:160px 120px;background-color:${color}"><p style="font-size:40px;color:#888888">${name}</p></div>`,
+        })
+      return b.result.id
+    })
+    // Agent additions fade in under a tinted placeholder first (overlay/incoming.ts).
+    await page.waitForTimeout(1_500)
+    // Thumbnails below 26 %, live layers above; the right and bottom edges land mid-pixel.
+    for (const zoom of [0.2, 0.245, 0.27, 0.33]) {
+      const edge = await page.evaluate(
+        ([id, z]) => {
+          const canvas = (window as unknown as Hook).__barenEditor.canvas
+          const f = canvas.getNodeFrame(id)
+          const root = (document.querySelector('.ic-root') as HTMLElement).getBoundingClientRect()
+          const right = Math.round(root.x + root.width * 0.6) + 0.5
+          const bottom = Math.round(root.y + root.height * 0.7) + 0.5
+          canvas.setViewport({
+            zoom: z,
+            x: f.x + f.width - (right - root.x) / z,
+            y: f.y + f.height - (bottom - root.y) / z,
+          })
+          return { right, bottom }
+        },
+        [board, zoom] as const,
+      )
+      await page.waitForFunction(
+        (z) => {
+          const s = (window as unknown as Hook).__barenEditor.canvas.getStats()
+          return s.pendingWork === 0 && s.lod === z < 0.25
+        },
+        zoom,
+        { timeout: 15_000 },
+      )
+      await settle(page)
+      // The pixels the edges cross, inside the black footer: canvas ground (#141414) or darker.
+      const [rightEdge, bottomEdge] = await page.evaluate(
+        async ([png, points]) => {
+          const img = new Image()
+          img.src = `data:image/png;base64,${png}`
+          await img.decode()
+          const ctx = new OffscreenCanvas(img.width, img.height).getContext('2d')
+          if (!ctx) throw new Error('no 2d context')
+          ctx.drawImage(img, 0, 0)
+          return points.map(([x, y]) => {
+            const d = ctx.getImageData(x, y, 1, 1).data
+            return ((d[0] ?? 0) + (d[1] ?? 0) + (d[2] ?? 0)) / 3
+          })
+        },
+        [
+          (await page.screenshot()).toString('base64'),
+          [
+            [Math.floor(edge.right), Math.floor(edge.bottom) - 30],
+            [Math.floor(edge.right) - 60, Math.floor(edge.bottom)],
+          ],
+        ] as const,
+      )
+      expect(rightEdge, `right edge at ${zoom}`).toBeLessThanOrEqual(28)
+      expect(bottomEdge, `bottom edge at ${zoom}`).toBeLessThanOrEqual(28)
+    }
+  })
+})
+
 test.describe('editor images', () => {
   test('image fill: fit mode, opacity and remove (one undo step each)', async ({ page }) => {
     await openEditor(page, IMAGE_FILE)

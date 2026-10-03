@@ -113,6 +113,8 @@ export interface VectorEditOverlay {
 export interface OverlayModel {
   viewport: Viewport
   labels: OverlayLabel[]
+  /** World boxes of artboards whose edges are snapped to device pixels (see drawEdges). */
+  edges: Rect[]
   hover: Rect | NodeFrame | null
   /** Individual outlines (shown for multi-selection). */
   selectionRects: (Rect | NodeFrame)[]
@@ -148,6 +150,7 @@ export function emptyOverlayModel(viewport: Viewport): OverlayModel {
   return {
     viewport,
     labels: [],
+    edges: [],
     hover: null,
     selectionRects: [],
     selectionBox: null,
@@ -221,6 +224,10 @@ const PILL_GAP = 7
 const PILL_RADIUS = 4
 const HANDLE = 6
 const OUTLINE = 1.5
+/** Edges this close to a device pixel boundary count as on it (layout precision is 1/64 px). */
+const EDGE_EPSILON = 1 / 64
+/** Artboards smaller than this (device px) keep their edges: snapping would eat into them. */
+const EDGE_MIN_SIZE = 24
 const ANCHOR = 6
 const HANDLE_DOT = 5
 const MIN_LABEL_WIDTH = 16
@@ -250,6 +257,8 @@ export class Overlay {
   private readonly explicitTheme: Partial<OverlayTheme>
   private readonly themeObserver: MutationObserver | null = null
   private lastModel: OverlayModel | null = null
+  /** Cached `groundColor()` ('' = clear), null until read. */
+  private ground: string | null = null
   private readonly onChange: (() => void) | null
   theme: OverlayTheme
 
@@ -293,10 +302,68 @@ export class Overlay {
     return { ...theme, ...this.explicitTheme }
   }
 
+  /** The page background changed: `drawEdges` reads it again on the next draw. */
+  groundChanged(): void {
+    this.ground = null
+  }
+
+  /** The colour behind the artboards (the canvas root's background), or null when clear. */
+  private groundColor(): string | null {
+    if (this.ground === null) {
+      const view = this.parent.ownerDocument.defaultView
+      const value =
+        view && this.parent.isConnected ? view.getComputedStyle(this.parent).backgroundColor : ''
+      this.ground = value && value !== 'transparent' && !/,\s*0\)$/.test(value) ? value : ''
+    }
+    return this.ground || null
+  }
+
+  /**
+   * An artboard edge that falls inside a device pixel: the artboard's own background fills
+   * that whole pixel while the full-bleed content on top covers only part of it, so a light
+   * line shows along the edge (a light artboard under dark sections, zoomed out). Repaint
+   * those pixels with the ground: the edge lands on a whole pixel, at most one pixel inside.
+   */
+  private drawEdges(edges: readonly Rect[], v: Viewport): void {
+    const ground = this.groundColor()
+    if (!ground) return
+    const { ctx, dpr } = this
+    const inside = (n: number) => {
+      const f = n - Math.floor(n)
+      return f > EDGE_EPSILON && f < 1 - EDGE_EPSILON
+    }
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.fillStyle = ground
+    for (const world of edges) {
+      const r = worldRectToScreen(v, world)
+      const x0 = r.x * dpr
+      const x1 = (r.x + r.width) * dpr
+      const y0 = r.y * dpr
+      const y1 = (r.y + r.height) * dpr
+      if (x1 - x0 < EDGE_MIN_SIZE || y1 - y0 < EDGE_MIN_SIZE) continue
+      const left = Math.floor(x0)
+      const top = Math.floor(y0)
+      const width = Math.ceil(x1) - left
+      const height = Math.ceil(y1) - top
+      if (inside(x0)) ctx.fillRect(left, top, 1, height)
+      if (inside(x1)) ctx.fillRect(Math.floor(x1), top, 1, height)
+      if (inside(y0)) ctx.fillRect(left, top, width, 1)
+      if (inside(y1)) ctx.fillRect(left, Math.floor(y1), width, 1)
+    }
+    ctx.restore()
+  }
+
   /** Re-reads the themed colours (the app theme changed) and repaints with the last model. */
   refreshTheme(): void {
+    // The default ground follows the app theme (`--color-canvas-ground`).
+    this.ground = null
     const next = this.resolveTheme()
-    if (THEMED_KEYS.every((key) => next[key] === this.theme[key])) return
+    if (THEMED_KEYS.every((key) => next[key] === this.theme[key])) {
+      // The ground may still have changed.
+      if (this.lastModel && this.lastModel.edges.length > 0) this.draw(this.lastModel)
+      return
+    }
     this.theme = next
     if (this.lastModel) this.draw(this.lastModel)
   }
@@ -340,6 +407,7 @@ export class Overlay {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     const v = m.viewport
 
+    if (m.edges.length > 0) this.drawEdges(m.edges, v)
     this.drawLabels(m.labels, v)
     if (m.agents.length > 0) this.drawAgents(m.agents, v)
     if (m.incoming.length > 0) this.drawIncoming(m.incoming, v)

@@ -1,11 +1,12 @@
 import type { NodeFrame } from '@baren/schema'
 import type { RemotePresence, Rect, Viewport } from '../types.ts'
 import type { Gesture, GestureOverlay } from '../interaction/host.ts'
-import { unionRects } from '../math/rect.ts'
+import { intersects, unionRects } from '../math/rect.ts'
 import { plainSizeLabel, sizeLabel } from '../math/sizeLabel.ts'
 import { isVirtualRef } from '../render/scene.ts'
 import type { SceneManager } from '../render/sceneManager.ts'
 import { flexDirectionOf } from '../render/styles.ts'
+import { topAabb } from '../render/topRecord.ts'
 import {
   emptyOverlayModel,
   type OverlayModel,
@@ -146,6 +147,9 @@ function selectionSizeLabel(
   return plainSizeLabel(box)
 }
 
+/** Artboards smaller than this on screen (CSS px) keep their edges (see Overlay.drawEdges). */
+const EDGE_MIN_CSS_SIZE = 12
+
 /** Everything the overlay draws this frame, in world coordinates. */
 export function buildOverlayModel(input: OverlayInput): OverlayModel {
   const { scenes, gesture, viewport: v } = input
@@ -157,6 +161,17 @@ export function buildOverlayModel(input: OverlayInput): OverlayModel {
   const work = agentWork(input.remotes, (id) => scenes.records.has(id))
   for (const rec of scenes.visibleTops(v)) {
     const names = work.size > 0 ? work.get(rec.id) : undefined
+    if ((rec.type === 'frame' || rec.type === 'instance') && rec.rotation === 0) {
+      const box = preview?.get(rec.id) ?? scenes.boundsOf(rec.id) ?? rec.bounds
+      // Big enough on screen to snap (the overlay checks device px), and not where another
+      // top-level layer overlaps it: snapping would cut into that layer.
+      const onScreen = Math.min(box.width, box.height) * v.zoom >= EDGE_MIN_CSS_SIZE
+      if (
+        onScreen &&
+        !scenes.topsInRect(box).some((o) => o !== rec && !o.hidden && intersects(topAabb(o), box))
+      )
+        model.edges.push(box)
+    }
     if (rec.type !== 'frame' && !names) continue
     const bounds = preview?.get(rec.id) ?? scenes.boundsOf(rec.id) ?? rec.bounds
     const badge = names ? agentBadgeText(names) : undefined
