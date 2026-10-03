@@ -129,7 +129,7 @@ export class VectorEditor {
     this.selected.clear()
     this.host.setSelection([id])
     this.onChange(id)
-    this.host.requestFrame()
+    this.host.invalidate()
     return true
   }
 
@@ -143,7 +143,7 @@ export class VectorEditor {
     const el = this.host.scenes.elementOf(id)
     if (el) applyVectorPath(el, getNode(this.host.doc, id)?.vector)
     this.onChange(null)
-    this.host.requestFrame()
+    this.host.invalidate()
   }
 
   /** The node vanished or changed type. */
@@ -248,7 +248,7 @@ export class VectorEditor {
       (at?.y ?? null) !== (this.insertAt?.y ?? null)
     ) {
       this.insertAt = at
-      this.host.requestFrame()
+      this.host.invalidate()
     }
     return hit ? (hit.kind === 'segment' ? penCursor('add') : 'default') : null
   }

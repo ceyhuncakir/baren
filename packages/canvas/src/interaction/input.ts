@@ -477,6 +477,11 @@ export class PointerInput {
 
   private readonly onDblClick = (e: MouseEvent): void => {
     const host = this.host
+    if (host.getTool() === 'pen') {
+      // Finishing the path leaves the tool on select: stop before this enters vector editing.
+      if (host.pen.active) host.pen.finishOnDoubleClick()
+      return
+    }
     if (host.getTool() !== 'select' || host.text.active) return
     const p = host.local(e)
     if (host.vectorEdit.active && host.vectorEdit.toggleMode(p)) return

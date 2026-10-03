@@ -543,6 +543,52 @@ test.describe('pen tool', () => {
     expect(sp?.points).toHaveLength(3)
     expect(await page.evaluate(() => window.__e2e.canvas().getTool())).toBe('select')
   })
+
+  test('a double-click finishes the path open there, without entering vector editing', async ({
+    page,
+  }) => {
+    await phase3(page)
+    await page.keyboard.press('p')
+    for (const [x, y] of [
+      [520, 30],
+      [600, 110],
+    ] as const) {
+      const c = cw(x, y)
+      await page.mouse.click(c.x, c.y)
+    }
+    const end = cw(680, 30)
+    await page.mouse.dblclick(end.x, end.y)
+    await frames(page, 2)
+    const id = (await selection(page))[0] as string
+    expect(await page.evaluate((nid) => window.__e2e.node(nid)?.type, id)).toBe('vector')
+    const sp = (await page.evaluate((nid) => window.__e2e.node(nid)?.vector, id))?.subpaths[0]
+    expect(sp?.closed).toBe(false)
+    // Both presses of the double-click landed on (680, 30): one point, not two.
+    expect(sp?.points).toEqual([
+      { x: 0, y: 0 },
+      { x: 80, y: 80 },
+      { x: 160, y: 0 },
+    ])
+    expect(await page.evaluate(() => window.__e2e.canvas().getTool())).toBe('select')
+    expect(await page.evaluate(() => window.__e2e.canvas().getEditingVector())).toBeNull()
+  })
+
+  test('the rubber band follows the pointer between clicks', async ({ page }) => {
+    await phase3(page)
+    await page.keyboard.press('p')
+    const a = cw(520, 30)
+    await page.mouse.click(a.x, a.y)
+    await page.mouse.move(a.x + 100, a.y + 100)
+    await page.mouse.move(a.x + 160, a.y, { steps: 4 })
+    await frames(page, 2)
+    // The band runs to where the pointer is now, not to where it first moved.
+    expect(isColor(await overlayPixel(page, a.x + 120, a.y), BLUE)).toBe(true)
+    expect(isColor(await overlayPixel(page, a.x + 50, a.y + 50), BLUE)).toBe(false)
+    // Escape with one point drops the draft; the overlay clears.
+    await page.keyboard.press('Escape')
+    await frames(page, 2)
+    expect(isColor(await overlayPixel(page, a.x + 120, a.y), BLUE)).toBe(false)
+  })
 })
 
 test.describe('vector editing', () => {

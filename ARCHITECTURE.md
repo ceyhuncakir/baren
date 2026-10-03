@@ -660,9 +660,9 @@ TS-only. The napi surface is unchanged.
 - **Groups**: a click selects the outermost group or instance, double-click enters; groups move,
   rotate and resize as one (`resizeGroup` scales descendants).
 - **Pen and vector editing**: P; click = corner, click-drag = smooth point, clicking the first
-  point closes, Enter/Escape finish; double-click (or Enter) edits a vector: drag anchors and
-  handles (Shift = 45°), insert points on segments, Delete removes points, double-click toggles
-  smooth/corner; vectors are hit on their stroke with a 4 px tolerance.
+  point closes, Enter/Escape or a double-click finish; double-click (or Enter) edits a vector:
+  drag anchors and handles (Shift = 45°), insert points on segments, Delete removes points,
+  double-click toggles smooth/corner; vectors are hit on their stroke with a 4 px tolerance.
 - **Instances** expand at render time with one resolver per canvas (documents without components
   do no resolver work); a main edit that only restyles main content patches just the changed
   virtual node of each instance (`stylePaths` + `resolveStyles` + `Scene.patchStyles`); other

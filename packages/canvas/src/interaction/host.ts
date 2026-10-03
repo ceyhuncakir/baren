@@ -38,6 +38,11 @@ export interface CanvasHost {
   getSelection(): string[]
   setSelection(ids: readonly string[]): void
   requestFrame(): void
+  /**
+   * Redraw the overlay next frame. `requestFrame` alone repaints it only while a gesture is
+   * active; overlay state changed outside one (pen rubber band, hover dots) needs this.
+   */
+  invalidate(): void
   /** Client coordinates → container-local screen coordinates. */
   local(e: { clientX: number; clientY: number }): Point
   toWorld(p: Point): Point

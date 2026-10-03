@@ -116,9 +116,9 @@ function round2(n: number): number {
 
 /**
  * The pen tool (contract 5.2): click adds a corner point, click-drag a smooth point (Alt
- * breaks the handle symmetry), clicking the first point closes the path; Enter/Escape finish.
- * The path is created in one `createNode` (`canvas:pen`) in the insertion target of the first
- * click; the tool returns to select with the new vector selected.
+ * breaks the handle symmetry), clicking the first point closes the path; Enter/Escape or a
+ * double-click finish it open. The path is created in one `createNode` (`canvas:pen`) in the
+ * insertion target of the first click; the tool returns to select with the new vector selected.
  */
 export class PenTool {
   private points: DraftPoint[] = []
@@ -164,7 +164,7 @@ export class PenTool {
 
   private sync(): void {
     this.host.gestureOverlay.pen = this.overlay()
-    this.host.requestFrame()
+    this.host.invalidate()
   }
 
   /** A press with the pen tool: adds (or closes on) a point; dragging shapes its handles. */
@@ -193,7 +193,7 @@ export class PenTool {
     this.pointer = null
     this.closing = false
     this.host.gestureOverlay.pen = null
-    this.host.requestFrame()
+    this.host.invalidate()
     if (points.length < 2 || !target || this.host.isReadOnly()) return null
     const host = this.host
     const scenes = host.scenes
@@ -242,6 +242,19 @@ export class PenTool {
     return id
   }
 
+  /**
+   * A double-click finishes the path open at the double-clicked point. Each of its presses
+   * added a point there, so the second one is dropped first.
+   */
+  finishOnDoubleClick(): string | null {
+    const last = this.points[this.points.length - 1]
+    const prev = this.points[this.points.length - 2]
+    const zoom = this.host.viewport().zoom
+    if (last && prev && Math.hypot(last.x - prev.x, last.y - prev.y) * zoom <= CLOSE_PX)
+      this.points.pop()
+    return this.finish(false)
+  }
+
   /** Drop the draft without creating anything. */
   cancel(): void {
     this.points = []
@@ -249,7 +262,7 @@ export class PenTool {
     this.pointer = null
     this.closing = false
     this.host.gestureOverlay.pen = null
-    this.host.requestFrame()
+    this.host.invalidate()
   }
 }
 
