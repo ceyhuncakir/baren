@@ -5,7 +5,7 @@
 import {
   getTokens,
   isAssetHash,
-  sanitizeSvgMarkup,
+  standaloneSvgMarkup,
   toRenderSubtree,
   vectorToSvgMarkup,
   type ResolvedNode,
@@ -169,7 +169,7 @@ export async function nodeImageTool(call: ToolCall): Promise<ToolOutput> {
   const nodeId = reqStr(call.args, 'nodeId')
   const node = requireRef(env, nodeId)
   if (node.type === 'svg') {
-    return { result: { svg: sanitizeSvgMarkup(node.svg ?? '') } }
+    return { result: { svg: standaloneSvgMarkup(node.svg ?? '') } }
   }
   if (node.type === 'vector') {
     return { result: { svg: vectorToSvgMarkup(node, getTokens(env.doc)) } }

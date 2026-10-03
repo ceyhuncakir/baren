@@ -354,3 +354,20 @@ export function sanitizeSvgMarkup(markup: string, rootStyle: string | null = nul
   if (out === '') out = `${writeStart('svg', [], rootStyle)}></svg>`
   return out
 }
+
+/**
+ * `markup` as a standalone SVG file (Copy as SVG, SVG export): sanitised, with the namespace
+ * declarations that SVG inlined in HTML may leave out (write_html stores it that way):
+ * `xmlns`, and `xmlns:xlink` when an `xlink:` attribute is used. Without them the file is
+ * plain XML and SVG viewers show nothing.
+ */
+export function standaloneSvgMarkup(markup: string): string {
+  const clean = sanitizeSvgMarkup(markup)
+  // Attribute values are escaped, so the root's start tag ends at the first `>`.
+  const root = /^<svg\b[^>]*/.exec(clean)?.[0] ?? ''
+  let declarations = ''
+  if (!/\sxmlns\s*=/.test(root)) declarations += ' xmlns="http://www.w3.org/2000/svg"'
+  if (/\sxlink:[a-z]+\s*=/i.test(clean) && !/\sxmlns:xlink\s*=/.test(root))
+    declarations += ' xmlns:xlink="http://www.w3.org/1999/xlink"'
+  return `<svg${declarations}${clean.slice('<svg'.length)}`
+}

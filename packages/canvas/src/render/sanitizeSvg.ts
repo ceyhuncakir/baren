@@ -117,16 +117,32 @@ function sanitizeElement(el: Element): void {
 
 let parser: DOMParser | null = null
 
+function isSvgRoot(el: Element | null): el is Element {
+  return el !== null && el.namespaceURI === SVG_NS && el.localName === 'svg'
+}
+
+/**
+ * The root <svg> of `markup`, or null. SVG files parse as XML. Markup written the way HTML
+ * inlines SVG — no `xmlns`, or an undeclared `xlink:` prefix, as write_html stores it — is
+ * not namespaced XML, so it parses as HTML, where an <svg> element is always in the SVG
+ * namespace. Both documents are inert (nothing loads or runs before sanitising).
+ */
+function parseSvgRoot(markup: string): Element | null {
+  parser ??= new DOMParser()
+  const xml = parser.parseFromString(markup, 'image/svg+xml')
+  if (isSvgRoot(xml.documentElement) && xml.getElementsByTagName('parsererror').length === 0)
+    return xml.documentElement
+  const el = parser.parseFromString(markup, 'text/html').body.firstElementChild
+  return isSvgRoot(el) ? el : null
+}
+
 /**
  * Parse and sanitize `markup`. Returns a detached, sanitized <svg> element
  * (owned by the current document) or null when the markup is not an SVG.
  */
 export function sanitizeSvg(markup: string): SVGSVGElement | null {
-  parser ??= new DOMParser()
-  const parsed = parser.parseFromString(markup, 'image/svg+xml')
-  const root = parsed.documentElement
-  if (root.namespaceURI !== SVG_NS || root.localName !== 'svg') return null
-  if (parsed.getElementsByTagName('parsererror').length > 0) return null
+  const root = parseSvgRoot(markup)
+  if (!root) return null
   sanitizeElement(root)
   const imported = document.importNode(root, true)
   return imported as unknown as SVGSVGElement

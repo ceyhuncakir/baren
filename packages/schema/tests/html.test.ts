@@ -10,6 +10,7 @@ import {
   renderSubtreeHtml,
   sanitizeSvgMarkup,
   setPropsAt,
+  standaloneSvgMarkup,
   setTextAt,
   setTokens,
   toRenderSubtree,
@@ -145,6 +146,26 @@ describe('renderHtml', () => {
     expect(renderHtml(doc, [img], { assetUrl: () => null })).toBe('')
     const sub = toRenderSubtree(doc, pageId)!
     expect(renderSubtreeHtml(sub.nodes, pageId)).toBe(page)
+  })
+
+  it('makes inline SVG a standalone file (Copy as SVG, SVG export)', () => {
+    // write_html stores <svg> as HTML inlines it: no namespace declarations.
+    expect(standaloneSvgMarkup('<svg viewBox="0 0 2 2"><path d="M0 0h2"></path></svg>')).toBe(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2"><path d="M0 0h2"></path></svg>',
+    )
+    expect(standaloneSvgMarkup('<svg><use xlink:href="#a"/></svg>')).toBe(
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="#a"/></svg>',
+    )
+    // Declarations already present are kept (a `>` in a value does not end the root tag early).
+    const file =
+      '<svg font-family="a>b" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="#a"/></svg>'
+    expect(standaloneSvgMarkup(file)).toBe(
+      '<svg font-family="a&gt;b" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="#a"/></svg>',
+    )
+    expect(standaloneSvgMarkup('<svg onload="x()"><script>x()</script></svg>')).toBe(
+      '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    )
+    expect(standaloneSvgMarkup('')).toBe('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
   })
 
   it('formats numbers like Rust and sanitises SVG like the Rust core', () => {

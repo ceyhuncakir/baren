@@ -34,6 +34,7 @@ import {
   serializeClipboard,
   setRotation,
   SchemaError,
+  standaloneSvgMarkup,
   toRenderSubtree,
   transact,
   ungroupNodes,
@@ -393,7 +394,7 @@ export class EditorActions {
             await copyText(vectorToSvgMarkup(node, this.session.tokens.getSnapshot()))
             toast('SVG copied')
           } else if (node.type === 'svg' && node.svg) {
-            await copyText(node.svg)
+            await copyText(standaloneSvgMarkup(node.svg))
             toast('SVG copied')
           } else {
             toast('SVG export works for vector and SVG layers.')

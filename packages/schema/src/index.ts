@@ -196,4 +196,4 @@ export {
   formatCssNumber,
   type HtmlOptions,
 } from './html.ts'
-export { sanitizeSvgMarkup } from './svgSanitize.ts'
+export { sanitizeSvgMarkup, standaloneSvgMarkup } from './svgSanitize.ts'

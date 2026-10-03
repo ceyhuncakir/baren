@@ -58,6 +58,56 @@ test.describe('rendering', () => {
     }
   })
 
+  test('draws svg markup written the way HTML inlines it (no xmlns, undeclared xlink)', async ({
+    page,
+  }) => {
+    // write_html stores inline <svg> as written: without xmlns, which is not namespaced XML.
+    const r = await page.evaluate(async () => {
+      const e = window.__e2e
+      const add = (svg: string, left: number) =>
+        e.createNode({
+          type: 'svg',
+          parentId: e.ids.boardA,
+          name: 'Icon',
+          svg,
+          styles: { position: 'absolute', left, top: 200, width: 24, height: 24 },
+        })
+      const inline = add(
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="#F04E1E"><path d="M2 2h20v20H2z"></path></svg>',
+        10,
+      )
+      const xlink = add(
+        '<svg viewBox="0 0 24 24"><defs><circle id="c" cx="12" cy="12" r="8"></circle></defs><use xlink:href="#c"></use></svg>',
+        40,
+      )
+      const hostile = add(
+        '<svg viewBox="0 0 24 24"><script>window.__pwned = 1</script><path d="M0 0h4v4z" onclick="window.__pwned = 2"></path><foreignObject><div>x</div></foreignObject><img src="x" onerror="window.__pwned = 3"></svg>',
+        70,
+      )
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+      await new Promise((res) => setTimeout(res, 50))
+      const el = (id: string) => e.elementOf(id)
+      return {
+        inline: el(inline)?.querySelectorAll('path').length,
+        inlineNs: el(inline)?.querySelector('path')?.namespaceURI,
+        inlineWidth: Math.round(el(inline)?.getBoundingClientRect().width ?? 0),
+        xlink: el(xlink)?.querySelector('use')?.getAttribute('xlink:href'),
+        hostile: el(hostile)?.outerHTML ?? '',
+        pwned: window.__pwned ?? null,
+      }
+    })
+    expect(r).toMatchObject({
+      inline: 1,
+      inlineNs: 'http://www.w3.org/2000/svg',
+      inlineWidth: 24,
+      xlink: '#c',
+      pwned: null,
+    })
+    expect(r.hostile).toContain('<path')
+    for (const bad of ['script', 'onclick', 'foreignObject', '<img', 'onerror'])
+      expect(r.hostile).not.toContain(bad)
+  })
+
   test('applies incremental updates to the changed elements only', async ({ page }) => {
     const r = await page.evaluate(async () => {
       const e = window.__e2e

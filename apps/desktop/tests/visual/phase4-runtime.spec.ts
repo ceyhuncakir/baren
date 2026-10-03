@@ -216,6 +216,10 @@ test.describe('agent runtime: a design session', () => {
     expect(header.summary).toContain('Frame "Header"')
     expect(header.summary).toContain('Text "Acme"')
     await expect(onCanvas(page, headerNode.id)).toBeAttached()
+    // The icon's <svg> has no xmlns (as HTML inlines it): the canvas still draws its content.
+    await expect(
+      onCanvas(page, headerNode.id).locator('svg.ic-node circle[r="8"][fill="#FFFFFF"]'),
+    ).toBeAttached()
 
     // --- hero with an image (data URI → stored asset, natural size)
     const hero = await body<{ createdNodes: { id: string }[] }>(page, 'write_html', {
