@@ -164,6 +164,61 @@ test('LOD thumbnails include image layers and image fills', async ({ page }) => 
   expect(px.rgba[3]).toBeGreaterThan(200)
 })
 
+test('LOD thumbnails draw SVG layers as themselves: colours, currentColor and tokens', async ({
+  page,
+}) => {
+  // SVG markup as write_html stores it (no xmlns). Zoomed out, these used to be grey boxes.
+  await page.evaluate(() => {
+    const e = window.__e2e
+    const board = e.createNode({
+      type: 'frame',
+      parentId: e.pageId,
+      name: 'Icons board',
+      styles: { left: 0, top: 400, width: 300, height: 100, backgroundColor: '#FFFFFF' },
+    })
+    const rect = (paint: string) =>
+      `<svg viewBox="0 0 10 10"><rect width="10" height="10" ${paint}></rect></svg>`
+    const icon = (left: number, svg: string, extra: Record<string, string> = {}) =>
+      e.createNode({
+        type: 'svg',
+        parentId: board,
+        name: 'Icon',
+        svg,
+        styles: { position: 'absolute', left, top: 0, width: 100, height: 100, ...extra },
+      })
+    icon(0, rect('fill="#00AA00"'))
+    icon(100, rect('fill="currentColor"'), { color: '#0000FF' })
+    icon(200, rect('style="fill: var(--color-brand)"'))
+  })
+  await page.evaluate(() => window.__e2e.canvas().setViewport({ x: -200, y: -200, zoom: 0.1 }))
+  await page.waitForFunction(() => {
+    const s = window.__e2e.canvas().getStats()
+    return s.lod && s.pendingWork === 0 && document.querySelectorAll('.ic-thumb').length >= 3
+  })
+  const px = await page.evaluate(async () => {
+    const thumbs = Array.from(document.querySelectorAll<HTMLImageElement>('.ic-thumb'))
+    // The icons board is the last top-level node (created last).
+    const img = thumbs[thumbs.length - 1] as HTMLImageElement
+    await img.decode()
+    const c = new OffscreenCanvas(img.naturalWidth, img.naturalHeight)
+    const ctx = c.getContext('2d') as OffscreenCanvasRenderingContext2D
+    ctx.drawImage(img, 0, 0)
+    return [1 / 6, 3 / 6, 5 / 6].map((fx) => {
+      const d = ctx.getImageData(Math.floor(c.width * fx), Math.floor(c.height / 2), 1, 1).data
+      return [d[0] ?? 0, d[1] ?? 0, d[2] ?? 0]
+    })
+  })
+  const [green, blue, brand] = px as [number[], number[], number[]]
+  expect(green[1]).toBeGreaterThan(140)
+  expect(Math.max(green[0] as number, green[2] as number)).toBeLessThan(60)
+  // currentColor resolves to the layer's colour (an image alone would draw it black).
+  expect(blue[2]).toBeGreaterThan(200)
+  expect(Math.max(blue[0] as number, blue[1] as number)).toBeLessThan(60)
+  // var(--color-brand) resolves to the document's token (#FFE8E0), not black or grey.
+  expect(brand[0]).toBeGreaterThan(245)
+  expect((brand[0] as number) - (brand[2] as number)).toBeGreaterThan(20)
+})
+
 test('drop targets: the artboard under the point (flow or absolute), else the page', async ({
   page,
 }) => {

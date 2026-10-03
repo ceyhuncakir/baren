@@ -39,6 +39,25 @@ interface Entry {
   undrawable: boolean
 }
 
+interface SvgEntry {
+  markup: string
+  image: HTMLImageElement | null
+  failed: boolean
+}
+
+/** Decoded SVG layer images kept for thumbnails (oldest dropped first). */
+const MAX_SVG_IMAGES = 500
+
+/** `svg:<length>:<FNV-1a>` — a short key for an SVG layer image (thumbnails wait on it). */
+function svgKey(markup: string): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < markup.length; i++) {
+    h ^= markup.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return `svg:${markup.length}:${(h >>> 0).toString(36)}`
+}
+
 /**
  * Resolves asset ids (content hashes) to URLs through the host's resolver, once per id,
  * and remembers what is known about each asset: its URL, whether loading it failed, and a
@@ -51,6 +70,7 @@ interface Entry {
  */
 export class AssetUrlCache {
   private readonly entries = new Map<string, Entry>()
+  private readonly svgs = new Map<string, SvgEntry>()
   private changed: Set<string> | null = null
   private inflight = 0
 
@@ -174,6 +194,44 @@ export class AssetUrlCache {
     if (img) e.image = img
     else e.undrawable = true
     this.notify(id)
+  }
+
+  /**
+   * An SVG layer as a decoded image for LOD thumbnails: standalone `markup` (see
+   * `svgThumbMarkup`) loaded from a data URL, so drawing it never taints the canvas. Returns
+   * the key a thumbnail waits on while it decodes (`onChange` reports it), the image once
+   * decoded, and `failed` when it cannot be decoded.
+   */
+  svgDrawable(markup: string): { key: string; image: HTMLImageElement | null; failed: boolean } {
+    const key = svgKey(markup)
+    let e = this.svgs.get(key)
+    if (!e || e.markup !== markup) {
+      if (this.svgs.size >= MAX_SVG_IMAGES) {
+        const oldest = this.svgs.keys().next()
+        if (!oldest.done) this.svgs.delete(oldest.value)
+      }
+      const entry: SvgEntry = { markup, image: null, failed: typeof Image === 'undefined' }
+      this.svgs.set(key, entry)
+      e = entry
+      if (!entry.failed) {
+        this.inflight++
+        const img = new Image()
+        img.decoding = 'async'
+        img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
+        const settle = (ok: boolean) => {
+          this.inflight--
+          if (this.svgs.get(key) !== entry) return
+          if (ok && img.naturalWidth > 0) entry.image = img
+          else entry.failed = true
+          this.notify(key)
+        }
+        img.decode().then(
+          () => settle(true),
+          () => settle(false),
+        )
+      }
+    }
+    return { key, image: e.image, failed: e.failed }
   }
 
   /** True once a drawable copy is known to be unavailable (thumbnails stop waiting). */

@@ -3,7 +3,7 @@ import type { IndexedNode } from '../math/hit.ts'
 import type { Point, Rect } from '../types.ts'
 import { MISSING_FILL_COLOR, isTaintFree, type AssetUrlCache } from './assets.ts'
 import { backgroundTiles, fitImage } from './imageFit.ts'
-import type { Scene, SceneNode } from './scene.ts'
+import { NODE_ID_ATTR, type Scene, type SceneNode } from './scene.ts'
 import { clipsContent, pxValue } from './styles.ts'
 
 /** Drawing instructions for a level-of-detail thumbnail (artboard-local coordinates). */
@@ -280,6 +280,35 @@ function placeholderBox(rect: Rect, radius: number, alpha: number): ThumbOp {
 }
 
 /** A drawable for `assetId`: the decoded asset, or null (placeholder) while it loads. */
+/** Paint properties an SVG image cannot resolve by itself (no document, no custom properties). */
+const SVG_PAINTS = ['fill', 'stroke', 'color', 'stop-color', 'flood-color', 'lighting-color']
+
+/**
+ * A rendered SVG layer as standalone markup for an image of `box` size: its sanitised content
+ * without the layer's own box styles (the thumbnail applies opacity and clipping), and with
+ * `var(--token)` / `currentColor` paints replaced by what the canvas computed for them.
+ */
+export function svgThumbMarkup(el: Element, box: Rect): string {
+  const clone = el.cloneNode(true) as Element
+  for (const name of ['style', 'class', NODE_ID_ATTR]) clone.removeAttribute(name)
+  clone.setAttribute('width', String(Math.max(1, Math.round(box.width))))
+  clone.setAttribute('height', String(Math.max(1, Math.round(box.height))))
+  if (/var\(|currentcolor/i.test(el.outerHTML)) {
+    const from = [el, ...el.querySelectorAll('*')]
+    const to = [clone, ...clone.querySelectorAll('*')]
+    from.forEach((source, i) => {
+      const target = to[i] as SVGElement | undefined
+      if (!target?.style) return
+      const cs = getComputedStyle(source)
+      for (const prop of SVG_PAINTS) {
+        const value = cs.getPropertyValue(prop)
+        if (value) target.style.setProperty(prop, value)
+      }
+    })
+  }
+  return new XMLSerializer().serializeToString(clone)
+}
+
 function assetImage(
   assetId: string | undefined,
   assets: AssetUrlCache | undefined,
@@ -355,15 +384,33 @@ function collectThumbOp(
     return
   }
   if (node.type === 'svg') {
-    out.push({
-      kind: 'box',
-      rect: clipped,
-      fill: 'rgba(128,128,128,0.35)',
-      radius: 0,
-      stroke: null,
-      strokeWidth: 0,
-      alpha,
-    })
+    // Drawn as an image of its own markup once decoded (the thumbnail waits for it); a
+    // neutral box only when it cannot be drawn (rotated layers, undecodable markup).
+    const svg = !frame && assets ? assets.svgDrawable(svgThumbMarkup(node.el, local)) : null
+    if (svg?.image) {
+      out.push({
+        kind: 'image',
+        rect: local,
+        clip: clipped,
+        radius,
+        image: svg.image,
+        fit: 'fill',
+        position: '50% 50%',
+        alpha,
+      })
+    } else if (svg && !svg.failed) {
+      waiting.add(svg.key)
+    } else {
+      out.push({
+        kind: 'box',
+        rect: clipped,
+        fill: 'rgba(128,128,128,0.35)',
+        radius: 0,
+        stroke: null,
+        strokeWidth: 0,
+        alpha,
+      })
+    }
     return
   }
   const bg = cs.backgroundColor
