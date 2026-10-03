@@ -30,7 +30,6 @@ const MODES = [
 ]
 
 const FOOTER_LINKS = [
-  { label: "What's new", onClick: () => void bridge.shell.openExternal(`${SITE_URL}/changelog`) },
   { label: 'Feedback', onClick: () => void bridge.shell.openExternal(`${SITE_URL}/feedback`) },
 ]
 

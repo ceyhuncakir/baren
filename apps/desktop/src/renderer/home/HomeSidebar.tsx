@@ -33,7 +33,6 @@ import css from './Home.module.css'
 export type SidebarItem = 'recents' | 'files' | 'archive' | 'settings'
 
 const FOOTER = [
-  { label: "What's new", onClick: () => void bridge.shell.openExternal(LINKS.whatsNew) },
   { label: 'Feedback', onClick: () => void bridge.shell.openExternal(LINKS.feedback) },
 ] as const
 
