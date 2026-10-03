@@ -13,3 +13,7 @@ release/
 *.tsbuildinfo
 # the sync server's default asset store next to ./baren.db (ASSETS_DIR)
 /baren-assets/
+# Local settings (copy the committed .env.example files)
+.env
+.env.*
+!.env.example

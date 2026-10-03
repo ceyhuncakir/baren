@@ -384,7 +384,8 @@ firewall (`ufw allow 80,443/tcp`). The server listens on loopback only.
 
 ### 4. Point the desktop app at it
 
-Build the renderer with `VITE_SERVER_URL=https://sync.example.com` (in `apps/desktop/.env`).
+Build the app with `VITE_SERVER_URL=https://sync.example.com`, set in `apps/desktop/.env.local`
+(copy `apps/desktop/.env.example`).
 The packaged app's origin is `app://renderer`, which is why `CORS_ORIGINS` contains it (CORS
 allows `GET HEAD POST PUT PATCH DELETE`; `PUT`/`HEAD` are the asset endpoints). The production
 Content-Security-Policy (`connect-src`, `img-src`) is derived from the same `VITE_SERVER_URL` at

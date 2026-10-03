@@ -101,7 +101,9 @@ pnpm --filter @baren/desktop exec electron-builder --config electron-builder.yml
 ```
 
 The app reaches the server at `VITE_SERVER_URL`, which is read **at build time**. It defaults to
-`http://127.0.0.1:8787`. The same value goes into the production Content-Security-Policy, and the
+`http://127.0.0.1:8787`. To point your builds somewhere else, copy `apps/desktop/.env.example` to
+`apps/desktop/.env.local` (git-ignored) and set it there; `pnpm dev`, `pnpm build` and the
+`package:*` scripts all read it. The same value goes into the production Content-Security-Policy, and the
 auto-update feed defaults to `<VITE_SERVER_URL>/updates/`. Releases for other people are built with
 `pnpm release:linux` (see [Releases and auto-update](#releases-and-auto-update)).
 
