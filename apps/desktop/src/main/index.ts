@@ -52,7 +52,11 @@ import { ThemeController, loadThemePreference } from './theme/themeController'
 import { updateAvailability, type Availability } from './updates/availability'
 import { resolveFeedUrl } from './updates/feed'
 import { UpdateController, type UpdaterLike } from './updates/updateController'
-import { DEV_DESKTOP_ID, ensureDevDesktopEntry } from './windows/desktopEntry'
+import {
+  DEV_DESKTOP_ID,
+  claimDevSchemeHandler,
+  ensureDevDesktopEntry,
+} from './windows/desktopEntry'
 import type { AppShortcut } from './windows/shortcuts'
 import { WindowManager } from './windows/windowManager'
 import { WindowStateStore } from './windows/windowStateStore'
@@ -389,6 +393,16 @@ function instrumentFirstWindow(win: BrowserWindow): void {
 
 function registerProtocolClient(): void {
   if (flags.smoke) return
+  if (platform === 'linux' && !app.isPackaged) {
+    // Dev runs take baren:// links through baren-dev.desktop (written at startup).
+    claimDevSchemeHandler(flags.registerProtocolInDev).then(
+      (changed) => {
+        if (changed) log.info('baren:// links now open this dev build')
+      },
+      (error: unknown) => log.warn('could not register baren:// for the dev build', String(error)),
+    )
+    return
+  }
   // On Linux this shells out to xdg-settings synchronously; deb/rpm installs
   // register the handler through the .desktop MimeType, so only AppImage needs it.
   if (platform === 'linux' && !process.env['APPIMAGE']) return
