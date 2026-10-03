@@ -70,7 +70,7 @@ import { renderNodePng } from '../session/raster'
 import { selectIds } from '../session/selection'
 import { buildCopyContent, copyPng, copyRich, copyText, readClipboard } from './clipboard'
 
-export type CopyAsFormat = 'html' | 'jsx' | 'css' | 'svg' | 'png1' | 'png2' | 'link'
+export type CopyAsFormat = 'html' | 'jsx' | 'css' | 'svg' | 'png1' | 'png2' | 'link' | 'agent'
 
 /** Where "Paste here" was asked for (context menu). */
 export interface PastePoint {
@@ -365,6 +365,7 @@ export class EditorActions {
   }
 
   async copyAs(format: CopyAsFormat): Promise<void> {
+    if (format === 'agent') return this.copyAgentContext()
     const { doc, fileId, resolver } = this.session
     const id = this.topRefs(this.selection)[0]
     if (id === undefined) return
@@ -420,6 +421,36 @@ export class EditorActions {
           toast('Link copied')
           return
       }
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Copy failed')
+    }
+  }
+
+  /**
+   * Copy as → Agent context: every selected layer as text for a coding agent's prompt, with
+   * the ids the Baren MCP tools take (agent/selectionContext.ts, loaded on first use).
+   */
+  private async copyAgentContext(): Promise<void> {
+    const refs = this.topRefs(this.selection)
+    if (refs.length === 0) return
+    const { doc, resolver, fileId, canvas } = this.session
+    try {
+      const { selectionContext } = await import('../../agent/selectionContext')
+      const text = selectionContext({
+        ctx: { doc, resolver },
+        refs,
+        fileId,
+        fileName: this.session.docName.getSnapshot() || this.session.file?.name || 'Untitled',
+        frameOf: (ref) => canvas.current?.getNodeFrame(ref) ?? null,
+      })
+      const ok = await copyText(text)
+      toast(
+        !ok
+          ? "Couldn't copy to the clipboard"
+          : refs.length === 1
+            ? 'Agent context copied'
+            : `Agent context of ${refs.length} layers copied`,
+      )
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Copy failed')
     }

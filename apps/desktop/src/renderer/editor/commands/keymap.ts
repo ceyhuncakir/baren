@@ -8,7 +8,8 @@ import type { EditorTool } from '../session/store'
 export type EditorKeyAction =
   | { kind: 'zoomIn' | 'zoomOut' | 'zoom100' | 'zoomToFit' | 'zoomToSelection' }
   | { kind: 'duplicate' | 'bringToFront' | 'sendToBack' | 'addFlex' | 'wrapInFrame' }
-  | { kind: 'copyHtml' | 'rename' | 'toggleLock' | 'toggleHide' | 'toggleClip' }
+  | { kind: 'copyHtml' | 'copyAgentContext' | 'rename' | 'toggleLock' | 'toggleHide' }
+  | { kind: 'toggleClip' }
   | { kind: 'togglePixelGrid' | 'toggleRulers' | 'toggleOutline' | 'toggleLeftPanel' }
   | { kind: 'group' | 'ungroup' | 'createComponent' | 'detachInstance' | 'pasteInPlace' }
   | { kind: 'tool'; tool: EditorTool }
@@ -51,6 +52,7 @@ export function editorKeyAction(e: KeyLike, platform: string): EditorKeyAction |
       if (e.code === 'KeyH') return { kind: 'toggleHide' }
       if (e.code === 'KeyG') return { kind: 'ungroup' }
       if (e.code === 'KeyV') return { kind: 'pasteInPlace' }
+      if (e.code === 'KeyC') return { kind: 'copyAgentContext' }
       return null
     }
     if (e.altKey) return null

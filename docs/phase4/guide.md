@@ -20,6 +20,7 @@ collaborators in a shared file see them too.
 Before anything else, load the full guide once per session: get_guide({ topic: "baren-mcp-instructions" }).
 
 - Start a file with get_basic_info (pages, artboards and their sizes, fonts, tokens) and get_selection (what the user is focused on). Omit fileId to use the file the user is looking at; call list_files to find others.
+- A <baren-selection> block in the user's message is layers they copied in Baren to point at them: pass its fileId and nodeId values straight to the tools instead of searching.
 - pageId defaults to the page the user is viewing. Pass it to work on another page without moving the user.
 - Write in small steps: each write_html call adds about one visual group (a header, one row, a button bar). Prefer duplicate_nodes + update_styles + set_text_content when that is faster than new HTML.
 - Use flexbox, padding and gap. Never margin, grid or tables. Use the file's design tokens as var(--token).
@@ -45,6 +46,10 @@ file, their collaborators see it too, and your name appears next to theirs.
    target: about 390 px is a phone, 768 px a tablet, 1440 px a desktop.
 2. Call `get_selection` to see what the user has selected. If nothing is selected and the
    request is ambiguous, ask the user which artboard to work on.
+   A `<baren-selection>` block in the user's message is layers they copied in Baren (Copy as →
+   Agent context): that is what "this" means. Pass its `fileId` and each `nodeId` — or the
+   `data-node-id` of an element inside, for a nested layer — straight to the tools. Its JSX is a
+   snapshot from when they copied, so read the layer again before you change it.
 3. Use `get_tree_summary` for the structure of an artboard (cheap), `get_children` for one
    level, and `get_node_info` for details and text content.
 4. Every file-scoped result starts with a header: the file id, the file name and a hash of the

@@ -12,6 +12,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { expect, test, type BrowserContext, type Page, type TestInfo } from '@playwright/test'
+import { recordCopies } from './copies'
 import { readReference } from './references'
 
 const REFERENCE_DIR = resolve(__dirname, '../../../../design/reference')
@@ -618,6 +619,52 @@ test.describe('editor behaviour', () => {
     await expect
       .poll(async () => (await pageChildren(page)).filter((n) => n === '03 Forms').length)
       .toBe(2)
+  })
+
+  test('copy as agent context: the context menu and Ctrl+Shift+C', async ({ page }) => {
+    const clipboard = await recordCopies(page)
+    await openEditor(page, COMPONENT_LIBRARY)
+
+    // A whole artboard: its JSX is too long, so its children are outlined with their ids.
+    await page.mouse.click(620, 200, { button: 'right' })
+    await page
+      .getByRole('menu', { name: 'Layer actions' })
+      .getByRole('menuitem', { name: 'Copy as' })
+      .hover()
+    await page.getByRole('menuitem', { name: /^Agent context/ }).click()
+    await expect(page.getByText('Agent context copied')).toBeVisible()
+    const board = await clipboard()
+    expect(board).toMatch(/^<baren-selection file="acme" fileId="f-acme" page="Component library">/)
+    expect(board).toMatch(
+      /<node nodeId="[^"]+" name="03 Forms" type="Frame" path="03 Forms" size="800×\d+">/,
+    )
+    expect(board).toContain('get_jsx returns it.')
+    expect(board).toMatch(/^- Header \(Frame, \d+×\d+\) nodeId=\S+$/m)
+
+    // A nested text layer, by shortcut: its JSX is included.
+    const title = await page.evaluate(() => {
+      const hook = (
+        window as unknown as {
+          __barenEditor: {
+            snapshot(): { nodes: Record<string, { id: string; type: string; text?: string }> }
+            canvas: { select(ids: string[]): void }
+          }
+        }
+      ).__barenEditor
+      const node = Object.values(hook.snapshot().nodes).find(
+        (n) => n.type === 'text' && n.text === 'Text input',
+      )
+      if (!node) throw new Error('no "Text input" text layer')
+      hook.canvas.select([node.id])
+      return node.id
+    })
+    await page.locator('.ic-root').focus()
+    await page.keyboard.press('Control+Shift+C')
+    await expect.poll(clipboard).toContain(`<node nodeId="${title}"`)
+    const text = await clipboard()
+    expect(text).toMatch(/type="Text" path="03 Forms \/ [^"]+" size="\d+×\d+">/)
+    expect(text).toContain(`<div data-node-id="${title}" style={{`)
+    expect(text).toContain('  Text input\n')
   })
 })
 

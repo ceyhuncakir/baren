@@ -58,7 +58,7 @@ export function EditorContextMenu() {
       <MenuItem shortcut={k('Mod+D')} disabled={!has} onSelect={() => actions.duplicate()}>
         Duplicate
       </MenuItem>
-      <Submenu label="Copy as" disabled={!has}>
+      <Submenu label="Copy as" width={220} disabled={!has}>
         <MenuItem shortcut={k('Mod+Alt+C')} onSelect={() => void actions.copyAs('html')}>
           HTML
         </MenuItem>
@@ -74,6 +74,9 @@ export function EditorContextMenu() {
         </MenuItem>
         <MenuSeparator />
         <MenuItem onSelect={() => void actions.copyAs('link')}>Link to selection</MenuItem>
+        <MenuItem shortcut={k('Mod+Shift+C')} onSelect={() => void actions.copyAs('agent')}>
+          Agent context
+        </MenuItem>
       </Submenu>
       <MenuSeparator />
       <MenuItem

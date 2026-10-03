@@ -82,6 +82,8 @@ export function useEditorCommands(session: EditorSession): void {
           return actions.wrapInFrame()
         case 'copyHtml':
           return void actions.copyAs('html')
+        case 'copyAgentContext':
+          return void actions.copyAs('agent')
         case 'rename':
           return actions.rename()
         case 'toggleLock':

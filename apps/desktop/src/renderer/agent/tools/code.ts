@@ -5,8 +5,8 @@
 import { getTokens, toRenderSubtree, type Styles, type Token } from '@baren/schema'
 import { AgentToolError, type EntryError } from '../errors'
 import { html } from '../html'
-import { artboardOfRef, requireRef, resolveRef } from '../model'
-import { arr, bool, str, reqStr, type HostEnv, type ToolCall, type ToolOutput } from '../context'
+import { artboardOfRef, requireRef, resolveRef, type DocContext } from '../model'
+import { arr, bool, str, reqStr, type ToolCall, type ToolOutput } from '../context'
 import { assertNotPage, orderedTokenNames } from './read'
 
 export const MAX_JSX_BYTES = 300 * 1024
@@ -15,7 +15,7 @@ export const MAX_JSX_BYTES = 300 * 1024
  * INHERITED_TEXT_PROPERTIES the node inherits from its ancestors and does not set itself
  * (nearest ancestor's declared value), so an exported root renders standalone.
  */
-export function inheritedStyles(env: HostEnv, ref: string): Styles {
+export function inheritedStyles(env: DocContext, ref: string): Styles {
   const node = resolveRef(env, ref)
   const out: Styles = {}
   if (!node) return out

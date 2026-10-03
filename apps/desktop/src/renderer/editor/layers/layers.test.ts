@@ -151,6 +151,9 @@ describe('keyboard map', () => {
     expect(editorKeyAction(key('c', { altKey: true, code: 'KeyC' }), 'linux')).toEqual({
       kind: 'toggleClip',
     })
+    expect(
+      editorKeyAction(key('C', { ctrlKey: true, shiftKey: true, code: 'KeyC' }), 'linux'),
+    ).toEqual({ kind: 'copyAgentContext' })
     expect(editorKeyAction(key('F2'), 'linux')).toEqual({ kind: 'rename' })
     expect(editorKeyAction(key('r'), 'linux')).toEqual({ kind: 'tool', tool: 'rectangle' })
     expect(editorKeyAction(key('I', { shiftKey: true, code: 'KeyI' }), 'linux')).toEqual({
@@ -164,6 +167,9 @@ describe('keyboard map', () => {
   it('uses Cmd on macOS', () => {
     expect(editorKeyAction(key('d', { metaKey: true }), 'darwin')).toEqual({ kind: 'duplicate' })
     expect(editorKeyAction(key('d', { ctrlKey: true }), 'darwin')).toBeNull()
+    expect(
+      editorKeyAction(key('c', { metaKey: true, shiftKey: true, code: 'KeyC' }), 'darwin'),
+    ).toEqual({ kind: 'copyAgentContext' })
   })
 
   it('formats shortcut labels per platform', () => {
