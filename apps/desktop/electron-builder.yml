@@ -14,12 +14,9 @@ files:
   - resources/icon.png
   - '!**/*.{map,ts,tsx}'
   - '!**/{.vscode,tests,test-results,playwright-report}/**'
-  # The Rust core (napi addon built by `pnpm build:native`), loaded by the main
-  # process from <resources>/app.asar.unpacked/native/. Missing → JS fallback core.
-  - from: ../../crates/napi
-    to: native
-    filter:
-      - '*.node'
+# The Rust core (napi addon from `pnpm build:native`, or cross-built for Windows and macOS: see
+# README → Installers) is added per platform below, into native/; the main process loads it from
+# <resources>/app.asar.unpacked/native/. Missing → JS fallback core.
 # Native addons cannot be loaded from inside the asar archive.
 asarUnpack:
   - '**/*.node'
@@ -46,21 +43,65 @@ linux:
       # Electron sets WM_CLASS from app.name (package.json productName).
       StartupWMClass: Baren
       Terminal: 'false'
+  files:
+    - from: ../../crates/napi
+      to: native
+      filter:
+        - 'baren-core.linux-*.node'
 appImage:
   artifactName: baren-${version}-${arch}.${ext}
 deb:
   artifactName: baren_${version}_${arch}.${ext}
 rpm:
   artifactName: baren-${version}.${arch}.${ext}
+# macOS: Baren.app per architecture, zipped by scripts/release.mjs with `zip -y` (a .dmg can only
+# be made on a Mac, and electron-builder's zip turns the frameworks' symlinks into copies when
+# built elsewhere, which breaks the bundle). Without an Apple Developer ID the app is signed ad
+# hoc after packing (scripts/afterPack.cjs, rcodesign off a Mac), which Apple Silicon needs to run
+# it; users open it once with right-click → Open (or System Settings → Privacy & Security → Open
+# Anyway), and it does not auto-update.
 mac:
-  target: dmg
+  target:
+    - target: dir
+      arch:
+        - arm64
+        - x64
+  executableName: Baren
   category: public.app-category.graphics-design
   darkModeSupport: true
+  identity: null
+  files:
+    - from: ../../crates/napi
+      to: native
+      filter:
+        - 'baren-core.darwin-${arch}.node'
+# Windows: a one-click installer per user (no admin rights, so updates install silently on
+# quit). Built off Windows, electron-builder runs the installer once under Wine to produce the
+# uninstaller (system wine; README → Installers). Unsigned: SmartScreen asks once (More info → Run anyway). baren:// links are registered
+# by the app itself on first start (setAsDefaultProtocolClient).
 win:
-  target: nsis
+  target:
+    - target: nsis
+      arch:
+        - x64
+  files:
+    - from: ../../crates/napi
+      to: native
+      filter:
+        - 'baren-core.win32-*.node'
+nsis:
+  oneClick: true
+  perMachine: false
+  artifactName: baren-setup-${version}.${ext}
+  shortcutName: Baren
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+afterPack: scripts/afterPack.cjs
 # Auto-update (electron-updater, generic provider). Makes electron-builder write
-# latest-linux.yml next to the artifacts and resources/app-update.yml into the app (electron-updater
-# reads its cache directory name from it). The app's feed itself is fixed at build time from
+# latest-linux.yml / latest.yml (Windows) next to the artifacts and resources/app-update.yml into
+# the app (electron-updater reads its cache directory name from it). The app's feed itself is fixed at build time from
 # VITE_UPDATE_URL / VITE_SERVER_URL (src/main/updates/feed.ts); scripts/release.mjs passes the same
 # URL here with -c.publish.url=<feed>. Nothing is uploaded by electron-builder (--publish never):
 # the release script rsyncs the files to the server's UPDATES_DIR.

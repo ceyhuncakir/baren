@@ -43,6 +43,8 @@ export function nativeModuleCandidates(loc: NativeLocation): string[] {
   const names = [
     ...(suffix ? [`${NATIVE_BINARY_NAME}.${suffix}.node`] : []),
     ...(loc.platform === 'darwin' ? [`${NATIVE_BINARY_NAME}.darwin-universal.node`] : []),
+    // Windows installers built on Linux carry a MinGW build of the core (same N-API exports).
+    ...(loc.platform === 'win32' ? [`${NATIVE_BINARY_NAME}.win32-${loc.arch}-gnu.node`] : []),
     `${NATIVE_BINARY_NAME}.node`,
   ]
   const dirs = loc.isPackaged

@@ -34,6 +34,24 @@ describe('nativeModuleCandidates', () => {
     ])
   })
 
+  it('falls back to the MinGW core on Windows', () => {
+    const names = nativeModuleCandidates({
+      platform: 'win32',
+      arch: 'x64',
+      isPackaged: true,
+      appPath: 'C:/Baren/resources/app.asar',
+      resourcesPath: 'C:/Baren/resources',
+      override: null,
+    })
+      .filter((p) => p.includes('app.asar.unpacked'))
+      .map((p) => p.split(/[\\/]/).pop())
+    expect(names).toEqual([
+      'baren-core.win32-x64-msvc.node',
+      'baren-core.win32-x64-gnu.node',
+      'baren-core.node',
+    ])
+  })
+
   it('looks in app.asar.unpacked/native when packaged', () => {
     const paths = nativeModuleCandidates({
       platform: 'darwin',

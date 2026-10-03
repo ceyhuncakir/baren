@@ -48,8 +48,9 @@ test and performance numbers, is in [docs/STATUS.md](docs/STATUS.md).
 | C compiler          | gcc or clang                | SQLite is compiled into the Rust crates.                                  |
 | Playwright Chromium | optional                    | Only for the visual tests: `pnpm exec playwright install chromium`.       |
 
-Development and testing so far have been on Linux (Fedora, x64). macOS and Windows are wired up
-(window chrome, menus, packaging targets) but have not been run.
+Development and testing have been on Linux (Fedora, x64), and the dev build has been used on
+Windows. The Windows installer and the Mac zips are built on Linux ([Installers](#installers)) and
+have not been tried on those systems yet.
 
 ## Run it locally (one command)
 
@@ -103,12 +104,15 @@ pnpm package:linux                                # Rust core + AppImage / deb /
 pnpm --filter @baren/desktop exec electron-builder --config electron-builder.yml --linux dir   # unpacked app only
 ```
 
+Windows and Mac builds are made with `pnpm release:win` and `pnpm release:mac` ([Installers](#installers)).
+
 The app reaches the server at `VITE_SERVER_URL`, which is read **at build time**. It defaults to
 `http://127.0.0.1:8787`. To point your builds somewhere else, copy `apps/desktop/.env.example` to
-`apps/desktop/.env.local` (git-ignored) and set it there; `pnpm dev`, `pnpm build` and the
-`package:*` scripts all read it. The same value goes into the production Content-Security-Policy, and the
-auto-update feed defaults to `<VITE_SERVER_URL>/updates/`. Releases for other people are built with
-`pnpm release:linux` (see [Releases and auto-update](#releases-and-auto-update)).
+`apps/desktop/.env` (or `.env.local`; both git-ignored) and set it there; `pnpm dev`, `pnpm build`,
+the `package:*` and the `release:*` scripts all read it. The same value goes into the production
+Content-Security-Policy, and the auto-update feed defaults to `<VITE_SERVER_URL>/updates/`. Releases
+for other people are built with `pnpm release:linux`, `release:win` and `release:mac` (see
+[Releases and auto-update](#releases-and-auto-update)).
 
 ## Email (SMTP)
 
@@ -130,27 +134,60 @@ likely to land in spam.
 
 ## Releases and auto-update
 
-Installed Linux packages update themselves from the server's `/updates/` directory
-(electron-updater, generic provider). Releasing a new version:
+Releases for all three systems are built on Linux and uploaded to the server's `/updates/`
+directory, which installed apps update from (electron-updater, generic provider) and people
+download them from (`<server>/updates/baren-setup-0.2.0.exe`). Releasing a new version:
 
 ```sh
-# on your machine: bump the version, build AppImage + deb + rpm with the server URL baked in,
-# then upload the packages and latest-linux.yml (last) into the server's UPDATES_DIR
-VITE_SERVER_URL=https://sync.example.com \
-RELEASE_TARGET=deploy@sync.example.com:/srv/baren/updates/ \
-  pnpm release:linux patch
+# on your machine: bump the version, build with the server URL baked in (VITE_SERVER_URL, or
+# apps/desktop/.env), then upload the files and the update metadata (last) into UPDATES_DIR
+export RELEASE_TARGET=deploy@sync.example.com:/srv/baren/updates/
+pnpm release:linux patch     # AppImage, deb, rpm + latest-linux.yml
+pnpm release:win             # same version: baren-setup-<version>.exe + latest.yml
+pnpm release:mac             # same version: baren-<version>-mac-arm64.zip and -x64.zip
 ```
 
-- `pnpm release:linux [<version>|major|minor|patch]` writes `apps/desktop/release/<version>/`
-  (`--targets AppImage,deb,rpm`, `--skip-native`, `--no-save`, `--out`, `--feed`, `--dry-run`; see
-  `scripts/release.mjs`). The server needs `UPDATES_DIR=/srv/baren/updates` (see
+- `pnpm release:<linux|win|mac> [<version>|major|minor|patch]` writes
+  `apps/desktop/release/<version>/` (`--skip-native`, `--no-save`, `--out`, `--feed`, `--dry-run`,
+  and `--targets AppImage,deb,rpm` for Linux; see `scripts/release.mjs`). The server needs
+  `UPDATES_DIR=/srv/baren/updates` (see
   [crates/server/README.md → Update feed](crates/server/README.md#update-feed)).
 - The app checks 10 s after it starts and every 4 hours, downloads in the background, and shows
   "Version x.y.z is ready" with **Restart**. Help → **Check for Updates…** checks right away.
 - **AppImage** installs replace their own file (no password) and also update on a normal quit.
   **deb/rpm** installs update through the system package manager, so clicking **Restart** shows a
-  password prompt (never on a plain quit).
+  password prompt (never on a plain quit). The **Windows** install updates itself the same way as
+  an AppImage, without admin rights.
+- The **Mac** app does not update itself: macOS only installs updates signed with a Developer ID
+  (see [Installers](#installers)). Send people the new zip.
 - Updates are off in development builds and in the unpacked `linux-unpacked` directory.
+
+### Installers
+
+`pnpm release:win` and `pnpm release:mac` run on Linux. They need:
+
+- **Docker**, to cross-compile the Rust core: `rust:1-bookworm` with MinGW for Windows, and
+  `ghcr.io/rust-cross/cargo-zigbuild` (clang, Rust's `ld64.lld` and its macOS SDK) for both Mac
+  architectures. Without the core the app still runs, on the slower JS core.
+- **Windows:** `wine`, or Docker again (`electronuserland/builder:wine`): electron-builder runs the
+  installer once under Wine to produce the uninstaller.
+- **Mac:** [rcodesign](https://github.com/indygreg/apple-platform-rs) (on `PATH`, or
+  `RCODESIGN=/path/to/rcodesign`) to sign the app ad hoc, which Apple Silicon needs to run it, and
+  `zip`.
+
+Neither is signed with a paid certificate, so people see a warning once:
+
+- **Windows** (`baren-setup-<version>.exe`): SmartScreen says "Windows protected your PC". Click
+  **More info**, then **Run anyway**. Baren installs for that user only (no admin rights), with
+  Start menu and desktop shortcuts, and `baren://` links (invites, file links) work after its
+  first start.
+- **macOS** (`-mac-arm64.zip` for Apple Silicon, `-mac-x64.zip` for Intel): unzip, move
+  **Baren.app** to Applications, then right-click it and choose **Open**. On macOS 15 and later,
+  open it once, then go to System Settings → Privacy & Security and click **Open Anyway**.
+
+A Windows code-signing certificate removes the SmartScreen step. An Apple Developer ID removes the
+Mac warning and is required for Mac auto-update; both would be set up in
+`apps/desktop/electron-builder.yml` (`win.signtoolOptions`, `mac.identity`).
 
 ## Invite a friend
 
@@ -165,13 +202,16 @@ RELEASE_TARGET=deploy@sync.example.com:/srv/baren/updates/ \
    Add `SMTP_URL` and `MAIL_FROM` ([Email (SMTP)](#email-smtp)) so codes and invites are emailed,
    and `UPDATES_DIR` so the app can update itself.
 
-2. **Build the app against it** and publish the first release, then give your friend the AppImage
-   (simplest: it updates itself without a password), deb or rpm from `apps/desktop/release/<version>/`:
+2. **Build the app against it** and publish the first release, then send your friend the download
+   link for their system (for example `https://sync.example.com/updates/baren-setup-0.1.0.exe`):
+   the Windows installer, a Mac zip, or on Linux the AppImage (simplest: it updates itself without
+   a password), deb or rpm.
    ```sh
    VITE_SERVER_URL=https://sync.example.com RELEASE_TARGET=deploy@sync.example.com:/srv/baren/updates/ \
-     pnpm release:linux
+     pnpm release:linux && pnpm release:win && pnpm release:mac
    ```
-   Later versions reach them automatically ([Releases and auto-update](#releases-and-auto-update)).
+   Later versions reach Linux and Windows installs automatically
+   ([Releases and auto-update](#releases-and-auto-update)).
 3. **Both of you create an account** (email + password; there is no Google/GitHub sign-in). The
    6-digit verification code arrives by email. Without SMTP it is in the server log
    (`journalctl -u baren-server`). A forgotten password is reset from **Forgot password?** on the

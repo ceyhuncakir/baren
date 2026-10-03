@@ -82,6 +82,18 @@ describe('update availability', () => {
       installOnQuit: false,
     })
     expect(updateAvailability({ ...packaged, packageType: 'rpm' })).toMatchObject({ kind: 'rpm' })
+    expect(updateAvailability({ ...packaged, platform: 'win32' })).toEqual({
+      enabled: true,
+      kind: 'win32',
+      installOnQuit: true,
+    })
+  })
+
+  it('is off for the ad-hoc-signed Mac builds', () => {
+    expect(updateAvailability({ ...packaged, platform: 'darwin' })).toEqual({
+      enabled: false,
+      reason: 'macOS builds without a Developer ID signature',
+    })
   })
 
   it('is disabled in dev, smoke runs, unpacked builds and without a feed', () => {

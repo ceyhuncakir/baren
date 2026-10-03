@@ -7,6 +7,10 @@
  * downloaded package through the system package manager, which asks for the admin password
  * via `pkexec` (polkit) when the user clicks "Restart to update". Anything else (an unpacked
  * directory, a tarball) cannot update itself.
+ *
+ * Windows: the per-user NSIS install replaces itself. macOS only installs an update signed with
+ * the same Developer ID as the running app, and our Mac builds are signed ad hoc, so they do not
+ * update (download a new zip instead).
  */
 export type InstallKind = 'appimage' | 'deb' | 'rpm' | 'pacman' | 'darwin' | 'win32' | 'dev'
 
@@ -50,8 +54,9 @@ export function updateAvailability(input: AvailabilityInput): Availability {
       : { enabled: false, reason: 'development build' }
   }
   const installOnQuit = !input.smoke
-  if (input.platform === 'darwin' || input.platform === 'win32') {
-    return { enabled: true, kind: input.platform, installOnQuit }
+  if (input.platform === 'win32') return { enabled: true, kind: 'win32', installOnQuit }
+  if (input.platform === 'darwin') {
+    return { enabled: false, reason: 'macOS builds without a Developer ID signature' }
   }
   if (input.appImagePath) return { enabled: true, kind: 'appimage', installOnQuit }
   const kind = PACKAGE_KINDS[input.packageType?.trim() ?? '']

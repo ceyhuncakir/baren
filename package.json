@@ -19,7 +19,9 @@
     "format:check": "prettier --check .",
     "build:native": "pnpm --filter @baren/core-native build",
     "package:linux": "pnpm build:native && pnpm --filter @baren/desktop package:linux",
-    "release:linux": "node scripts/release.mjs"
+    "release:linux": "node scripts/release.mjs",
+    "release:win": "node scripts/release.mjs --platform win",
+    "release:mac": "node scripts/release.mjs --platform mac"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

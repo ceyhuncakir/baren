@@ -19,3 +19,8 @@ napi-derive.workspace = true
 
 [build-dependencies]
 napi-build.workspace = true
+
+# Windows GNU builds (cross-compiled from Linux) look up N-API in the host process at runtime,
+# as MSVC builds always do: Electron exports it from its executable, not from a libnode.dll.
+[target.'cfg(all(windows, target_env = "gnu"))'.dependencies]
+napi = { workspace = true, features = ["dyn-symbols"] }
