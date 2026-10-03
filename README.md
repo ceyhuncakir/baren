@@ -1,6 +1,9 @@
-<p align="center"><img src="design/brand/baren-icon.png" width="128" height="128" alt="Baren"></p>
-
-<h1 align="center">Baren</h1>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/brand/baren-lockup-dark.png">
+    <img src="design/brand/baren-lockup.png" width="340" alt="Baren">
+  </picture>
+</p>
 
 Baren is a local-first, multiplayer design tool for the desktop. Your files live on your machine
 (a Rust core with SQLite), so the app works offline and does not need an account. When you share a
