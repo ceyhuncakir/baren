@@ -1,6 +1,6 @@
 <p align="center"><img src="design/brand/baren-icon.png" width="128" height="128" alt="Baren"></p>
 
-# Baren
+<h1 align="center">Baren</h1>
 
 Baren is a local-first, multiplayer design tool for the desktop. Your files live on your machine
 (a Rust core with SQLite), so the app works offline and does not need an account. When you share a
@@ -10,7 +10,7 @@ without conflicts. Coding agents can read and edit your designs through the MCP 
 the app. There is no billing: accounts are an email address and a password on your own server,
 and teams grow through email invites.
 
-![The Baren editor with a layer selected and the inspector open](design/reference/06-editor-selection-inspector.png)
+![Baren in action: an agent builds a pricing page live, every layer is real HTML and CSS, and teammates edit together](docs/baren-showcase.gif)
 
 - **Desktop app:** Electron + React 19 + TypeScript, with a custom DOM canvas that handles
   50,000-node documents at well over 60 fps.
@@ -178,13 +178,15 @@ RELEASE_TARGET=deploy@sync.example.com:/srv/baren/updates/ \
    you to send). The page has an **Open in Baren** button that launches the app on the
    invite (`baren://invite/<token>`). **Resend invite** emails a fresh link (the old one stops
    working).
-   - If the deep link handler is not registered (for example, when running from a dev build),
-     start the app with the link as an argument: `baren 'baren://invite/<token>'`.
-5. **Share a file.** In the editor, open **Share**, then either invite them by email or click
-   **Copy link**. Either action puts the file in the team. The file then appears in their Recents,
-   and while both of you have it open you see each other's edits, cursors and selections live.
-   Images you add (picker, drag and drop, or paste) are uploaded to the server and appear on their
-   side as well.
+   - Installed packages register the `baren://` handler, and so do dev builds (`pnpm dev`) on
+     Linux and Windows unless an installed Baren already has it. Otherwise start the app with the
+     link as an argument: `baren 'baren://invite/<token>'`.
+5. **Your files go into the team on their own.** While you are signed in, a file goes into your
+   current team when you open it, and Home uploads the rest of your local files in the background.
+   The Scratchpad and archived files stay on your machine, and viewers share nothing. Team files
+   appear in your teammates' Files and Recents within about 10 seconds, and while both of you have
+   a file open you see each other's edits, cursors and selections live. Images you add (picker,
+   drag and drop, or paste) are uploaded to the server and appear on their side as well.
 
 ## Connect your agent
 
@@ -318,8 +320,9 @@ BAREN_E2E_MAIL_DIR=/tmp/baren-mail VITE_SERVER_URL=http://127.0.0.1:8899 \
 ```
 
 They cover register → emailed code → verify, forgot → reset, email + password sign-in, an emailed
-invite accepted by a second user, invite re-send and password change, and a shared file whose
-images one client inserts and the other renders. With the same two variables,
+invite accepted by a second user, invite re-send and password change, a shared file whose
+images one client inserts and the other renders, and team files that reach a teammate's open
+Files screen on their own. With the same two variables,
 the Phase 3 suites run too (`pnpm test:visual` runs everything):
 
 ```sh
