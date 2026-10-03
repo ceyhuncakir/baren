@@ -646,7 +646,6 @@ test.describe('screens behaviour', () => {
     await name.fill('Studio')
     await name.press('Enter')
     await expect(page.getByRole('heading', { name: 'Studio settings' })).toBeVisible()
-    await expect(page.getByRole('navigation', { name: 'Team' }).getByText('Studio')).toBeVisible()
 
     await page.getByRole('button', { name: 'File access' }).click()
     await page.getByRole('menuitemcheckbox', { name: 'Only team members' }).click()
@@ -660,9 +659,9 @@ test.describe('screens behaviour', () => {
     await confirm.getByRole('textbox').fill('Studio')
     await confirm.getByRole('button', { name: 'Delete team' }).click()
     await expect(page).toHaveURL(/#\/recents$/)
-    await expect(
-      page.getByRole('navigation', { name: 'Team' }).getByText('Acme Labs'),
-    ).toBeVisible()
+    // The remaining team becomes current: Settings opens it.
+    await page.getByRole('navigation', { name: 'Team' }).getByText('Settings').click()
+    await expect(page.getByRole('heading', { name: 'Acme Labs settings' })).toBeVisible()
   })
 
   test('account menu: switch team, log out, sign back in where you were', async ({ page }) => {

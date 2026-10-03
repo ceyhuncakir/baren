@@ -5,7 +5,6 @@ import {
   ChevronRightIcon,
   ClockIcon,
   FooterLinks,
-  GraduationCapIcon,
   LayoutGridIcon,
   NavItem,
   PromoCard,
@@ -14,7 +13,6 @@ import {
   Sidebar,
   SidebarNav,
   SidebarSpacer,
-  StatusDot,
   UserIcon,
   UsersIcon,
 } from '@baren/ui'
@@ -135,7 +133,7 @@ function AgentsCard({ onDismiss }: { onDismiss: () => void }) {
   )
 }
 
-/** Home sidebar (artboards 01–03, 17). No billing: the team row carries no "Pro" badge. */
+/** Home sidebar (artboards 01–03, 17). */
 export const HomeSidebar = memo(function HomeSidebar({ active }: { active: SidebarItem }) {
   const [, navigate] = useLocation()
   const status = useSession((s) => s.status)
@@ -151,14 +149,9 @@ export const HomeSidebar = memo(function HomeSidebar({ active }: { active: Sideb
     if (active === 'settings') navigate(paths.files)
   }, [active, navigate])
 
-  let teamHeading
-  if (signedIn && team) {
-    teamHeading = (
-      <NavItem icon={<UsersIcon size={15} />} strong onClick={() => navigate(paths.teamMembers)}>
-        {team.name}
-      </NavItem>
-    )
-  } else if (signedIn && !hasTeams) {
+  // Signed in with a team, Settings opens it; otherwise the first team row leads to one.
+  let teamHeading = null
+  if (signedIn && !hasTeams) {
     teamHeading = (
       <NavItem
         icon={<UsersIcon size={15} />}
@@ -168,7 +161,7 @@ export const HomeSidebar = memo(function HomeSidebar({ active }: { active: Sideb
         Create a team
       </NavItem>
     )
-  } else {
+  } else if (!signedIn) {
     teamHeading = (
       <NavItem icon={<UsersIcon size={15} />} strong onClick={() => navigate(paths.signIn)}>
         Sign in to collaborate
@@ -189,13 +182,6 @@ export const HomeSidebar = memo(function HomeSidebar({ active }: { active: Sideb
           onClick={() => navigate(paths.recents)}
         >
           Recents
-        </NavItem>
-        <NavItem
-          icon={<GraduationCapIcon size={15} />}
-          trailing={<StatusDot tone="accent" />}
-          onClick={() => void bridge.shell.openExternal(LINKS.learn)}
-        >
-          Learn
         </NavItem>
       </SidebarNav>
       <SidebarNav aria-label="Team">

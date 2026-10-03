@@ -18,7 +18,7 @@ export interface StatusDotProps extends HTMLAttributes<HTMLSpanElement> {
   size?: number
 }
 
-/** Small status dot: "Active now" (green), "Not connected" (gray), "Learn" (blue). */
+/** Small status dot: "Active now" (green), "Not connected" (gray), accent (blue). */
 export function StatusDot({
   tone = 'neutral',
   size = 6,

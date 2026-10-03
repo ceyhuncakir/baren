@@ -16,7 +16,6 @@ export const HELP_LINKS = {
 export type HelpCommandId = keyof typeof HELP_LINKS
 
 export const LINKS = {
-  learn: `${SITE_URL}/learn`,
   agents: `${SITE_URL}/docs/mcp`,
   feedback: `${SITE_URL}/feedback`,
   whatsNew: HELP_LINKS['help.releaseNotes'],

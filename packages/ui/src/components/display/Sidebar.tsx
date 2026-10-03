@@ -29,7 +29,7 @@ export interface NavItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean
   /** Medium weight even when inactive (team heading row). */
   strong?: boolean
-  /** Right after the label (Learn's blue dot). */
+  /** Right after the label (e.g. a status dot). */
   trailing?: ReactNode
   /** Pushed to the far right (counts). */
   end?: ReactNode
