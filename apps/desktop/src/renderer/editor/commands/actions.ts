@@ -416,10 +416,16 @@ export class EditorActions {
           )
           return
         }
-        case 'link':
-          await copyText(fileLink(fileId, this.session.file?.remoteId ?? null, id))
+        case 'link': {
+          const remoteId = this.session.store.getState().remoteId ?? this.session.file?.remoteId
+          if (!remoteId) {
+            toast('Sign in and add this file to a team to get a link.')
+            return
+          }
+          await copyText(fileLink(remoteId, id))
           toast('Link copied')
           return
+        }
       }
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Copy failed')
@@ -580,7 +586,7 @@ export class EditorActions {
     return id
   }
 
-  /** Select `id` on its page (switching pages first) and zoom to it. */
+  /** Select `id` on its page (switching pages first) and zoom to it; a page: fit it. */
   reveal(id: string): void {
     const { doc, store } = this.session
     const page = pageOf(doc, realIdOf(id))
@@ -588,6 +594,7 @@ export class EditorActions {
     const finish = () => {
       const canvas = this.session.canvas.current
       if (!canvas) return
+      if (id === page) return canvas.zoomToFit({ animate: false })
       canvas.select([id])
       canvas.zoomToSelection({ animate: false })
     }

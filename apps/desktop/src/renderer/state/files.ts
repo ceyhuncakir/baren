@@ -39,6 +39,8 @@ const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 export const useFiles = create<FilesState>()((set, get) => {
   let inflight: Promise<void> | null = null
+  /** One more load after the running one, shared by the calls made while it runs. */
+  let again: Promise<void> | null = null
 
   const patch = (id: string, change: Partial<FileMeta>) =>
     set({ files: get().files.map((f) => (f.id === id ? { ...f, ...change } : f)) })
@@ -61,7 +63,15 @@ export const useFiles = create<FilesState>()((set, get) => {
     scratchpadId: initialScratchpad,
 
     load() {
-      if (inflight) return inflight
+      // The running load may have listed the files before the caller's change (an import, a
+      // team pull): a caller gets a list taken after its call.
+      if (inflight) {
+        again ??= inflight.then(() => {
+          again = null
+          return get().load()
+        })
+        return again
+      }
       if (get().status !== 'ready') set({ status: 'loading' })
       inflight = bridge.files
         .list()

@@ -1,9 +1,9 @@
 //! `/api/teams/:id/files`, `/api/files/:id[/snapshot]`.
 
 use axum::body::Bytes;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
-use axum::http::HeaderValue;
+use axum::http::{HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use baren_proto::dto::{CreateFileRequest, File, OkResponse, Role, UpdateFileRequest};
@@ -13,6 +13,7 @@ use loro::{ExportMode, LoroDoc};
 
 use crate::db::{new_id, now_ms, require_file_role, require_team_role, FileRow};
 use crate::error::{ApiError, ApiResult, JsonBody};
+use crate::html::{self, escape, heading, icons};
 use crate::rooms::store;
 use crate::session::AuthUser;
 use crate::state::AppState;
@@ -187,4 +188,47 @@ pub async fn snapshot(
     );
     headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
     Ok(response)
+}
+
+#[derive(serde::Deserialize)]
+pub struct LandingQuery {
+    node: Option<String>,
+}
+
+/// `GET /f/:id`: the page behind the app's "Copy link". It hands the file to the desktop app
+/// and says nothing about it: the app checks access when it opens the file. `?node=<id>` (a
+/// link to a layer) is passed on.
+pub async fn landing(Path(id): Path<String>, Query(query): Query<LandingQuery>) -> Response {
+    if !is_link_id(&id, 64, b"-") {
+        return html::page(
+            StatusCode::NOT_FOUND,
+            "Link not valid",
+            icons::ALERT,
+            &heading("This link is not valid", "Check the link and try again."),
+        );
+    }
+    let href = match query.node.filter(|n| is_link_id(n, 128, b"-_.@")) {
+        Some(node) => format!("baren://file/{id}?node={}", node.replace('@', "%40")),
+        None => format!("baren://file/{id}"),
+    };
+    let body = format!(
+        r#"{}
+<a class="button" href="{}">Open in Baren</a>
+<p>Don't have the app yet? Install Baren, then open this link again.</p>"#,
+        heading(
+            "Open this design",
+            "It opens in the Baren app. You need to be a member of its team to see it.",
+        ),
+        escape(&href),
+    );
+    html::page(StatusCode::OK, "Open file", icons::FILE, &body)
+}
+
+/// Ids in file links: ASCII letters, digits and `extra`, so they never need escaping.
+fn is_link_id(value: &str, max: usize, extra: &[u8]) -> bool {
+    !value.is_empty()
+        && value.len() <= max
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || extra.contains(&b))
 }

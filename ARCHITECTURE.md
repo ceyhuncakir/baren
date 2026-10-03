@@ -211,7 +211,7 @@ interface BarenBridge {
   export: { html(fileId: string, nodeId: string): Promise<string>; json(fileId: string): Promise<string> }
   auth:   { getToken(): Promise<string | null>; setToken(token: string | null): Promise<void> }  // safeStorage
   shell:  { openExternal(url: string): Promise<void> }   // http(s) only
-  onDeepLink(cb: (url: string) => void): () => void   // baren://invite/<token>
+  onDeepLink(cb: (url: string) => void): () => void   // baren://invite/<token>, baren://file/<id>[/<page>][?node=]
   app: { newWindow(): void; quit(): void; reload(): void; forceReload(): void; toggleDevTools(): void;
          toggleFullScreen(): void; checkForUpdates(): Promise<void>; version(): Promise<string> }
   theme: { initial: ResolvedTheme; preference(): Promise<ThemePreference>;
@@ -321,6 +321,9 @@ re-send, update feed) are listed in "Server additions" below.
   `PATCH /api/files/:id {name?, archived?}` · `DELETE /api/files/:id` · `GET /api/files/:id/snapshot` (binary).
   The server mirrors the live document's `meta.name` into the file list.
 - `GET /i/:token` → small HTML page with an "Open in Baren" button → `baren://invite/<token>`
+- `GET /f/:id[?node=<layer>]` → the same kind of page for "Copy link" → `baren://file/<id>[?node=…]`;
+  the app opens the file (pulling the team file first if needed) and checks access itself.
+  `baren://file/<id>[/<page>]` also takes a local file's id: the `url` in MCP results.
 
 Live sync: `GET /ws/files/:id?token=…` (WebSocket). Binary frames, first byte = message type:
 

@@ -26,7 +26,7 @@ draws them.
 | 05  | Editor — Canvas overview       | **done**    | 2.22%      | Virtualized artboards, LOD thumbnails below 25% zoom (images included), layer hover highlights the canvas. The zoom chip shows the real zoom (14%), where the reference design says 12%.                                                                                                   |
 | 06  | Editor — Selection & inspector | **partial** | 2.48%      | Every inspector section (layout, flex, radius, blending, fill, outline, border, shadows, filters, selection colours, typography); a scrub is one undo step. The rotation field now rotates (Phase 3). One fill per layer, not a stack.                                                     |
 | 07  | Editor — Theme tokens          | **done**    | 1.32%      | Add, rename, delete and recolour tokens; usage ("Used in"); the canvas updates live.                                                                                                                                                                                                       |
-| 08  | Editor — Share popover         | **partial** | 2.19%      | Invite (now emailed) and Copy link put the file in the team and start live sync. Role changes point to Team settings. "Copy link" produces `https://baren.dev/file/<id>`, which nothing serves yet.                                                                                        |
+| 08  | Editor — Share popover         | **partial** | 2.19%      | Invite (now emailed) and Copy link put the file in the team and start live sync. Role changes point to Team settings. "Copy link" produces the server's `/f/<id>` page, which opens the file in the app.                                                                                   |
 | 09  | Menu — File                    | **done**    | 3.37% †    | New Window, Quit.                                                                                                                                                                                                                                                                          |
 | 10  | Menu — Edit                    | **done**    | 3.45% †    | Driven by the command registry; enabled state follows the editor.                                                                                                                                                                                                                          |
 | 11  | Menu — View                    | **done**    | 4.42% †    | Reload, Force Reload, DevTools, Full Screen.                                                                                                                                                                                                                                               |
@@ -260,8 +260,8 @@ user's own dev session.
    brings it back on the next pull. Archiving or deleting on the server is not reflected locally.
 4. **Native vs JS core data are separate.** Files created while the JS fallback ran
    (`userData/core-js`) do not show up once the native core loads (`userData/core`).
-5. **"Copy link"** points at `https://baren.dev/file/<id>`, and the Help links point at `Baren`
-   pages; none of them exist yet.
+5. **Help links** point at `Baren` pages that do not exist yet. ("Copy link" now opens the file
+   through the server's `/f/<id>` page.)
 6. **Design follow-ups** (the reference designs change only in the design workstream): artboard
    20's tip still promises a link in the email; the Help menu's version label and update item states,
    dark menus/dialogs and the update card's other states are not drawn; artboard 33 omits the

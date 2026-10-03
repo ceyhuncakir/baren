@@ -1,18 +1,22 @@
 /**
- * baren:// deep links: `baren://invite/<token>`.
+ * baren:// deep links: `baren://invite/<token>` (the server's /i/<token> page) and
+ * `baren://file/<file id>[/<page id>][?node=<layer id>]`: a team file's server id (its /f/<id>
+ * page, from "Copy link") or a local file's id (the `url` in MCP results, with a page).
  *
  * Links arrive from the OS (argv on Linux/Windows, `open-url` on macOS) and are
- * untrusted. Only known kinds with a single URL-safe value are accepted;
- * they are forwarded to the renderer in canonical form.
+ * untrusted. Only known kinds with a single URL-safe value (plus a page id for files) are
+ * accepted; they are forwarded to the renderer in canonical form.
  */
 export const DEEP_LINK_SCHEME = 'baren'
-export const DEEP_LINK_KINDS = ['invite'] as const
+export const DEEP_LINK_KINDS = ['invite', 'file'] as const
 export type DeepLinkKind = (typeof DEEP_LINK_KINDS)[number]
 
 export interface DeepLink {
   kind: DeepLinkKind
-  /** The invite token. */
+  /** The invite token, or the file's id (server or local). */
   value: string
+  /** File links: the page in the file, if the link names one. */
+  page?: string
   /** Canonical URL handed to the renderer, e.g. `baren://invite/abc123`. */
   url: string
 }
@@ -20,6 +24,8 @@ export interface DeepLink {
 const MAX_URL_LENGTH = 4096
 const VALUE_RE = /^[A-Za-z0-9._~-]{1,1024}$/
 const PARAM_RE = /^[A-Za-z0-9._~-]{1,64}$/
+/** A page id (Loro TreeID, `<counter>@<peer>`). */
+const PAGE_RE = /^[A-Za-z0-9@._~-]{1,128}$/
 
 function isKind(value: string): value is DeepLinkKind {
   return (DEEP_LINK_KINDS as readonly string[]).includes(value)
@@ -50,10 +56,13 @@ export function parseDeepLink(raw: unknown): DeepLink | null {
   // `baren://invite/abc` parses with host "invite"; `baren:invite/abc` without one.
   const segments = url.pathname.split('/').filter((s) => s.length > 0)
   const kindRaw = (url.host || segments.shift() || '').toLowerCase()
-  if (!isKind(kindRaw) || segments.length !== 1) return null
+  if (!isKind(kindRaw) || segments.length < 1 || segments.length > (kindRaw === 'file' ? 2 : 1))
+    return null
 
   const value = safeDecode(segments[0] ?? '')
   if (value === null || !VALUE_RE.test(value)) return null
+  const page = segments[1] === undefined ? undefined : safeDecode(segments[1])
+  if (page === null || (page !== undefined && !PAGE_RE.test(page))) return null
 
   // Keep simple query parameters (e.g. a `state` value), re-encoded canonically.
   const params = new URLSearchParams()
@@ -62,10 +71,12 @@ export function parseDeepLink(raw: unknown): DeepLink | null {
     params.append(key, val)
   }
   const query = params.toString()
+  const path = page === undefined ? value : `${value}/${encodeURIComponent(page)}`
   return {
     kind: kindRaw,
     value,
-    url: `${DEEP_LINK_SCHEME}://${kindRaw}/${value}${query ? `?${query}` : ''}`,
+    ...(page !== undefined ? { page } : {}),
+    url: `${DEEP_LINK_SCHEME}://${kindRaw}/${path}${query ? `?${query}` : ''}`,
   }
 }
 

@@ -28,12 +28,39 @@ describe('parseDeepLink', () => {
     )
   })
 
+  it('accepts file links, keeping the layer', () => {
+    const id = '01a0fefe-0b75-71ce-b315-db36b3935047'
+    expect(parseDeepLink(`baren://file/${id}`)).toEqual({
+      kind: 'file',
+      value: id,
+      url: `baren://file/${id}`,
+    })
+    expect(parseDeepLink(`baren://file/${id}?node=47%401076`)?.url).toBe(
+      `baren://file/${id}?node=47%401076`,
+    )
+  })
+
+  it('accepts the page of MCP file links (local ids), encoded or not', () => {
+    const id = '0199a3f2-7c41-7e0a-9d11-5b2f3c4d5e6f'
+    expect(parseDeepLink(`baren://file/${id}/2@9651120170868898917`)).toEqual({
+      kind: 'file',
+      value: id,
+      page: '2@9651120170868898917',
+      url: `baren://file/${id}/2%409651120170868898917`,
+    })
+    expect(parseDeepLink(`baren://file/${id}/1%402?node=5%402`)?.url).toBe(
+      `baren://file/${id}/1%402?node=5%402`,
+    )
+  })
+
   it.each([
     ['other scheme', 'https://baren.dev/invite/abc'],
     ['unknown kind', 'baren://admin/abc'],
     ['auth kind (no longer used)', 'baren://auth/abc'],
     ['missing value', 'baren://invite/'],
     ['extra segments', 'baren://invite/abc/def'],
+    ['a third file segment', 'baren://file/abc/1@2/x'],
+    ['a bad page id', 'baren://file/abc/%3Cscript%3E'],
     ['traversal', 'baren://invite/..%2F..%2Fetc'],
     ['bad characters', 'baren://invite/<script>'],
     ['credentials', 'baren://user:pw@invite/abc'],

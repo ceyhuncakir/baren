@@ -5,7 +5,8 @@
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+import { recordCopies } from './copies'
 
 const MAIL_DIR = process.env['BAREN_E2E_MAIL_DIR']
 const SERVER = (process.env['VITE_SERVER_URL'] ?? 'http://127.0.0.1:8787').replace(/\/+$/, '')
@@ -54,6 +55,42 @@ async function createAccount(name: string, email: string, password: string): Pro
   return token
 }
 
+/** Accounts A and B, with B an editor in A's team (invite + accept through the API). */
+async function teamOfTwo() {
+  const stamp = Date.now()
+  const emailA = `ada-${stamp}@example.com`
+  const emailB = `bora-${stamp}@example.com`
+  const password = 'shared-passw0rd'
+  const tokenA = await createAccount('Ada Lovelace', emailA, password)
+  const tokenB = await createAccount('Bora Demir', emailB, password)
+
+  // B joins A's team (invite + accept through the API).
+  const me = await call<{ teams: { id: string; name: string }[] }>(
+    'GET',
+    '/api/me',
+    undefined,
+    tokenA,
+  )
+  const team = me.teams.find((t) => t.name === "Ada's Team")!
+  const { url } = await call<{ url: string }>(
+    'POST',
+    `/api/teams/${team.id}/invites`,
+    { role: 'editor', email: emailB },
+    tokenA,
+  )
+  const inviteToken = url.match(/\/i\/([^/?#]+)$/)![1]!
+  await call('POST', `/api/invites/${inviteToken}/accept`, {}, tokenB)
+  return { emailA, emailB, password, team, tokenB }
+}
+
+async function signIn(page: Page, email: string, password: string): Promise<void> {
+  await page.goto('/')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password', { exact: true }).fill(password)
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page).toHaveURL(/#\/recents$/)
+}
+
 test.describe('against a real server: team files', () => {
   test.skip(!MAIL_DIR, 'needs BAREN_E2E_MAIL_DIR + VITE_SERVER_URL (see server.spec.ts)')
 
@@ -61,29 +98,7 @@ test.describe('against a real server: team files', () => {
     browser,
   }) => {
     test.setTimeout(120_000)
-    const stamp = Date.now()
-    const emailA = `ada-${stamp}@example.com`
-    const emailB = `bora-${stamp}@example.com`
-    const password = 'shared-passw0rd'
-    const tokenA = await createAccount('Ada Lovelace', emailA, password)
-    const tokenB = await createAccount('Bora Demir', emailB, password)
-
-    // B joins A's team (invite + accept through the API).
-    const me = await call<{ teams: { id: string; name: string }[] }>(
-      'GET',
-      '/api/me',
-      undefined,
-      tokenA,
-    )
-    const team = me.teams.find((t) => t.name === "Ada's Team")!
-    const { url } = await call<{ url: string }>(
-      'POST',
-      `/api/teams/${team.id}/invites`,
-      { role: 'editor', email: emailB },
-      tokenA,
-    )
-    const inviteToken = url.match(/\/i\/([^/?#]+)$/)![1]!
-    await call('POST', `/api/invites/${inviteToken}/accept`, {}, tokenB)
+    const { emailA, emailB, password, team, tokenB } = await teamOfTwo()
     const teamFiles = async () => {
       const list = await call<{ name: string }[] | { files: { name: string }[] }>(
         'GET',
@@ -136,5 +151,54 @@ test.describe('against a real server: team files', () => {
         timeout: 30_000,
       })
     }
+  })
+
+  test('Copy link gives a link to the server that opens the file for a teammate', async ({
+    browser,
+  }) => {
+    test.setTimeout(120_000)
+    const { emailA, emailB, password } = await teamOfTwo()
+    const a = await (await browser.newContext()).newPage()
+    const copied = await recordCopies(a)
+    const b = await (await browser.newContext()).newPage()
+    const emitDeepLink = (url: string) =>
+      b.evaluate(
+        (u) =>
+          (
+            window as unknown as { __barenTest: { emitDeepLink(u: string): void } }
+          ).__barenTest.emitDeepLink(u),
+        url,
+      )
+
+    // A makes a file (it goes into the team) and copies its link.
+    await signIn(a, emailA, password)
+    await a.getByRole('button', { name: 'New file' }).click()
+    await expect(a).toHaveURL(/#\/file\//)
+    await a.getByRole('button', { name: 'Share', exact: true }).click()
+    await expect
+      .poll(
+        async () => {
+          await a.getByRole('button', { name: 'Copy link' }).click()
+          return copied()
+        },
+        { timeout: 15_000 },
+      )
+      .toMatch(new RegExp(`^${SERVER.replace(/[.]/g, '\\.')}/f/[0-9a-f-]{36}$`))
+    const link = await copied()
+    const remoteId = link.split('/f/')[1]!
+
+    // The page behind it opens the app on the file.
+    const page = await (await fetch(link)).text()
+    expect(page).toContain(`baren://file/${remoteId}`)
+
+    // B opens the link: the app pulls the file and opens it.
+    await signIn(b, emailB, password)
+    await emitDeepLink(`baren://file/${remoteId}`)
+    await expect(b).toHaveURL(/#\/file\//, { timeout: 15_000 })
+    await expect(b.getByRole('button', { name: 'Share', exact: true })).toBeVisible()
+
+    // A file in none of B's teams.
+    await emitDeepLink('baren://file/01a0fefe-0b75-71ce-b315-000000000000')
+    await expect(b.getByText("You don't have access to this file.", { exact: false })).toBeVisible()
   })
 })

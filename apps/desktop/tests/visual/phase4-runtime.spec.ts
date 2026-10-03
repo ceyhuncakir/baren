@@ -875,3 +875,47 @@ test.describe('agent runtime: budgets (contract §11.7)', () => {
     expect(write.median).toBeLessThan(100)
   })
 })
+
+test.describe('agent runtime: file links in results', () => {
+  test("a result's url opens that file at its page; a layer link selects the layer", async ({
+    page,
+  }) => {
+    type Hook = {
+      __barenEditor: {
+        snapshot(): { pageIds: string[]; nodes: Record<string, NodeLike> }
+        session: { store: { getState(): { pageId: string; selection: readonly string[] } } }
+      }
+      __barenTest: { emitDeepLink(url: string): void }
+    }
+    const emit = (url: string) =>
+      page.evaluate((u) => (window as unknown as Hook).__barenTest.emitDeepLink(u), url)
+    const state = () =>
+      page.evaluate(() => {
+        const s = (window as unknown as Hook).__barenEditor.session.store.getState()
+        return { pageId: s.pageId, selection: [...s.selection] }
+      })
+
+    await openEditor(page, '/?fixture=design#/file/f-acme')
+    const { first, logo, board } = await page.evaluate(() => {
+      const snap = (window as unknown as Hook).__barenEditor.snapshot()
+      const first = snap.pageIds[0] as string
+      const logo = snap.pageIds.find((id) => snap.nodes[id]?.name === 'Logo') as string
+      return { first, logo, board: snap.nodes[first]?.children[0] as string }
+    })
+    // get_basic_info's url names the local file and the page (baren://file/<id>/<page id>).
+    const info = await body<{ url: string }>(page, 'get_basic_info', { pageId: logo })
+    expect(info.url).toBe(`baren://file/f-acme/${logo}`)
+
+    // Clicked from Home (the OS hands the link to the app): the file opens on that page.
+    await page.evaluate(() => (location.hash = '#/recents'))
+    await expect(page.getByTestId('editor')).toHaveCount(0)
+    await emit(info.url)
+    await expect(page).toHaveURL(/#\/file\/f-acme$/)
+    await page.getByTestId('editor').waitFor()
+    await expect.poll(async () => (await state()).pageId).toBe(logo)
+
+    // A layer link while the file is open: back to the layer's page, selected.
+    await emit(`baren://file/f-acme?node=${encodeURIComponent(board)}`)
+    await expect.poll(state).toEqual({ pageId: first, selection: [board] })
+  })
+})

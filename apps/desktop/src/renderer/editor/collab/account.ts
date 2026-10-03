@@ -16,7 +16,7 @@ import { bridge } from '../../lib/bridge'
 import { autoShareTeam, filesToShare, shareOnce } from '../../state/autoShare'
 import { useFiles } from '../../state/files'
 import { useSession } from '../../state/session'
-import { SERVER_URL, SITE_URL, type FixtureMode } from '../lib/env'
+import { SERVER_URL, type FixtureMode } from '../lib/env'
 import type { EditorSession, FileMeta } from '../session/context'
 import type { Identity } from '../session/store'
 import { assetApiOf } from './assetSync'
@@ -248,8 +248,12 @@ export async function setLinkAccess(fixture: FixtureMode, teamId: string, access
   await api().teams.update(teamId, { fileAccess: access === 'view' ? 'link' : 'members' })
 }
 
-/** Link to the file (or a node in it) for "Copy link" / "Link to selection". */
-export function fileLink(fileId: string, remoteId: string | null, nodeId?: string): string {
-  const base = `${SITE_URL}/file/${encodeURIComponent(remoteId ?? fileId)}`
+/**
+ * Link to a team file (or a layer in it) for "Copy link" / "Copy link to selection": the
+ * server's /f/<id> page, which opens it in the app (`baren://file/<id>`). Only files in a team
+ * have one; the app checks access when it opens the link.
+ */
+export function fileLink(remoteId: string, nodeId?: string): string {
+  const base = `${SERVER_URL}/f/${encodeURIComponent(remoteId)}`
   return nodeId ? `${base}?node=${encodeURIComponent(nodeId)}` : base
 }

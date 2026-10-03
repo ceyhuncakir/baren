@@ -10,6 +10,7 @@ import * as schema from '@baren/schema'
 import { getTokens, toSnapshot } from '@baren/schema'
 import { Button } from '@baren/ui'
 import { useEffect, useRef, useState } from 'react'
+import { onReveal } from '../state/fileLinks'
 import { EditorLayout } from './EditorLayout'
 import { EditorProvider, type EditorSession } from './session/context'
 import { openSession, type SessionHandle } from './session/openSession'
@@ -70,6 +71,13 @@ export function EditorScreen({ fileId, onExit }: EditorScreenProps) {
     }
   }, [fileId])
 
+  // Layer links ("Copy link to selection"): select and zoom to the layer.
+  const session = state.status === 'ready' ? state.session : null
+  useEffect(() => {
+    if (!session) return
+    return onReveal(fileId, (nodeId) => revealWhenReady(session, nodeId))
+  }, [session, fileId])
+
   if (state.status === 'error') {
     return (
       <div className={css.status} role="alert">
@@ -88,6 +96,13 @@ export function EditorScreen({ fileId, onExit }: EditorScreenProps) {
       <EditorLayout />
     </EditorProvider>
   )
+}
+
+/** `actions.reveal` once the canvas has mounted and laid the page out (≈5 s at most). */
+function revealWhenReady(session: EditorSession, nodeId: string, frames = 300): void {
+  const canvas = session.canvas.current
+  if (canvas && canvas.getStats().pendingWork === 0) session.actions.reveal(nodeId)
+  else if (frames > 0) requestAnimationFrame(() => revealWhenReady(session, nodeId, frames - 1))
 }
 
 /**

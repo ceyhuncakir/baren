@@ -170,7 +170,11 @@ export function SharePopover() {
         return
       }
     }
-    const ok = await copyText(fileLink(session.fileId, remoteId ?? null))
+    if (!remoteId) {
+      toast('Sign in and add this file to a team to get a link.')
+      return
+    }
+    const ok = await copyText(fileLink(remoteId))
     toast(ok ? 'Link copied' : "Couldn't copy the link")
   }
 
