@@ -16,7 +16,7 @@ import { bridge } from '../../lib/bridge'
 import { SERVER_URL } from '../lib/env'
 import type { EditorSession } from '../session/context'
 import { toWireAgents } from '../../agent/presence'
-import { api, loadIdentity } from './account'
+import { api, autoShareOnOpen, loadIdentity } from './account'
 import { assetApiOf } from './assetSync'
 import { agentPresences, toRemotePresence } from './presence'
 
@@ -40,7 +40,8 @@ const CANVAS_WAIT_MS = 15_000
 
 export function useCollaboration(session: EditorSession): void {
   const { store } = session
-  // Set at open from FileMeta, or later when the file is shared to a team (SharePopover).
+  // Set at open from FileMeta, or later when the file is shared to a team (on open, or from
+  // the SharePopover).
   const remoteId = useStore(store, (s) => s.remoteId)
 
   useEffect(() => {
@@ -52,7 +53,14 @@ export function useCollaboration(session: EditorSession): void {
       if (cancelled) return
       session.teams = account?.teams ?? []
       store.setState({ identity: account?.identity ?? null })
-      if (!account || !remoteId || session.fixture.enabled) return
+      if (!account || session.fixture.enabled) return
+      if (!remoteId) {
+        // Not in a team yet: share it into the current one (this effect then runs again).
+        void autoShareOnOpen(session, account.teams).catch((error: unknown) =>
+          console.warn('[share]', error),
+        )
+        return
+      }
       const { connectFile } = await import('@baren/sync-client')
       if (cancelled) return
       connection = connectFile({

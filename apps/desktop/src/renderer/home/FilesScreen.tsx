@@ -16,6 +16,7 @@ import { api, errorMessage } from '../lib/api'
 import { bridge } from '../lib/bridge'
 import { isDesignFixture } from '../lib/fixture'
 import { signalAppReady } from '../lib/ready'
+import { autoShareTeam, shareLocalFilesOnce } from '../state/autoShare'
 import { selectView } from '../state/fileViews'
 import { useFiles } from '../state/files'
 import { useSession } from '../state/session'
@@ -28,6 +29,15 @@ import { FileListView } from './FileListView'
 import css from './Files.module.css'
 
 const TITLES: Record<HomeView, string> = { recents: 'Recents', files: 'Files', archive: 'Archive' }
+
+/** How often an open home screen syncs the team files (up and down). */
+const TEAM_FILES_POLL_MS = 10_000
+
+/** Images of a file shared from Home (lazy: reading the snapshot needs Loro). */
+async function uploadAssets(remoteId: string, snapshot: Uint8Array): Promise<void> {
+  const { uploadFileAssets } = await import('../state/uploadFileAssets')
+  await uploadFileAssets(remoteId, snapshot)
+}
 
 const VIEW_OPTIONS: ReadonlyArray<SegmentedOption<ViewMode>> = [
   { value: 'grid', icon: <LayoutGridIcon size={14} />, 'aria-label': 'Grid view' },
@@ -73,21 +83,44 @@ export function FilesScreen({ view }: { view: HomeView }) {
     void useFiles.getState().load()
   }, [])
 
-  // Files shared to the user's teams appear locally (imported once, then synced live).
+  // Team files both ways: local files go up into the current team (autoShare.ts), and files
+  // shared to the user's teams come down (imported once, then synced live). The server does
+  // not announce new team files, so this runs on open, when the window comes back and every
+  // TEAM_FILES_POLL_MS while it is visible: a teammate's new file shows up on its own.
   const signedIn = useSession((s) => s.status === 'signedIn')
   const teams = useSession((s) => s.teams)
+  const currentTeamId = useSession((s) => s.currentTeamId)
   useEffect(() => {
     if (!signedIn || teams.length === 0 || isDesignFixture) return
     let alive = true
-    void pullTeamFilesOnce(teams, { api, files: bridge.files })
-      .then(({ added }) => {
-        if (alive && added.length > 0) void useFiles.getState().load()
-      })
-      .catch(() => undefined)
+    const shareTo = autoShareTeam(teams, currentTeamId)
+    const sync = async () => {
+      let changed = false
+      if (shareTo) {
+        const { shared } = await shareLocalFilesOnce(shareTo.id, useFiles.getState().scratchpadId, {
+          api,
+          files: bridge.files,
+          uploadAssets,
+        })
+        changed = shared > 0
+      }
+      const { added } = await pullTeamFilesOnce(teams, { api, files: bridge.files })
+      if (alive && (changed || added.length > 0)) void useFiles.getState().load()
+    }
+    const run = () => {
+      if (document.visibilityState !== 'hidden') void sync().catch(() => undefined)
+    }
+    run()
+    const timer = window.setInterval(run, TEAM_FILES_POLL_MS)
+    window.addEventListener('focus', run)
+    document.addEventListener('visibilitychange', run)
     return () => {
       alive = false
+      window.clearInterval(timer)
+      window.removeEventListener('focus', run)
+      document.removeEventListener('visibilitychange', run)
     }
-  }, [signedIn, teams])
+  }, [signedIn, teams, currentTeamId])
 
   useEffect(() => {
     if (status === 'ready' || status === 'error') signalAppReady()

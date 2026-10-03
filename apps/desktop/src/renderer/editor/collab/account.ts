@@ -13,6 +13,9 @@ import {
 } from '@baren/sync-client/api'
 import { docAssetRefs, exportSnapshot, getDocName } from '@baren/schema'
 import { bridge } from '../../lib/bridge'
+import { autoShareTeam, filesToShare, shareOnce } from '../../state/autoShare'
+import { useFiles } from '../../state/files'
+import { useSession } from '../../state/session'
 import { SERVER_URL, SITE_URL, type FixtureMode } from '../lib/env'
 import type { EditorSession, FileMeta } from '../session/context'
 import type { Identity } from '../session/store'
@@ -184,23 +187,45 @@ export function shareToTeam(session: EditorSession, teamId: string): Promise<str
   let pending = sharing.get(session)
   if (!pending) {
     pending = (async () => {
-      const name = getDocName(session.doc) || session.file?.name || 'Untitled'
-      const remote = await api().files.create(teamId, {
-        name,
-        snapshot: exportSnapshot(session.doc),
+      // Home may be uploading the same file in the background (autoShare.ts): one upload.
+      const shared = await shareOnce(session.fileId, async () => {
+        const name = getDocName(session.doc) || session.file?.name || 'Untitled'
+        const remote = await api().files.create(teamId, {
+          name,
+          snapshot: exportSnapshot(session.doc),
+        })
+        await bridge.files.setRemote(session.fileId, teamId, remote.id)
+        return { teamId, remoteId: remote.id }
       })
-      await bridge.files.setRemote(session.fileId, teamId, remote.id)
-      if (session.file) session.file = { ...session.file, teamId, remoteId: remote.id }
+      const { remoteId } = shared
+      if (session.file) session.file = { ...session.file, teamId: shared.teamId, remoteId }
       // Upload the images the file already uses right away (members may open it next).
       const assetApi = assetApiOf(api())
       if (assetApi)
-        void session.assets.attach({ fileId: remote.id, api: assetApi }, docAssetRefs(session.doc))
-      session.store.setState({ remoteId: remote.id })
-      return remote.id
+        void session.assets.attach({ fileId: remoteId, api: assetApi }, docAssetRefs(session.doc))
+      session.store.setState({ remoteId })
+      return remoteId
     })().finally(() => sharing.delete(session))
     sharing.set(session, pending)
   }
   return pending
+}
+
+/**
+ * A file opened while signed in goes into the current team (autoShare.ts), unless it is the
+ * Scratchpad or archived, or the user may only view that team. Sharing sets `remoteId`, so
+ * `useCollaboration` connects right after.
+ */
+export async function autoShareOnOpen(
+  session: EditorSession,
+  teams: readonly Team[],
+): Promise<void> {
+  const team = autoShareTeam(teams, useSession.getState().currentTeamId)
+  if (!team) return
+  const files = await bridge.files.list()
+  if (!filesToShare(files, useFiles.getState().scratchpadId).some((f) => f.id === session.fileId))
+    return
+  await shareToTeam(session, team.id)
 }
 
 /** Invite by email into the file's team; returns the shareable invite URL. */
