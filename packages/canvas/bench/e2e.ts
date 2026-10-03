@@ -467,6 +467,23 @@ const api = {
   elementOf: (id: string): Element | null => stage.querySelector(`[data-nid="${id}"]`),
   assetUrls,
   createNode: (input: Parameters<typeof createNode>[1]) => createNode(doc, input),
+  /** A layer created the way an agent's tool call creates it (one `agent:` commit). */
+  agentCreate: (input: Parameters<typeof createNode>[1]): string =>
+    transact(doc, () => createNode(doc, input), { origin: 'agent:write_html' }),
+  /** A style edit the way an agent's tool call makes it. */
+  agentSetStyle: (id: string, key: string, value: StyleValue): void =>
+    transact(doc, () => setStyle(doc, id, key, value), { origin: 'agent:update_styles' }),
+  /** A rename the way an agent's tool call makes it. */
+  agentRename: (id: string, name: string): void =>
+    transact(doc, () => setNodeProps(doc, id, { name }), { origin: 'agent:rename_nodes' }),
+  /** A layer a collaborator created (imported, no origin). */
+  remoteCreate: (input: Parameters<typeof createNode>[1]): string => {
+    let id = ''
+    remote((d) => {
+      id = createNode(d, input)
+    })
+    return id
+  },
   p3,
   sync,
   /** Switch to the Phase 3 page at a fixed viewport (world (x, y) at client (x + 50, y + 50)). */

@@ -97,8 +97,8 @@
     var(--shadow-identity);
 }
 
-/* MCP agents (34–36): a rounded square (r6 at every size) in the agent accent, white sparkle.
-   Not clipped, so the presence dot can sit on the corner. */
+/* MCP agents (34–36): a rounded square (r6 at every size) in the agent accent holding the
+   Baren medallion. Not clipped, so the presence dot can sit on the corner. */
 .agent {
   overflow: visible;
   border-radius: var(--radius-md);
@@ -107,10 +107,21 @@
   color: var(--color-on-accent);
 }
 
+/* The medallion (sized inline, inside the square, unlike a full-bleed photo). */
+.mark {
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+}
+
 /* An agent that is not active (36 "Last active 2 hours ago"). */
 .idle {
   background: var(--color-muted);
   color: var(--color-foreground-muted);
+}
+
+.idle .mark {
+  filter: grayscale(1);
+  opacity: 0.55;
 }
 
 /* Presence dot (36): 8 px success, 2 px background ring, bottom-right offset −3. */

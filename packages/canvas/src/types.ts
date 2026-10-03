@@ -53,8 +53,8 @@ export interface TransientChange {
  *
  * `kind: 'agent'` entries are MCP agents (Phase 4 contract §10.4): the overlay ignores `color`
  * and `cursor`, keeps the top-level artboards of `selection` that are on the current page (the
- * agent's working set) and draws the agent ring, glow, sweep and one "<badge> is working" badge
- * per artboard, in the agent accent (`OverlayTheme.agent*`).
+ * agent's working set) and draws the agent ring, halo and glow plus one island (the Baren
+ * medallion and the agents' names) per artboard, in the agent accent (`OverlayTheme.agent*`).
  */
 export interface RemotePresence {
   userId: string
@@ -67,7 +67,7 @@ export interface RemotePresence {
   transient?: TransientChange | null
   /** Default `user`. */
   kind?: 'user' | 'agent'
-  /** Agents: the display name shown in the badge (falls back to `name`). */
+  /** Agents: the display name shown in the island (falls back to `name`). */
   badge?: string
 }
 
@@ -102,11 +102,11 @@ export interface OverlayTheme {
   marqueeFill: string
   /** Main components, instances and their content (`--color-overlay-component`). */
   component: string
-  /** Agent badge fill and working-edge sweep (`--color-overlay-agent`). */
+  /** Agent ring and island fill (`--color-overlay-agent`). */
   agent: string
-  /** 2 px ring around an artboard an agent is editing (`--color-agent-ring`). */
+  /** 4 px translucent halo around that ring (`--color-agent-ring`). */
   agentRing: string
-  /** Soft glow outside that ring (`--color-agent-glow`). */
+  /** Soft glow outside the ring (`--color-agent-glow`). */
   agentGlow: string
   fontFamily: string
 }

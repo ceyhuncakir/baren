@@ -2,7 +2,7 @@
  * Agents in an open file (contract §10.2): the local ones (main's `agent:presence` for this
  * file: agents connected to this app) and the remote ones (relayed by collaborators' presence
  * `agents` field), merged into `EditorState.agents`, and turned into canvas presence entries of
- * `kind: 'agent'` (ring, glow, sweep and "<name> is working" badge on their working artboards).
+ * `kind: 'agent'` (ring, halo, glow and an island with their name on their working artboards).
  */
 import type { RemotePresence } from '@baren/canvas'
 import type { PeerPresence } from '@baren/sync-client'

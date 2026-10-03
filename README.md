@@ -262,8 +262,9 @@ hidden window.
    AppImage for AppImage installs; `node <shim>` works too.)
 
 3. Ask the agent to design something ("Make a pricing page in Baren"). The status line
-   turns to **Connected** with the agent's name; artboards it is editing show an "… is working"
-   badge until it calls `finish_working_on_nodes` (or after two minutes idle), and
+   turns to **Connected** with the agent's name; artboards it is editing get a vermilion ring
+   and an island with the agent's name until it calls `finish_working_on_nodes` (or after two
+   minutes idle), and
    collaborators in a shared file see the agent next to you in the inspector. Each tool call is
    one undo step for you (Ctrl+Z).
 

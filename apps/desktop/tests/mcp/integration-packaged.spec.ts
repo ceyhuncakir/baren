@@ -170,8 +170,8 @@ async function overlayShowsAgent(page: Page): Promise<boolean> {
     const d = ctx.getImageData(0, 0, c.width, c.height).data
     for (let i = 0; i < d.length; i += 4) {
       const [r, g, b, a] = [d[i] ?? 0, d[i + 1] ?? 0, d[i + 2] ?? 0, d[i + 3] ?? 0]
-      // --color-agent #d21f75 (light theme).
-      if (a > 200 && r > 190 && g < 110 && b > 90 && b < 180) return true
+      // --color-agent #d0391e.
+      if (a > 200 && r > 180 && g > 25 && g < 95 && b < 70) return true
     }
     return false
   })

@@ -99,11 +99,11 @@
   --color-component-subtle: #39334d;
 
   /* 5. Phase 4 agent accent (docs/phase4/design-tokens.md; artboards 34–36, D34, D35) --------
-     Light values: #d21f75 / #d21f7552 / #d21f752e. --color-overlay-agent on :root follows
+     Light values: #d0391e / #d0391e1a / #d0391e33. --color-overlay-agent on :root follows
      var(--color-agent) in both themes. */
-  --color-agent: #ec5a9c;              /* agent avatars, "… is working" badge, sweep */
-  --color-agent-ring: #ec5a9c59;       /* 2 px ring around an artboard an agent is editing */
-  --color-agent-glow: #ec5a9c33;       /* its glow */
+  --color-agent: #d0391e;              /* agent avatars, the island and the ring */
+  --color-agent-ring: #d0391e26;       /* the ring's halo */
+  --color-agent-glow: #d0391e40;       /* its glow */
 }
 
 /*

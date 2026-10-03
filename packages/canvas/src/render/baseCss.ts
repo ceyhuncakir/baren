@@ -26,6 +26,9 @@ const CSS = `
 .ic-drag>*{position:absolute!important;margin:0!important;pointer-events:none!important;}
 .ic-drag-src{visibility:hidden!important;}
 .ic-hidden{display:none!important;}
+.ic-incoming{opacity:0!important;}
+.ic-revealing{animation:ic-reveal 320ms ease-out;}
+@keyframes ic-reveal{from{opacity:0;}}
 .ic-editing{user-select:text;-webkit-user-select:text;cursor:text;outline:none;caret-color:currentColor;}
 `
 

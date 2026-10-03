@@ -5,9 +5,7 @@
  *    more than 24/255, 3 % budget (the Phase 3 metric of editor.spec.ts) — with
  *    `?fixture=design&mcp=<state>`: `not-connected` for 34/D34, `connected` for 35/D35/36. The
  *    agent of 35 is injected as the runtime receives it from main (`window.__barenAgent
- *    .presence`, the mock bridge's agent loop). The sweep is frozen where the reference draws it
- *    (head on the top-right corner) with the overlay's test-only `__barenAgentSweepPhase = 0`
- *    instead of emulating reduced motion (which would draw the static 1.5 px ring instead).
+ *    .presence`, the mock bridge's agent loop).
  * 2. Behaviour: the Connect dialog's segments, masking, Reveal, Copy, the Switch, Regenerate
  *    token and the remembered segment; the MCP section and the home card for every `?mcp=`
  *    state and live status changes; agent avatars and badges for injected presence; every
@@ -51,12 +49,6 @@ function url(opts: { mcp?: string; theme?: 'dark' | 'light'; scene?: string; has
   if (opts.mcp) q.push(`mcp=${opts.mcp}`)
   if (opts.theme) q.push(`theme=${opts.theme}`)
   return `/?${q.join('&')}${opts.hash}`
-}
-
-async function freezeSweep(page: Page) {
-  await page.addInitScript(() => {
-    ;(globalThis as { __barenAgentSweepPhase?: number }).__barenAgentSweepPhase = 0
-  })
 }
 
 interface CanvasStatsLike {
@@ -255,8 +247,8 @@ async function overlayHasAgent(page: Page, x: number, y: number, w: number, h: n
       const d = ctx.getImageData(rx - box.left, ry - box.top, rw, rh).data
       for (let i = 0; i < d.length; i += 4) {
         const [r, g, b, a] = [d[i] ?? 0, d[i + 1] ?? 0, d[i + 2] ?? 0, d[i + 3] ?? 0]
-        // --color-agent #d21f75 (light) / #ec5a9c (dark), opaque.
-        if (a > 200 && r > 190 && g < 110 && b > 90 && b < 180) return true
+        // --color-agent #d0391e (light and dark), opaque.
+        if (a > 200 && r > 180 && g > 25 && g < 95 && b < 70) return true
       }
       return false
     },
@@ -310,7 +302,6 @@ test.describe('Phase 4 artboards vs references', () => {
     test(`${key} Editor — Agent working${key === 'D35' ? ' (dark)' : ''}`, async ({
       page,
     }, testInfo) => {
-      await freezeSweep(page)
       await openEditor(
         page,
         url({
@@ -553,7 +544,6 @@ test.describe('agents in the editor', () => {
   test('avatars and the working badge follow injected presence and clear with it', async ({
     page,
   }) => {
-    await freezeSweep(page)
     await openEditor(
       page,
       url({ mcp: 'connected', scene: PICKER_SCENE, hash: `#/file/${LIBRARY}` }),

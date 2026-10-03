@@ -12,6 +12,7 @@ import {
   type PenOverlay,
   type VectorEditOverlay,
 } from './overlay.ts'
+import type { IncomingOverlay } from './incoming.ts'
 
 /* ---------------------------------------------------------------- agents (Phase 4 §10.4) */
 
@@ -43,11 +44,11 @@ export function agentWork(
   return out
 }
 
-/** "Claude Code is working", "Claude Code and Cursor are working", "A, B and C are working". */
+/** The island text: "Claude Code", "Claude Code & Cursor", "A, B & C". */
 export function agentBadgeText(names: readonly string[]): string {
   const list = names.length > 0 ? names : ['Agent']
-  if (list.length === 1) return `${list[0]} is working`
-  return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]} are working`
+  if (list.length === 1) return list[0] as string
+  return `${list.slice(0, -1).join(', ')} & ${list[list.length - 1]}`
 }
 
 export interface OverlayInput {
@@ -67,6 +68,8 @@ export interface OverlayInput {
   vector?: VectorEditOverlay | null
   /** World frame of the main component of the selected instance (outlined 2 px outside). */
   mainOutline?: NodeFrame | null
+  /** Layers an agent just added (placeholders, already timed by the controller). */
+  incoming?: readonly IncomingOverlay[]
 }
 
 /** World frames of the selection (gesture previews win over measured frames). */
@@ -147,6 +150,7 @@ function selectionSizeLabel(
 export function buildOverlayModel(input: OverlayInput): OverlayModel {
   const { scenes, gesture, viewport: v } = input
   const model = emptyOverlayModel(v)
+  if (input.incoming) model.incoming = [...input.incoming]
   const preview = gesture?.previewRects()
   const selected = new Set(input.selection)
   const hoverTop = input.hoverId && scenes.records.has(input.hoverId) ? input.hoverId : null

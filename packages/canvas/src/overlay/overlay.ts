@@ -2,6 +2,8 @@ import { frameCorners, type NodeFrame } from '@baren/schema'
 import type { Guide } from '../math/snap.ts'
 import { worldRectToScreen, worldToScreen } from '../math/viewport.ts'
 import type { OverlayTheme, Point, Rect, Viewport } from '../types.ts'
+import { agentMark } from './agentMark.ts'
+import type { IncomingOverlay } from './incoming.ts'
 
 /**
  * Screen-space overlay drawn with Canvas 2D: artboard labels, hover and
@@ -15,12 +17,11 @@ import type { OverlayTheme, Point, Rect, Viewport } from '../types.ts'
  * 6×6 white handles with a 1px blue border, an 18px blue size pill (11px/500
  * white text, radius 4) 7px below the box, 11px labels 5px above artboards.
  *
- * Agents (Phase 4 contract §10.4, artboard 35): every artboard an MCP agent is working on gets
- * a 2 px ring in --color-agent-ring just outside it, a --color-agent-glow glow (CSS
- * `0 0 18px 2px`), a bright sweep travelling clockwise around the ring (one lap per 2.4 s; a
- * static 1.5 px --color-overlay-agent ring under prefers-reduced-motion) and one
- * "<name> is working" badge right-aligned in its label row. While a sweep is on screen
- * `animating` is true and the controller redraws the overlay at ≤ 30 fps.
+ * Agents (Phase 4 contract §10.4): every artboard an MCP agent is working on gets a 2 px
+ * --color-overlay-agent ring just outside it, a 4 px --color-agent-ring halo and a
+ * --color-agent-glow glow (CSS `0 0 24px 2px`), plus an island fused to the ring's top edge and
+ * right-aligned with it: the Baren medallion and the agents' names (only the medallion when the
+ * artboard is narrower than the island).
  *
  * Colours are app chrome and follow the host's theme: unless the host passes them in
  * `theme`, they are read from CSS custom properties (THEME_VARS) on the canvas container,
@@ -36,9 +37,9 @@ export const DEFAULT_THEME: OverlayTheme = {
   snap: '#FF3B5C',
   marqueeFill: 'rgba(47, 128, 255, 0.08)',
   component: '#7B4DFF',
-  agent: '#D21F75',
-  agentRing: 'rgba(210, 31, 117, 0.32)',
-  agentGlow: 'rgba(210, 31, 117, 0.18)',
+  agent: '#D0391E',
+  agentRing: 'rgba(208, 57, 30, 0.1)',
+  agentGlow: 'rgba(208, 57, 30, 0.2)',
   fontFamily: "'Inter Variable', Inter, system-ui, sans-serif",
 }
 
@@ -139,6 +140,8 @@ export interface OverlayModel {
   remotes: RemoteOverlay[]
   /** Visible artboards with working agents. */
   agents: AgentOverlay[]
+  /** Layers an agent just added: placeholders where they land (incoming.ts). */
+  incoming: IncomingOverlay[]
 }
 
 export function emptyOverlayModel(viewport: Viewport): OverlayModel {
@@ -165,79 +168,17 @@ export function emptyOverlayModel(viewport: Viewport): OverlayModel {
     mainOutline: null,
     remotes: [],
     agents: [],
+    incoming: [],
   }
 }
 
-/* ---------------------------------------------------------------- agent sweep */
-
-/** One lap of the sweep (ms, linear). */
-export const AGENT_SWEEP_PERIOD_MS = 2400
-/** Fade lengths behind and ahead of the sweep's head, as shares of the ring's perimeter. */
-const SWEEP_TRAIL = 0.125
-const SWEEP_LEAD = 0.085
-
-interface SweepGlobals {
-  /**
-   * Test-only (visual tests, design review): a fixed sweep phase in [0, 1) — 0 puts the head
-   * on the top-right corner as drawn in artboard 35 — instead of the clock. A frozen sweep
-   * does not animate.
-   */
-  __barenAgentSweepPhase?: number
-}
-
-let reducedMotionQuery: MediaQueryList | null | undefined
-
-function reducedMotion(): MediaQueryList | null {
-  if (reducedMotionQuery === undefined) {
-    reducedMotionQuery =
-      typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null
-  }
-  return reducedMotionQuery
-}
-
-/**
- * The sweep's phase now (0 = head on the artboard's top-right corner, increasing clockwise),
- * `null` when there is no sweep (reduced motion), and whether it moves.
- */
-export function agentSweep(now: number): { phase: number | null; moving: boolean } {
-  if (reducedMotion()?.matches) return { phase: null, moving: false }
-  const fixed = (globalThis as SweepGlobals).__barenAgentSweepPhase
-  if (typeof fixed === 'number' && Number.isFinite(fixed)) {
-    return { phase: ((fixed % 1) + 1) % 1, moving: false }
-  }
-  return { phase: (now / AGENT_SWEEP_PERIOD_MS) % 1, moving: true }
-}
-
-/** `color` (hex or rgb[a]) with its alpha multiplied by `alpha`, as rgba(); null if unparsable. */
-export function withAlpha(color: string, alpha: number): string | null {
+/** `color` fully transparent (same hue, so gradients fade without a grey fringe). */
+function transparentOf(color: string): string {
   const c = color.trim()
-  let r: number
-  let g: number
-  let b: number
-  let a = 1
-  const hex = /^#([0-9a-f]{3,8})$/i.exec(c)
-  if (hex) {
-    let h = hex[1] as string
-    if (h.length === 3 || h.length === 4) h = [...h].map((ch) => ch + ch).join('')
-    if (h.length !== 6 && h.length !== 8) return null
-    r = parseInt(h.slice(0, 2), 16)
-    g = parseInt(h.slice(2, 4), 16)
-    b = parseInt(h.slice(4, 6), 16)
-    if (h.length === 8) a = parseInt(h.slice(6, 8), 16) / 255
-  } else {
-    const fn = /^rgba?\(([^)]+)\)$/i.exec(c)
-    if (!fn) return null
-    const parts = (fn[1] as string).split(/[\s,/]+/).filter(Boolean)
-    if (parts.length < 3) return null
-    ;[r, g, b] = parts.slice(0, 3).map((p) => Number.parseFloat(p)) as [number, number, number]
-    if (parts[3] !== undefined) {
-      const p = parts[3]
-      a = p.endsWith('%') ? Number.parseFloat(p) / 100 : Number.parseFloat(p)
-    }
-    if (![r, g, b, a].every(Number.isFinite)) return null
-  }
-  const out = Math.max(0, Math.min(1, a * alpha))
-  return `rgba(${r}, ${g}, ${b}, ${Math.round(out * 1000) / 1000})`
+  const hex = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(c)
+  if (hex) return `#${hex[1]}00`
+  const rgb = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(c)
+  return rgb ? `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, 0)` : 'rgba(0, 0, 0, 0)'
 }
 
 /** Screen corners of a world rect or frame. */
@@ -252,24 +193,27 @@ function isRotated(r: Rect | NodeFrame): r is NodeFrame {
 
 const LABEL_LINE = 14
 const LABEL_GAP = 5
-/* Agent badge (35): an 18 px pill whose bottom is 6 px above the artboard, right-aligned to
-   its right edge; padding 0 6 0 5, a 10 px sparkle, gap 4, 11/500 text. */
-const BADGE_HEIGHT = 18
-const BADGE_GAP = 6
-const BADGE_PAD_LEFT = 5
-const BADGE_PAD_RIGHT = 6
-const BADGE_ICON = 10
-const BADGE_ICON_GAP = 4
-/** Space kept between a label's name and the badge. */
+/* Agent island: a tab rising from the ring's top edge, flush with its outer right edge, radius 8
+   on top and a concave 8 px fillet into the ring on the left; a 16 px medallion, 12/600 names. */
+const ISLAND_HEIGHT = 24
+const ISLAND_PAD_LEFT = 4
+const ISLAND_PAD_RIGHT = 10
+const ISLAND_MARK = 16
+const ISLAND_GAP = 6
+const ISLAND_RADIUS = 8
+const ISLAND_FILLET = 8
+const ISLAND_FONT_PX = 12
+/** Shown in place of the medallion until it has decoded (the seal's cream). */
+const MARK_FALLBACK = '#F5EFE5'
+/** Space kept between a label's name and the island. */
 const BADGE_MARGIN = 8
 const AGENT_RING = 2
-const AGENT_RING_STATIC = 1.5
-/** CSS `0 0 18px 2px`: 18 px blur (σ 9) of the artboard grown by 2 px. */
-const AGENT_GLOW_BLUR = 18
+const AGENT_HALO = 4
+/** Corner radius of an incoming-layer placeholder (screen px). */
+const INCOMING_RADIUS = 6
+/** CSS `0 0 24px 2px`: 24 px blur (σ 12) of the artboard grown by 2 px. */
+const AGENT_GLOW_BLUR = 24
 const AGENT_GLOW_SPREAD = 2
-/** The agent sparkle (lucide sparkle) on a 24 px grid. */
-const SPARKLE_PATH =
-  'M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'
 const LABEL_FONT_PX = 11
 const PILL_HEIGHT = 18
 const PILL_PAD = 6
@@ -306,24 +250,17 @@ export class Overlay {
   private readonly explicitTheme: Partial<OverlayTheme>
   private readonly themeObserver: MutationObserver | null = null
   private lastModel: OverlayModel | null = null
-  private sparkle: Path2D | null = null
   private readonly onChange: (() => void) | null
-  private readonly motionQuery: MediaQueryList | null
-  private readonly onMotionChange = () => this.onChange?.()
   theme: OverlayTheme
-  /** The last draw showed a moving agent sweep: the host keeps redrawing (≤ 30 fps). */
-  animating = false
 
   /**
    * `onChange` asks the host for a redraw when something the overlay reads by itself changed
-   * (reduced motion turned on or off).
+   * (the agent medallion finished loading).
    */
   constructor(parent: HTMLElement, theme: Partial<OverlayTheme> = {}, onChange?: () => void) {
     this.parent = parent
     this.explicitTheme = theme
     this.onChange = onChange ?? null
-    this.motionQuery = reducedMotion()
-    this.motionQuery?.addEventListener?.('change', this.onMotionChange)
     this.theme = this.resolveTheme()
     this.canvas = document.createElement('canvas')
     this.canvas.className = 'ic-overlay'
@@ -395,7 +332,7 @@ export class Overlay {
     return null
   }
 
-  draw(m: OverlayModel, now: number = performance.now()): void {
+  draw(m: OverlayModel): void {
     this.lastModel = m
     const { ctx, dpr } = this
     ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -404,8 +341,8 @@ export class Overlay {
     const v = m.viewport
 
     this.drawLabels(m.labels, v)
-    this.animating = false
-    if (m.agents.length > 0) this.drawAgents(m.agents, v, now)
+    if (m.agents.length > 0) this.drawAgents(m.agents, v)
+    if (m.incoming.length > 0) this.drawIncoming(m.incoming, v)
 
     for (const r of m.remotes) {
       for (const rect of r.rects) this.outlineAny(v, rect, r.color, OUTLINE)
@@ -723,7 +660,7 @@ export class Overlay {
       ctx.font = f
       let room = l.component ? Math.max(s.width, COMPONENT_LABEL_MAX) : s.width
       if (l.badge !== undefined)
-        room = Math.min(room, s.width - this.badgeWidth(l.badge) - BADGE_MARGIN)
+        room = Math.min(room, s.width - this.islandWidth(l.badge) - BADGE_MARGIN)
       const text = this.truncate(l.name, Math.max(0, room - icon), f)
       if (!text) continue
       const top = s.y - LABEL_GAP - LABEL_LINE
@@ -752,43 +689,39 @@ export class Overlay {
 
   /* ---------------------------------------------------------------- agents */
 
-  private badgeFont(): string {
-    return `500 ${LABEL_FONT_PX}px ${this.theme.fontFamily}`
+  private islandFont(): string {
+    return `600 ${ISLAND_FONT_PX}px ${this.theme.fontFamily}`
   }
 
-  /** Full width of an agent badge with this text. */
-  private badgeWidth(text: string): number {
+  /** Full width of an agent island with this text. */
+  private islandWidth(text: string): number {
     return Math.round(
-      BADGE_PAD_LEFT +
-        BADGE_ICON +
-        BADGE_ICON_GAP +
-        this.textWidth(text, this.badgeFont()) +
-        BADGE_PAD_RIGHT,
+      ISLAND_PAD_LEFT +
+        ISLAND_MARK +
+        ISLAND_GAP +
+        this.textWidth(text, this.islandFont()) +
+        ISLAND_PAD_RIGHT,
     )
   }
 
-  private drawAgents(agents: readonly AgentOverlay[], v: Viewport, now: number): void {
-    const { ctx } = this
-    const sweep = agentSweep(now)
+  private drawAgents(agents: readonly AgentOverlay[], v: Viewport): void {
     for (const a of agents) {
       const s = worldRectToScreen(v, a.bounds)
       const x0 = this.snap(s.x)
       const y0 = this.snap(s.y)
       const x1 = this.snap(s.x + s.width)
       const y1 = this.snap(s.y + s.height)
-      // Off screen (the glow included): nothing to draw.
-      const reach = AGENT_GLOW_BLUR + AGENT_GLOW_SPREAD + BADGE_GAP + BADGE_HEIGHT
+      // Off screen (the glow and the island included): nothing to draw.
+      const reach = AGENT_GLOW_BLUR + AGENT_GLOW_SPREAD + AGENT_RING + ISLAND_HEIGHT
       if (x1 < -reach || y1 < -reach || x0 > this.width + reach || y0 > this.height + reach)
         continue
-      this.drawAgentEdge(x0, y0, x1, y1, sweep.phase)
-      if (sweep.moving) this.animating = true
-      this.drawBadge(a.badge, x0, x1, y0)
+      this.drawAgentEdge(x0, y0, x1, y1)
+      this.drawIsland(a.badge, x0, x1, y0)
     }
-    ctx.globalAlpha = 1
   }
 
-  /** Glow and ring outside the artboard (never over its content), then the sweep. */
-  private drawAgentEdge(x0: number, y0: number, x1: number, y1: number, phase: number | null) {
+  /** Glow and halo outside the artboard (never over its content), then the ring. */
+  private drawAgentEdge(x0: number, y0: number, x1: number, y1: number): void {
     const { ctx, dpr } = this
     const w = x1 - x0
     const h = y1 - y0
@@ -809,107 +742,113 @@ export class Overlay {
     ctx.fillRect(x0 - sp - away, y0 - sp, w + 2 * sp, h + 2 * sp)
     ctx.restore()
 
-    // Ring: 2 px just outside (box-shadow 0 0 0 2px); static 1.5 px accent with reduced motion.
-    const ring = phase === null ? AGENT_RING_STATIC : AGENT_RING
-    ctx.strokeStyle = phase === null ? this.theme.agent : this.theme.agentRing
-    ctx.lineWidth = ring
-    ctx.strokeRect(x0 - ring / 2, y0 - ring / 2, w + ring, h + ring)
-    if (phase !== null)
-      this.drawSweep(x0 - ring / 2, y0 - ring / 2, w + ring, h + ring, ring, phase)
+    // Halo (box-shadow 0 0 0 6px, translucent) around the ring (0 0 0 2px).
+    const out = AGENT_RING + AGENT_HALO / 2
+    ctx.strokeStyle = this.theme.agentRing
+    ctx.lineWidth = AGENT_HALO
+    ctx.strokeRect(x0 - out, y0 - out, w + 2 * out, h + 2 * out)
+    ctx.strokeStyle = this.theme.agent
+    ctx.lineWidth = AGENT_RING
+    ctx.strokeRect(x0 - AGENT_RING / 2, y0 - AGENT_RING / 2, w + AGENT_RING, h + AGENT_RING)
   }
 
   /**
-   * The bright segment on the ring: full --color-overlay-agent at the head, fading linearly to
-   * transparent over SWEEP_TRAIL of the perimeter behind it and SWEEP_LEAD ahead. Perimeter
-   * positions start at the top-right corner and run clockwise (right, bottom, left, top).
+   * The island over the artboard's top-right corner: the medallion and the names, or only the
+   * medallion when the artboard is narrower than the island; nothing on tiny artboards.
    */
-  private drawSweep(x: number, y: number, w: number, h: number, lw: number, phase: number) {
+  private drawIsland(text: string, x0: number, x1: number, y0: number): void {
     const { ctx } = this
-    const P = 2 * (w + h)
-    if (P <= 0) return
-    const head = phase * P
-    const pieces: [number, number, number, number][] = [
-      // [from, to, alpha at from, alpha at to]
-      [head - SWEEP_TRAIL * P, head, 0, 1],
-      [head, head + SWEEP_LEAD * P, 1, 0],
-    ]
-    // Sides as [start, end] perimeter positions and their start point / direction.
-    const sides: { a: number; b: number; px: number; py: number; dx: number; dy: number }[] = [
-      { a: 0, b: h, px: x + w, py: y, dx: 0, dy: 1 },
-      { a: h, b: h + w, px: x + w, py: y + h, dx: -1, dy: 0 },
-      { a: h + w, b: 2 * h + w, px: x, py: y + h, dx: 0, dy: -1 },
-      { a: 2 * h + w, b: P, px: x, py: y, dx: 1, dy: 0 },
-    ]
-    ctx.lineWidth = lw
-    ctx.lineCap = 'butt'
-    for (const [from, to, af, at] of pieces) {
-      for (const shift of [-P, 0, P]) {
-        const lo = from + shift
-        const hi = to + shift
-        for (const side of sides) {
-          const s0 = Math.max(lo, side.a)
-          const s1 = Math.min(hi, side.b)
-          if (s1 - s0 <= 0.01) continue
-          const alpha = (p: number) => af + ((at - af) * (p - lo)) / (hi - lo)
-          const c0 = withAlpha(this.theme.agent, alpha(s0))
-          const c1 = withAlpha(this.theme.agent, alpha(s1))
-          const ax = side.px + side.dx * (s0 - side.a)
-          const ay = side.py + side.dy * (s0 - side.a)
-          const bx = side.px + side.dx * (s1 - side.a)
-          const by = side.py + side.dy * (s1 - side.a)
-          if (c0 && c1) {
-            const g = ctx.createLinearGradient(ax, ay, bx, by)
-            g.addColorStop(0, c0)
-            g.addColorStop(1, c1)
-            ctx.strokeStyle = g
-          } else {
-            ctx.strokeStyle = this.theme.agent
-            ctx.globalAlpha = (alpha(s0) + alpha(s1)) / 2
-          }
-          // A piece that ends on a corner covers the corner square too.
-          const ext = s1 >= side.b - 0.01 ? lw / 2 : 0
-          ctx.beginPath()
-          ctx.moveTo(ax, ay)
-          ctx.lineTo(bx + side.dx * ext, by + side.dy * ext)
-          ctx.stroke()
-          ctx.globalAlpha = 1
-        }
-      }
-    }
-  }
+    const compactWidth = 2 * ISLAND_PAD_LEFT + ISLAND_MARK
+    const full = this.islandWidth(text)
+    const room = x1 - x0 - ISLAND_FILLET
+    if (room < compactWidth) return
+    const compact = room < full
+    const w = compact ? compactWidth : full
+    const right = x1 + AGENT_RING
+    const left = right - w
+    const ringTop = y0 - AGENT_RING
+    const top = ringTop - ISLAND_HEIGHT
+    if (y0 < 0 || top > this.height || left - ISLAND_FILLET > this.width || right < 0) return
 
-  /** "<name> is working", right-aligned to the artboard; a sparkle-only chip when narrow. */
-  private drawBadge(text: string, x0: number, x1: number, y0: number): void {
-    const { ctx } = this
-    const full = this.badgeWidth(text)
-    const compact = x1 - x0 < full
-    const w = compact ? BADGE_HEIGHT : full
-    const x = this.snap(x1 - w)
-    const y = this.snap(y0 - BADGE_GAP - BADGE_HEIGHT)
-    if (y + BADGE_HEIGHT < 0 || y > this.height || x > this.width || x + w < 0) return
     ctx.fillStyle = this.theme.agent
+    // The tab runs down through the ring band, so tab and ring read as one shape.
     ctx.beginPath()
-    ctx.roundRect(x, y, w, BADGE_HEIGHT, PILL_RADIUS)
+    ctx.roundRect(left, top, w, ISLAND_HEIGHT + AGENT_RING, [ISLAND_RADIUS, ISLAND_RADIUS, 0, 0])
     ctx.fill()
-    const iconX = compact ? x + (BADGE_HEIGHT - BADGE_ICON) / 2 : x + BADGE_PAD_LEFT
-    this.drawSparkle(iconX, y + (BADGE_HEIGHT - BADGE_ICON) / 2, BADGE_ICON)
+    // Fillet: the ring's top edge curving up into the tab's left side.
+    const f = ISLAND_FILLET
+    ctx.beginPath()
+    ctx.moveTo(left, ringTop - f)
+    ctx.lineTo(left, ringTop)
+    ctx.lineTo(left - f, ringTop)
+    ctx.arc(left - f, ringTop - f, f, Math.PI / 2, 0, true)
+    ctx.closePath()
+    ctx.fill()
+
+    const mx = left + ISLAND_PAD_LEFT
+    const my = top + (ISLAND_HEIGHT - ISLAND_MARK) / 2
+    const mark = agentMark(() => this.onChange?.())
+    if (mark) {
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(mark, mx, my, ISLAND_MARK, ISLAND_MARK)
+    } else {
+      ctx.fillStyle = MARK_FALLBACK
+      ctx.beginPath()
+      ctx.arc(mx + ISLAND_MARK / 2, my + ISLAND_MARK / 2, ISLAND_MARK / 2, 0, 2 * Math.PI)
+      ctx.fill()
+    }
     if (compact) return
-    ctx.font = this.badgeFont()
+    ctx.font = this.islandFont()
     ctx.fillStyle = ON_ACCENT
     ctx.textBaseline = 'alphabetic'
-    ctx.fillText(text, x + BADGE_PAD_LEFT + BADGE_ICON + BADGE_ICON_GAP, y + 13)
+    // 12 px text centred on the 24 px tab: baseline ≈ 16 px below its top for Inter.
+    ctx.fillText(text, mx + ISLAND_MARK + ISLAND_GAP, top + 16)
   }
 
-  private drawSparkle(x: number, y: number, size: number): void {
+  /**
+   * Where an agent's new layer lands: a rounded tint in --color-agent-ring with a
+   * --color-overlay-agent outline, and while the layer is still hidden a --color-agent-glow
+   * shimmer crossing it once, left to right.
+   */
+  private drawIncoming(items: readonly IncomingOverlay[], v: Viewport): void {
     const { ctx } = this
-    this.sparkle ??= typeof Path2D === 'function' ? new Path2D(SPARKLE_PATH) : null
-    if (!this.sparkle) return
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.scale(size / 24, size / 24)
-    ctx.fillStyle = ON_ACCENT
-    ctx.fill(this.sparkle)
-    ctx.restore()
+    for (const it of items) {
+      if (it.alpha <= 0) continue
+      const s = worldRectToScreen(v, it.bounds)
+      if (s.x > this.width || s.y > this.height || s.x + s.width < 0 || s.y + s.height < 0) continue
+      const x = this.snap(s.x)
+      const y = this.snap(s.y)
+      const w = Math.max(1, Math.round(s.width))
+      const h = Math.max(1, Math.round(s.height))
+      const r = Math.min(INCOMING_RADIUS, w / 2, h / 2)
+      ctx.save()
+      ctx.globalAlpha = it.alpha
+      ctx.beginPath()
+      ctx.roundRect(x, y, w, h, r)
+      ctx.fillStyle = this.theme.agentRing
+      ctx.fill()
+      if (it.shimmer !== null) {
+        ctx.save()
+        ctx.clip()
+        const band = Math.max(48, w * 0.35)
+        const bx = x - band + (w + band) * it.shimmer
+        const g = ctx.createLinearGradient(bx, 0, bx + band, 0)
+        const clear = transparentOf(this.theme.agentGlow)
+        g.addColorStop(0, clear)
+        g.addColorStop(0.5, this.theme.agentGlow)
+        g.addColorStop(1, clear)
+        ctx.fillStyle = g
+        ctx.fillRect(bx, y, band, h)
+        ctx.restore()
+      }
+      ctx.strokeStyle = this.theme.agent
+      ctx.lineWidth = OUTLINE
+      ctx.beginPath()
+      ctx.roundRect(x + OUTLINE / 2, y + OUTLINE / 2, w - OUTLINE, h - OUTLINE, r)
+      ctx.stroke()
+      ctx.restore()
+    }
   }
 
   /** The main-component mark: four filled diamonds in an 11 px square. */
@@ -1024,7 +963,6 @@ export class Overlay {
 
   dispose(): void {
     this.themeObserver?.disconnect()
-    this.motionQuery?.removeEventListener?.('change', this.onMotionChange)
     this.lastModel = null
     this.canvas.remove()
   }

@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react'
-import { SparkleIcon } from '../../icons/icons'
+import medallionUrl from '../../assets/baren-medallion.png'
 import { normalizeHex, readableOn } from '../../lib/color'
 import { getInitials } from '../../lib/text'
 import styles from './Avatar.module.css'
@@ -19,9 +19,9 @@ export interface AvatarProps extends HTMLAttributes<HTMLSpanElement> {
   textColor?: string
   shape?: 'circle' | 'square'
   /**
-   * `agent`: an MCP agent (34–36) — a rounded square in --color-agent with a white sparkle
-   * (squares mean non-person). `idle`: an agent that is not active — --color-muted with a
-   * muted sparkle.
+   * `agent`: an MCP agent (34–36) — a rounded square in --color-agent holding the Baren
+   * medallion (squares mean non-person). `idle`: an agent that is not active — --color-muted
+   * with a greyed medallion.
    */
   variant?: 'solid' | 'pending' | 'muted' | 'accent' | 'agent' | 'idle'
   /** Icon instead of initials (pending invite, group, globe). */
@@ -31,7 +31,7 @@ export interface AvatarProps extends HTMLAttributes<HTMLSpanElement> {
   presence?: boolean
 }
 
-const SPARKLE_SIZE: Record<AvatarSize, number> = { 18: 10, 22: 12, 28: 14, 32: 16, 36: 16 }
+const MARK_SIZE: Record<AvatarSize, number> = { 18: 12, 22: 16, 28: 20, 32: 22, 36: 24 }
 
 const SIZE_CLASS: Record<AvatarSize, string | undefined> = {
   18: styles.s18,
@@ -85,7 +85,13 @@ export function Avatar({
       ) : icon !== undefined ? (
         icon
       ) : agent ? (
-        <SparkleIcon size={SPARKLE_SIZE[size]} />
+        <img
+          className={styles.mark}
+          src={medallionUrl}
+          alt=""
+          style={{ width: MARK_SIZE[size], height: MARK_SIZE[size] }}
+          draggable={false}
+        />
       ) : (
         <span aria-hidden="true">{initials ?? (name ? getInitials(name) : '')}</span>
       )}

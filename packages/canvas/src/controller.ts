@@ -52,6 +52,14 @@ import {
   geometryStyles,
   insertTargetFor,
 } from './interaction/gestures.ts'
+import {
+  AGENT_ORIGIN_PREFIX,
+  INCOMING_MAX,
+  INCOMING_WAIT_MS,
+  incomingPhase,
+  prefersReducedMotion,
+  type IncomingOverlay,
+} from './overlay/incoming.ts'
 import { buildOverlayModel, selectionRects } from './overlay/model.ts'
 import { layoutSize } from './render/measure.ts'
 import { isVirtualRef } from './render/scene.ts'
@@ -82,9 +90,9 @@ import { Camera } from './viewport/camera.ts'
 const FIT_PADDING = 48
 /** Per-frame time budget for loading/attaching artboard DOM while idle. */
 const MOUNT_BUDGET_MS = 8
+/** Props that do not change what the canvas shows: an agent setting them gets no flash. */
+const QUIET_PROPS = new Set(['name', 'locked'])
 const REMOTE_HZ = 30
-/** Overlay redraw interval while an agent sweep animates (30 fps). */
-const AGENT_FRAME_MS = 1000 / 30
 
 /** Create a canvas inside `options.container`. */
 export function createCanvas(options: CanvasOptions): CanvasController {
@@ -140,12 +148,19 @@ class Canvas implements CanvasController, InputHost {
   /** The next local batch comes from undo/redo (see flushBatches). */
   private afterHistory = false
   private remotes: RemotePresence[] = []
+  /**
+   * Layers an agent just added (staged in: hidden, then revealed) or edited (only flashed),
+   * oldest first (overlay/incoming.ts).
+   */
+  private readonly incoming = new Map<
+    string,
+    { addedAt: number; startAt: number | null; revealed: boolean }
+  >()
+  private incomingOverlay: IncomingOverlay[] = []
   private rootRect: DOMRect
   private dpr: number
   private lastSceneVersion = -1
   private destroyed = false
-  /** Next overlay-only redraw while an agent sweep is on screen (≤ 30 fps; §10.4). */
-  private agentTimer: ReturnType<typeof setTimeout> | null = null
   private readonly pageViewports = new Map<string, Viewport>()
   /** Frame highlighted while files or components are dragged over the canvas. */
   private dropIndicator: Rect | NodeFrame | null = null
@@ -400,6 +415,7 @@ class Canvas implements CanvasController, InputHost {
     if (this.pendingFits.size > 0 && !this.input.busy) this.runPendingFits()
 
     // Draw.
+    const staging = this.tickIncoming(t0)
     if (this.scenes.version !== this.lastSceneVersion) {
       this.lastSceneVersion = this.scenes.version
       this.overlayDirty = true
@@ -407,7 +423,6 @@ class Canvas implements CanvasController, InputHost {
     if (this.overlayDirty) {
       this.overlayDirty = false
       this.drawOverlay()
-      this.scheduleAgentFrame()
     }
     this.lastFrameMs = performance.now() - t0
     if (
@@ -416,9 +431,117 @@ class Canvas implements CanvasController, InputHost {
       camera.animating ||
       camera.rerasterPending ||
       this.text.hasPending ||
-      this.input.finishing
+      this.input.finishing ||
+      staging
     )
       this.requestFrame()
+  }
+
+  /**
+   * Layers an agent changed in this batch. The top-most ones it created start hidden, until
+   * their placeholder has shown where they land; the top-most ones it edited (styles, text,
+   * moves, vectors, overrides, visible props) only get the placeholder flash. Local agent writes
+   * carry the `agent:` origin; remote ones carry none, so a remote change counts when its
+   * artboard is in an agent's working set.
+   */
+  private collectIncoming(batch: NodeChangeBatch): void {
+    if (batch.changes.length === 0) return
+    const local = batch.by === 'local' && (batch.origin ?? '').startsWith(AGENT_ORIGIN_PREFIX)
+    const working = local || batch.by !== 'import' ? null : this.agentWorkingTops()
+    if (!local && (working === null || working.size === 0)) return
+    const created = new Set<string>()
+    const edited = new Set<string>()
+    for (const c of batch.changes) {
+      if (c.kind === 'created') created.add(c.id)
+      else if (c.kind === 'deleted') continue
+      else if (c.kind !== 'props' || c.keys.some((k) => !QUIET_PROPS.has(k))) edited.add(c.id)
+    }
+    const onPage = (id: string) => {
+      const top = this.scenes.topLevelOf(id)
+      return top !== null && (working === null || working.has(top))
+    }
+    const hide = !prefersReducedMotion()
+    const now = performance.now()
+    for (const c of batch.changes) {
+      if (c.kind !== 'created' || (c.parentId !== null && created.has(c.parentId))) continue
+      if (!onPage(c.id)) continue
+      this.incoming.set(c.id, { addedAt: now, startAt: null, revealed: false })
+      if (hide) this.scenes.setIncoming(c.id, 'hidden')
+    }
+    for (const id of edited) {
+      if (created.has(id) || !onPage(id) || this.hasEditedAncestor(id, edited)) continue
+      // A layer still being staged in keeps its own timeline; an edited one flashes again.
+      if (this.incoming.get(id)?.revealed === false) continue
+      this.incoming.delete(id)
+      this.incoming.set(id, { addedAt: now, startAt: null, revealed: true })
+    }
+    for (const id of this.incoming.keys()) {
+      if (this.incoming.size <= INCOMING_MAX) break
+      this.scenes.setIncoming(id, null)
+      this.incoming.delete(id)
+    }
+    this.requestFrame()
+  }
+
+  /** Whether an ancestor of `id` is in `ids` (its flash already covers `id`). */
+  private hasEditedAncestor(id: string, ids: ReadonlySet<string>): boolean {
+    let p = this.scenes.parentOf(id)
+    for (let n = 0; p !== null && n < 64; n++) {
+      if (ids.has(p)) return true
+      p = this.scenes.parentOf(p)
+    }
+    return false
+  }
+
+  /** Artboards any agent is working on (agent presence keeps its working set as selection). */
+  private agentWorkingTops(): Set<string> {
+    const out = new Set<string>()
+    for (const r of this.remotes) if (r.kind === 'agent') for (const id of r.selection) out.add(id)
+    return out
+  }
+
+  /**
+   * Advances the staged additions: each starts once measured, is revealed after its hold and
+   * leaves after the fade. True while any is still on its way (keep drawing frames).
+   */
+  private tickIncoming(now: number): boolean {
+    if (this.incoming.size === 0) {
+      if (this.incomingOverlay.length > 0) {
+        this.incomingOverlay = []
+        this.overlayDirty = true
+      }
+      return false
+    }
+    const reduced = prefersReducedMotion()
+    const out: IncomingOverlay[] = []
+    for (const [id, e] of this.incoming) {
+      const bounds = this.scenes.boundsOf(id)
+      if (e.startAt === null) {
+        if (bounds && this.scenes.isMeasured(id)) e.startAt = now
+        else {
+          // Off screen, deleted or never measured: just show it.
+          if (now - e.addedAt > INCOMING_WAIT_MS || this.scenes.topLevelOf(id) === null) {
+            this.scenes.setIncoming(id, null)
+            this.incoming.delete(id)
+          }
+          continue
+        }
+      }
+      const phase = incomingPhase(now - e.startAt, reduced)
+      if (!phase.hidden && !e.revealed) {
+        e.revealed = true
+        this.scenes.setIncoming(id, reduced ? null : 'reveal')
+      }
+      if (phase.done || !bounds) {
+        this.scenes.setIncoming(id, null)
+        this.incoming.delete(id)
+        continue
+      }
+      out.push({ bounds, alpha: phase.alpha, shimmer: phase.shimmer })
+    }
+    this.incomingOverlay = out
+    this.overlayDirty = true
+    return this.incoming.size > 0
   }
 
   private flushBatches(): void {
@@ -460,6 +583,7 @@ class Canvas implements CanvasController, InputHost {
           .map((c) => c.id)
       }
       this.scenes.apply(batch.changes)
+      this.collectIncoming(batch)
       for (const c of batch.changes) {
         if (c.id === this.pageId && c.kind === 'props') pageChanged = true
         if (c.kind === 'text' && batch.origin !== ORIGIN.text && this.text.isEditing(c.id)) {
@@ -566,22 +690,6 @@ class Canvas implements CanvasController, InputHost {
         : background
   }
 
-  /**
-   * Keeps redrawing the overlay (nothing else) at ≤ 30 fps while an agent sweep is visible;
-   * stops as soon as the last draw had none (reduced motion, off screen, cleared).
-   */
-  private scheduleAgentFrame(): void {
-    if (!this.overlay.animating) {
-      if (this.agentTimer !== null) clearTimeout(this.agentTimer)
-      this.agentTimer = null
-      return
-    }
-    this.agentTimer ??= setTimeout(() => {
-      this.agentTimer = null
-      this.invalidate()
-    }, AGENT_FRAME_MS)
-  }
-
   private drawOverlay(): void {
     this.overlay.draw(
       buildOverlayModel({
@@ -598,6 +706,7 @@ class Canvas implements CanvasController, InputHost {
         drop: this.dropIndicator,
         vector: this.vectorEdit.overlay(),
         mainOutline: this.mainOfSelection(),
+        incoming: this.incomingOverlay,
       }),
     )
   }
@@ -1099,13 +1208,12 @@ class Canvas implements CanvasController, InputHost {
     this.destroyed = true
     if (this.rafId) cancelAnimationFrame(this.rafId)
     this.rafId = 0
-    if (this.agentTimer !== null) clearTimeout(this.agentTimer)
-    this.agentTimer = null
     for (const fn of this.cleanups.splice(0)) fn()
     this.emitViewport.cancel()
     this.emitTransientT.cancel()
     this.emitCursorT.cancel()
     this.history?.dispose()
+    this.incoming.clear()
     this.scenes.clear()
     this.resolver.dispose()
     this.overlay.dispose()

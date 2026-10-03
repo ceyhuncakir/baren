@@ -27,18 +27,18 @@ this". It sits apart from every hue already in use: selection blue `#2f80ff`, co
 `#7b4dff`, avatar orange-red `#f04e1e`, success green, warning amber and destructive red. In
 light mode it keeps AA contrast for 11 px labels on panels and on the canvas.
 
-| Token                | Light       | Dark        | Used for                                                                                                                               |
-| -------------------- | ----------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `--color-agent`      | `#d21f75`   | `#ec5a9c`   | Agent avatar (inspector header, MCP section, home card), the "… is working" badge on the canvas, the bright sweep of the working edge. |
-| `--color-agent-ring` | `#d21f7552` | `#ec5a9c59` | 2 px base ring around an artboard an agent is editing: the agent colour at 32 % (light) or 35 % (dark).                                |
-| `--color-agent-glow` | `#d21f752e` | `#ec5a9c33` | Soft glow outside the ring (`0 0 18px 2px`): the agent colour at 18 % (light) or 20 % (dark).                                          |
+| Token                | Light       | Dark        | Used for                                                                                                                                             |
+| -------------------- | ----------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--color-agent`      | `#d0391e`   | `#d0391e`   | The seal's vermilion: agent avatars (inspector header, MCP section, home card), the 2 px ring around an artboard an agent is editing and its island. |
+| `--color-agent-ring` | `#d0391e1a` | `#d0391e26` | 4 px halo around that ring: the agent colour at 10 % (light) or 15 % (dark).                                                                         |
+| `--color-agent-glow` | `#d0391e33` | `#d0391e40` | Soft glow outside the ring (`0 0 24px 2px`): the agent colour at 20 % (light) or 25 % (dark).                                                        |
 
 Canvas chrome (section 5 of `tokens.css`, `:root` only, read by the Canvas 2D overlay like the
 other `--color-overlay-*` tokens):
 
-| Token                   | Value                | Used for                                                               |
-| ----------------------- | -------------------- | ---------------------------------------------------------------------- |
-| `--color-overlay-agent` | `var(--color-agent)` | Agent badge fill, working-edge sweep (ring/glow use the tokens above). |
+| Token                   | Value                | Used for                                                     |
+| ----------------------- | -------------------- | ------------------------------------------------------------ |
+| `--color-overlay-agent` | `var(--color-agent)` | Agent ring and island fill (halo/glow use the tokens above). |
 
 Text and glyphs on the agent colour use the existing `--color-on-accent` (`#ffffff` in both
 themes), the same rule as text on `--color-selection` and `--color-avatar`.
@@ -50,14 +50,13 @@ UI workstream adds the three tokens, copy their dark values into a new section 5
 
 ### Contrast (WCAG)
 
-| Pair                                           | Ratio                                                                                              |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `#d21f75` text on `#ffffff`                    | 5.01:1                                                                                             |
-| `#d21f75` on `--color-surface` `#f7f7f7`       | 4.67:1                                                                                             |
-| `#d21f75` on the canvas `#eeeeee`              | 4.32:1 (same order as `--color-component`, 4.16:1)                                                 |
-| white text on `#d21f75` (badge)                | 5.01:1                                                                                             |
-| `#ec5a9c` on `#1a1a1a` / `#202020` / `#141414` | 5.39 / 5.05 / 5.71:1                                                                               |
-| white text on `#ec5a9c` (dark badge)           | 3.23:1 (same order as white on the dark selection pill `#3b8cff`, 3.29:1, and on `#9b7dff`, 3.1:1) |
+| Pair                                           | Ratio                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `#d0391e` on `#ffffff`                         | 4.90:1                                                                                     |
+| `#d0391e` on `--color-surface` `#f7f7f7`       | 4.57:1                                                                                     |
+| `#d0391e` on the canvas `#eeeeee`              | 4.22:1                                                                                     |
+| white text on `#d0391e` (island, both themes)  | 4.90:1                                                                                     |
+| `#d0391e` on `#1a1a1a` / `#202020` / `#141414` | 3.56 / 3.33 / 3.76:1 (ring and island are graphics: ≥ 3:1; no agent-coloured text on dark) |
 
 ### Existing tokens reused (no change)
 
@@ -79,14 +78,14 @@ UI workstream adds the three tokens, copy their dark values into a new section 5
 
 | Literal in 34–36 / D34–D35                                                                                                                  | Token                                                              |
 | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `#D21F75` / `#EC5A9C`                                                                                                                       | `--color-agent` / `--color-overlay-agent`                          |
-| `#D21F7552` / `#EC5A9C59` (2 px box-shadow ring)                                                                                            | `--color-agent-ring`                                               |
-| `#D21F752E` / `#EC5A9C33` (18 px glow)                                                                                                      | `--color-agent-glow`                                               |
+| `#D0391E` (both themes)                                                                                                                     | `--color-agent` / `--color-overlay-agent`                          |
+| `#D0391E1A` / `#D0391E26` (4 px halo)                                                                                                       | `--color-agent-ring`                                               |
+| `#D0391E33` / `#D0391E40` (24 px glow)                                                                                                      | `--color-agent-glow`                                               |
 | `#22A55B` / `#34C26F` (status and presence dots)                                                                                            | `--color-success`                                                  |
 | `#BDBDBD` / `#5C5C5C` (status dot)                                                                                                          | `--color-dot`                                                      |
 | `#0000001F` / `#00000080` (dialog backdrop)                                                                                                 | `--color-scrim-subtle`                                             |
 | dialog shadow `#00000014 0 0 0 1px, #0000002E 0 12px 32px -8px, #00000014 0 4px 8px -4px`                                                   | `--shadow-popover`                                                 |
-| `#FFFFFF` sparkle glyph / badge text                                                                                                        | `--color-on-accent`                                                |
+| `#FFFFFF` island text                                                                                                                       | `--color-on-accent`                                                |
 | `#363636` (dark active segment)                                                                                                             | `--color-segment-active`                                           |
 | knob shadow `#0000001F 0 0 0 1px, #00000026 0 1px 3px`                                                                                      | `--shadow-thumb`                                                   |
 | dark chrome hexes (`#1A1A1A`, `#202020`, `#262626`, `#2A2A2A`, `#2E2E2E`, `#EDEDED`, `#A0A0A0`, `#6B6B6B`, `#F2F2F2`, `#111111`, `#9B7DFF`) | the dark values of the matching tokens in `design/tokens.dark.css` |
@@ -160,24 +159,27 @@ It replaces today's informational `McpDialog`.
 
 Claude Code is editing "Pricing — Desktop". Nothing is selected, so the inspector shows Page and MCP.
 
-- **Badge**: the artboard label row grows to 18 px. The name keeps its place, bottom-aligned, so the
-  board does not move. The badge is right-aligned to the artboard's right edge: an 18 px pill,
-  radius `--radius-sm`, `--color-overlay-agent` fill, padding 0 6 0 5, gap 4, a 10 px filled
-  sparkle (lucide `Sparkle`, `--color-on-accent`) and "Claude Code is working" 11/500
-  `--color-on-accent`. The name comes from `clientInfo` (fallback "Agent is working"). Two agents on
-  one artboard share one badge: "Claude Code and Cursor are working".
-- **Working edge**: a 2 px `--color-agent-ring` ring just outside the artboard, plus a
-  `--color-agent-glow` glow (`0 0 18px 2px`), plus a bright **sweep**: a 2 px stroke of
-  `--color-overlay-agent` that fades to transparent along the perimeter. In the artboard it is
-  frozen at the top-right corner (about 260 px along the top edge and 180 px down the right
-  edge). In the app it travels clockwise around the ring, one lap every 2.4 s, linear: a
-  conic-gradient stroke whose angle advances each frame. Draw it only for visible artboards,
-  in the overlay layer. With `prefers-reduced-motion` there is no sweep: the ring is drawn at
-  1.5 px in full `--color-overlay-agent`.
-  The badge and edge stay until `finish_working_on_nodes` releases the artboard, or until the
-  idle timeout in the contract. Nothing is drawn for agent writes outside a working set.
+- **Island**: a 24 px tab rising from the ring's top edge, flush with its outer right edge, so
+  ring and island read as one shape: `--color-overlay-agent` fill, radius 8 on top, a concave 8 px
+  fillet where it meets the ring on the left. Inside: the Baren medallion (16 px, the round
+  centre of the seal) 4 px from the left, gap 6, the name 12/600 `--color-on-accent`, padding
+  right 10. The name comes from `clientInfo` (fallback "Agent"); two agents on one artboard share
+  one island: "Claude Code & Cursor". On an artboard narrower than the island only the medallion
+  shows. The artboard's own label keeps its place and leaves room for the island.
+- **Working edge**: a 2 px `--color-overlay-agent` ring just outside the artboard, a 4 px
+  `--color-agent-ring` halo around it and a `--color-agent-glow` glow (`0 0 24px 2px`). Nothing
+  animates. The island and edge stay until `finish_working_on_nodes` releases the artboard, or
+  until the idle timeout in the contract. Nothing is drawn for agent writes outside a working
+  set.
+- **Incoming layers**: each top-level layer an agent adds first shows a placeholder where it
+  lands: its bounds as a rounded rect (radius 6) tinted `--color-agent-ring`, a 1.5 px
+  `--color-overlay-agent` outline and one `--color-agent-glow` shimmer band crossing it left to
+  right, while the layer itself is hidden. After 450 ms the layer fades in (320 ms) and the
+  placeholder fades out (400 ms). A layer an agent edits (styles, text, moves, vectors,
+  overrides, visible props; not a rename) gets the same placeholder flash over it, without
+  being hidden. With reduced motion layers appear at once and the placeholder only fades.
 - **Inspector header**: the agent avatar comes after the human collaborators. It is 22 px, a
-  **rounded square** (radius `--radius-md`) in `--color-agent` with a 12 px white sparkle, using
+  **rounded square** (radius `--radius-md`) in `--color-agent` holding the 16 px medallion, using
   the existing overlap rule (−4 px, 2 px `--color-surface` ring). Squares mean
   non-person (as with team marks); circles are people. Tooltip: "Claude Code (agent)".
 - **MCP section (connected)**: header "MCP" with a `--color-success` dot and "Connected" on the right.

@@ -874,9 +874,17 @@ parentId, worldX/worldY, size), a tree `summary` and `warnings`.
   (`agents.json`). Every agent uses the one agent accent (`--color-agent` and its ring, glow and
   overlay tokens); presence carries no colour.
 - Editor: `EditorState.agents` (local from `agent:presence`, remote from peers); the inspector
-  header shows rounded-square sparkle avatars after the people; the canvas overlay draws, per
-  working artboard, a ring, glow, a travelling sweep (static under reduced motion) and one
-  "<name(s)> is/are working" badge (`RemotePresence.kind = 'agent'`, `badge`).
+  header shows rounded-square avatars with the Baren medallion after the people; the canvas
+  overlay draws, per working artboard, a ring, halo and glow plus one island fused to the
+  ring's top edge: the medallion and the agents' names, "Claude Code & Cursor"
+  (`RemotePresence.kind = 'agent'`, `badge`). Layers an agent adds are staged in
+  (`packages/canvas/src/overlay/incoming.ts`): hidden for 450 ms while a placeholder in the agent
+  colour (tint, outline, one shimmer pass) marks where they land, then faded in as the
+  placeholder fades out. Layers an agent edits (styles, text, moves, vectors, overrides, visible
+  props; not renames) get the same placeholder flash without being hidden. Local writes are
+  recognised by their `agent:` commit origin, remote ones by landing on an artboard in an
+  agent's working set. With reduced motion the layer shows at once and only the placeholder
+  fades. Only the presentation is delayed; the document is not.
 - Live sync: presence frames gain an optional **`agents: [{ id, name, working }]`** (proto,
   server relay, sync-client types; additive and backwards compatible).
 - UI (artboards **34** Connect your agent, **35** Agent working, **36** Home — Agents connected,

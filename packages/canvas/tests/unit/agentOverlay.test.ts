@@ -1,11 +1,15 @@
 /**
  * Agent presence on the overlay (Phase 4 contract §10.4, artboard 35): grouping per artboard,
- * joined names, top-level artboards of the current page only, no cursors, and the sweep clock
- * (frozen by the test hook, absent under reduced motion).
+ * joined names, top-level artboards of the current page only and no cursors.
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import {
+  INCOMING_APPEAR_MS,
+  INCOMING_FADE_MS,
+  INCOMING_HOLD_MS,
+  incomingPhase,
+} from '../../src/overlay/incoming.ts'
 import { agentBadgeText, agentWork, buildOverlayModel } from '../../src/overlay/model.ts'
-import { agentSweep, AGENT_SWEEP_PERIOD_MS, withAlpha } from '../../src/overlay/overlay.ts'
 import type { SceneManager } from '../../src/render/sceneManager.ts'
 import type { RemotePresence, Rect } from '../../src/types.ts'
 
@@ -35,11 +39,11 @@ const user = (name: string, selection: string[]): RemotePresence => ({
 })
 
 describe('agentBadgeText', () => {
-  it('joins names like the design ("A is working", "A and B are working", "A, B and C …")', () => {
-    expect(agentBadgeText(['Claude Code'])).toBe('Claude Code is working')
-    expect(agentBadgeText(['Claude Code', 'Cursor'])).toBe('Claude Code and Cursor are working')
-    expect(agentBadgeText(['A', 'B', 'C'])).toBe('A, B and C are working')
-    expect(agentBadgeText([])).toBe('Agent is working')
+  it('shows the names on the island ("A", "A & B", "A, B & C")', () => {
+    expect(agentBadgeText(['Claude Code'])).toBe('Claude Code')
+    expect(agentBadgeText(['Claude Code', 'Cursor'])).toBe('Claude Code & Cursor')
+    expect(agentBadgeText(['A', 'B', 'C'])).toBe('A, B & C')
+    expect(agentBadgeText([])).toBe('Agent')
   })
 })
 
@@ -147,17 +151,17 @@ describe('buildOverlayModel with agents', () => {
       {
         id: 'pricing',
         bounds: { x: 0, y: 0, width: 600, height: 454 },
-        badge: 'Claude Code and Cursor are working',
+        badge: 'Claude Code & Cursor',
       },
       // Top-level non-frames get the edge and badge too (no label).
       {
         id: 'logo',
         bounds: { x: 0, y: 600, width: 40, height: 40 },
-        badge: 'Claude Code is working',
+        badge: 'Claude Code',
       },
     ])
     const pricing = m.labels.find((l) => l.id === 'pricing')
-    expect(pricing?.badge).toBe('Claude Code and Cursor are working')
+    expect(pricing?.badge).toBe('Claude Code & Cursor')
     expect(m.labels.find((l) => l.id === 'mobile')?.badge).toBeUndefined()
     expect(m.labels.some((l) => l.id === 'logo')).toBe(false)
   })
@@ -174,53 +178,22 @@ describe('buildOverlayModel with agents', () => {
   })
 })
 
-describe('agent sweep clock', () => {
-  const g = globalThis as { __barenAgentSweepPhase?: number }
-  afterEach(() => {
-    delete g.__barenAgentSweepPhase
+describe('incomingPhase', () => {
+  it('holds the placeholder with the layer hidden, then fades it while the layer shows', () => {
+    expect(incomingPhase(0, false)).toEqual({ alpha: 0, shimmer: 0, hidden: true, done: false })
+    expect(incomingPhase(INCOMING_APPEAR_MS, false).alpha).toBe(1)
+    const mid = incomingPhase(INCOMING_HOLD_MS / 2, false)
+    expect(mid.hidden).toBe(true)
+    expect(mid.shimmer).toBeCloseTo(0.5)
+    const fading = incomingPhase(INCOMING_HOLD_MS + INCOMING_FADE_MS / 2, false)
+    expect(fading).toMatchObject({ hidden: false, shimmer: null, done: false })
+    expect(fading.alpha).toBeCloseTo(0.5)
+    expect(incomingPhase(INCOMING_HOLD_MS + INCOMING_FADE_MS, false).done).toBe(true)
   })
 
-  it('advances one lap per 2.4 s and animates', () => {
-    expect(AGENT_SWEEP_PERIOD_MS).toBe(2400)
-    expect(agentSweep(0)).toEqual({ phase: 0, moving: true })
-    expect(agentSweep(600).phase).toBeCloseTo(0.25)
-    expect(agentSweep(2400 * 3 + 1200).phase).toBeCloseTo(0.5)
-  })
-
-  it('freezes on the test hook phase (0 = head on the top-right corner)', () => {
-    g.__barenAgentSweepPhase = 0
-    expect(agentSweep(1234)).toEqual({ phase: 0, moving: false })
-    g.__barenAgentSweepPhase = 1.25
-    expect(agentSweep(99)).toEqual({ phase: 0.25, moving: false })
-  })
-
-  it('has no sweep and requests no frames under prefers-reduced-motion', async () => {
-    const original = (globalThis as { matchMedia?: unknown }).matchMedia
-    // A fresh module instance reads matchMedia on first use.
-    const { vi } = await import('vitest')
-    vi.resetModules()
-    ;(globalThis as { matchMedia?: unknown }).matchMedia = (q: string) => ({
-      matches: q.includes('reduce'),
-      addEventListener() {},
-      removeEventListener() {},
-    })
-    try {
-      const fresh = await import('../../src/overlay/overlay.ts')
-      expect(fresh.agentSweep(500)).toEqual({ phase: null, moving: false })
-    } finally {
-      ;(globalThis as { matchMedia?: unknown }).matchMedia = original
-      vi.resetModules()
-    }
-  })
-})
-
-describe('withAlpha', () => {
-  it('scales the alpha of hex and rgb colours', () => {
-    expect(withAlpha('#d21f75', 0.5)).toBe('rgba(210, 31, 117, 0.5)')
-    expect(withAlpha('#ec5a9c59', 1)).toBe('rgba(236, 90, 156, 0.349)')
-    expect(withAlpha('#fff', 0)).toBe('rgba(255, 255, 255, 0)')
-    expect(withAlpha('rgb(210, 31, 117)', 0.25)).toBe('rgba(210, 31, 117, 0.25)')
-    expect(withAlpha('rgba(210 31 117 / 50%)', 0.5)).toBe('rgba(210, 31, 117, 0.25)')
-    expect(withAlpha('var(--x)', 1)).toBeNull()
+  it('never hides the layer and has no shimmer with reduced motion', () => {
+    expect(incomingPhase(0, true)).toEqual({ alpha: 1, shimmer: null, hidden: false, done: false })
+    expect(incomingPhase(INCOMING_FADE_MS / 2, true).alpha).toBeCloseTo(0.5)
+    expect(incomingPhase(INCOMING_FADE_MS, true).done).toBe(true)
   })
 })

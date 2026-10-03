@@ -1352,6 +1352,18 @@ export class SceneManager {
   }
 
   // ---------------------------------------------------------------------------
+  // Agent additions (overlay/incoming.ts)
+  // ---------------------------------------------------------------------------
+
+  /** Hide a layer an agent just added (`'hidden'`), fade it in (`'reveal'`), or neither. */
+  setIncoming(id: string, state: 'hidden' | 'reveal' | null): void {
+    const el = this.records.get(id)?.wrapper ?? this.elementOf(id)
+    if (!el) return
+    el.classList.toggle('ic-incoming', state === 'hidden')
+    el.classList.toggle('ic-revealing', state === 'reveal')
+  }
+
+  // ---------------------------------------------------------------------------
   // Gesture previews
   // ---------------------------------------------------------------------------
 

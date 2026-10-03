@@ -303,7 +303,7 @@ export interface AgentRedrawResult {
 }
 
 /**
- * Phase 4 §10.4 budget: with one agent artboard visible (ring, glow, moving sweep, badge — the
+ * Phase 4 §10.4 budget: with one agent artboard visible (ring, halo, glow, island — the
  * pricing artboard of 35 at 100 %) one overlay redraw stays ≤ 1 ms.
  */
 async function agentRedraw(frames = 240): Promise<AgentRedrawResult> {
@@ -318,7 +318,7 @@ async function agentRedraw(frames = 240): Promise<AgentRedrawResult> {
       name: 'Pricing — Desktop',
       bounds,
       active: false,
-      ...(agent ? { badge: 'Claude Code is working' } : {}),
+      ...(agent ? { badge: 'Claude Code' } : {}),
     })
     m.labels.push({
       id: 'main',
@@ -327,20 +327,20 @@ async function agentRedraw(frames = 240): Promise<AgentRedrawResult> {
       active: false,
       component: true,
     })
-    if (agent) m.agents.push({ id: 'pricing', bounds, badge: 'Claude Code is working' })
+    if (agent) m.agents.push({ id: 'pricing', bounds, badge: 'Claude Code' })
     return m
   }
   const time = async (agent: boolean, n: number): Promise<number[]> => {
     const out: number[] = []
     await new Promise<void>((resolve) => {
       let i = 0
-      const tick = (now: number): void => {
+      const tick = (): void => {
         if (i >= n) {
           resolve()
           return
         }
         const t = performance.now()
-        o.draw(scene(agent), now)
+        o.draw(scene(agent))
         out.push(performance.now() - t)
         i++
         requestAnimationFrame(tick)

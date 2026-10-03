@@ -95,13 +95,13 @@
   --color-component: #7b4dff;
   --color-component-faint: #f6f3ff;
   --color-component-subtle: #eee8ff;
-  /* Agent accent (Phase 4, artboards 34–36): the one colour that means "an agent is doing
-     this" — agent avatars, the "… is working" badge and the working-edge sweep (--color-agent),
-     the 2 px ring around an artboard an agent is editing (-ring, 32 %) and its glow (-glow,
-     18 %). Text and glyphs on it use --color-on-accent. */
-  --color-agent: #d21f75;
-  --color-agent-ring: #d21f7552;
-  --color-agent-glow: #d21f752e;
+  /* Agent accent (Phase 4, artboards 34–36): the seal's vermilion means "an agent is doing
+     this" — agent avatars, the island and the 2 px ring around an artboard an agent is editing
+     (--color-agent), the ring's halo (-ring, 10 %) and its glow (-glow, 20 %). Text and glyphs
+     on it use --color-on-accent. */
+  --color-agent: #d0391e;
+  --color-agent-ring: #d0391e1a;
+  --color-agent-glow: #d0391e33;
 
   --color-destructive: #c0233c;
   --color-destructive-border: #f0c3cb;
@@ -230,9 +230,9 @@
   --color-component: #9b7dff;
   --color-component-faint: #2c2936;
   --color-component-subtle: #39334d;
-  --color-agent: #ec5a9c;
-  --color-agent-ring: #ec5a9c59;
-  --color-agent-glow: #ec5a9c33;
+  --color-agent: #d0391e;
+  --color-agent-ring: #d0391e26;
+  --color-agent-glow: #d0391e40;
 
   --color-destructive: #f05a72;
   --color-destructive-border: #5a2933;
@@ -321,9 +321,9 @@
     --color-component: #9b7dff;
     --color-component-faint: #2c2936;
     --color-component-subtle: #39334d;
-    --color-agent: #ec5a9c;
-    --color-agent-ring: #ec5a9c59;
-    --color-agent-glow: #ec5a9c33;
+    --color-agent: #d0391e;
+    --color-agent-ring: #d0391e26;
+    --color-agent-glow: #d0391e40;
 
     --color-destructive: #f05a72;
     --color-destructive-border: #5a2933;
@@ -406,6 +406,6 @@
   --color-overlay-marquee: #2f80ff14;
   /* Main components and instances on the canvas (31). */
   --color-overlay-component: var(--color-component);
-  /* Agent badge and working-edge sweep (35); the ring and glow use --color-agent-ring/-glow. */
+  /* Agent ring and island (35); the halo and glow use --color-agent-ring/-glow. */
   --color-overlay-agent: var(--color-agent);
 }
