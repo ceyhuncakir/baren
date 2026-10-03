@@ -31,7 +31,12 @@ import type { AgentHostState, McpStatus } from '../renderer/types/bridge'
 import type { TokenStore } from './auth/tokenStore'
 import type { BackendSelection } from './core/selectBackend'
 import type { McpController } from './mcp/controller'
-import { DEEP_LINK_SCHEME, findDeepLinkInArgv, parseDeepLink } from './deeplink/deepLink'
+import {
+  DEEP_LINK_SCHEME,
+  devMayClaimScheme,
+  findDeepLinkInArgv,
+  parseDeepLink,
+} from './deeplink/deepLink'
 import { DeepLinkRouter } from './deeplink/router'
 import { createClipboardService } from './clipboard/clipboard'
 import { registerIpcHandlers } from './ipc/handlers'
@@ -408,9 +413,21 @@ function registerProtocolClient(): void {
   if (platform === 'linux' && !process.env['APPIMAGE']) return
   if (app.isPackaged) {
     app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME)
-  } else if (flags.registerProtocolInDev && process.argv[1]) {
-    app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, [resolve(process.argv[1])])
+    return
   }
+  // Windows dev runs take baren:// links unless an installed build has them. macOS registers
+  // whole app bundles (here Electron.app), so dev runs there only do with the flag.
+  const claim =
+    platform === 'win32'
+      ? devMayClaimScheme(
+          app.getApplicationNameForProtocol(`${DEEP_LINK_SCHEME}://`),
+          flags.registerProtocolInDev,
+        )
+      : flags.registerProtocolInDev
+  const args = [app.getAppPath()]
+  if (!claim || app.isDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, args)) return
+  if (app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, args))
+    log.info('baren:// links now open this dev build')
 }
 
 async function installMacMenu(): Promise<void> {

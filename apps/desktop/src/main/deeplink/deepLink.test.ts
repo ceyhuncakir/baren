@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findDeepLinkInArgv, parseDeepLink } from './deepLink'
+import { devMayClaimScheme, findDeepLinkInArgv, parseDeepLink } from './deepLink'
 
 describe('parseDeepLink', () => {
   it('accepts invite links in canonical form', () => {
@@ -65,5 +65,17 @@ describe('findDeepLinkInArgv', () => {
 
   it('returns null without a link (dev argv)', () => {
     expect(findDeepLinkInArgv(['electron', '.', '--inspect'])).toBeNull()
+  })
+})
+
+describe('devMayClaimScheme', () => {
+  it('claims links nobody handles, or another dev run handles', () => {
+    expect(devMayClaimScheme('', false)).toBe(true)
+    expect(devMayClaimScheme('Electron', false)).toBe(true)
+  })
+
+  it('leaves an installed build in charge unless forced', () => {
+    expect(devMayClaimScheme('Baren', false)).toBe(false)
+    expect(devMayClaimScheme('Baren', true)).toBe(true)
   })
 })

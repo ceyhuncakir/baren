@@ -83,3 +83,13 @@ export function findDeepLinkInArgv(argv: readonly string[]): DeepLink | null {
   }
   return null
 }
+
+/**
+ * Whether a Windows dev run may make itself the baren:// handler, given the app that handles
+ * the links now (`app.getApplicationNameForProtocol`): nobody, or another dev run ("Electron",
+ * e.g. from a moved checkout). An installed build keeps them unless `force`
+ * (BAREN_REGISTER_PROTOCOL=1).
+ */
+export function devMayClaimScheme(owner: string, force: boolean): boolean {
+  return force || owner === '' || owner === 'Electron'
+}

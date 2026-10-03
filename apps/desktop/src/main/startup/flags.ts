@@ -10,8 +10,8 @@
  * BAREN_DISABLE_GPU=1         disable hardware acceleration (broken drivers, VMs)
  * BAREN_IGNORE_GPU_BLOCKLIST=1  force GPU paths on blocklisted drivers
  * BAREN_REGISTER_PROTOCOL=1   register baren:// in dev builds too (packaged builds always do;
- *                                Linux dev runs do when no installed build has it, and this
- *                                makes them take it over)
+ *                                Linux and Windows dev runs do when no installed build has it,
+ *                                and this makes them take it over)
  * BAREN_FORCE_UPDATES=1       run auto-update in dev builds and smoke runs too
  * BAREN_UPDATE_URL            override the build-time update feed URL (staging, tests)
  * BAREN_SMOKE_UPDATES=<state> smoke runs also check for updates right away and wait (up to
