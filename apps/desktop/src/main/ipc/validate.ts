@@ -135,6 +135,7 @@ export const AGENT_ERROR_CODES: readonly AgentErrorCode[] = [
   'read_only',
   'token_exists',
   'token_not_found',
+  'comment_not_found',
   'unsupported',
   'too_large',
   'host_unavailable',

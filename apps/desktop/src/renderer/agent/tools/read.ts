@@ -18,6 +18,7 @@ import {
 } from '@baren/schema'
 import { LoroMap } from 'loro-crdt'
 import { AgentToolError } from '../errors'
+import { commentCounts } from './comments'
 import {
   artboardOfRef,
   childRefs,
@@ -171,12 +172,13 @@ export function basicInfo(env: HostEnv, pageIdArg: string | undefined): Record<s
   const page = requireRef(env, pageId)
   const tokens = getTokens(env.doc)
   const scan = scanDoc(env, tokens)
+  const comments = commentCounts(env)
   const artboards: Record<string, unknown>[] = []
   for (const id of getChildIds(env.doc, pageId)) {
     const node = resolveRef(env, id)
     if (!node || !isArtboardNode(node)) continue
     const g = env.geometry.fields(id)
-    artboards.push({
+    const board: Record<string, unknown> = {
       id,
       name: displayName(env, node),
       component: componentName(env, node),
@@ -185,7 +187,11 @@ export function basicInfo(env: HostEnv, pageIdArg: string | undefined): Record<s
       height: g.height,
       worldX: g.worldX,
       worldY: g.worldY,
-    })
+    }
+    // Only when there are some: most artboards have none (tokens matter on big files).
+    const open = comments.openByArtboard.get(id)
+    if (open !== undefined) board['openComments'] = open
+    artboards.push(board)
   }
   const orders = env.tokenOrders()
   const counts = scan.instanceCounts
@@ -218,6 +224,8 @@ export function basicInfo(env: HostEnv, pageIdArg: string | undefined): Record<s
       mainId: c.mainId,
       instanceCount: counts[c.key] ?? 0,
     })),
+    // Every page; read them with get_comments.
+    comments: { open: comments.open, resolved: comments.resolved },
   }
 }
 

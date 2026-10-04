@@ -39,6 +39,9 @@ export const HOST_TOOLS = [
   'duplicate_nodes',
   'move_nodes',
   'delete_nodes',
+  'get_comments',
+  'reply_to_comment',
+  'resolve_comment',
 ] as const satisfies readonly McpToolName[]
 
 export type HostToolName = (typeof HOST_TOOLS)[number]

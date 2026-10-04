@@ -27,6 +27,7 @@ Before anything else, load the full guide once per session: get_guide({ topic: "
 - Call get_font_family_info before your first typographic styling.
 - Review with get_screenshot after each meaningful change. When content clips, set the artboard height to "fit-content" instead of guessing a new height.
 - When you are done creating or editing, you MUST call finish_working_on_nodes.
+- Collaborators leave comments on layers: get_basic_info counts them (openComments per artboard). Read them with get_comments before editing an artboard that has some and whenever the user mentions comments or feedback; reply_to_comment when you addressed one, resolve_comment only when it is fully handled or the user asks.
 - Never show node IDs to the user.
 - For code, use get_jsx, get_computed_styles and get_tokens for exact values — never read sizes or colors off a screenshot.
 
@@ -229,7 +230,26 @@ The people using Baren care about craft.
   file without opening it (pass its `fileId`).
 - Never show node ids to the user; refer to layers by name ("the hero section").
 
-## 11. From design to code
+## 11. Comments
+
+- Collaborators pin comment threads on layers and artboards (or on the page): feedback,
+  questions, requests. `get_basic_info` reports `comments: { open, resolved }` for the file and
+  `openComments` on each artboard that has any.
+- Call `get_comments` before you edit an artboard with open comments, and whenever the user
+  mentions comments, feedback or "what they said". Narrow it with `nodeId` (a layer or artboard
+  and everything inside it) or `pageId`; `includeResolved: true` adds resolved threads. Each
+  thread says which layer and artboard it is on, where its pin is, and every message with its
+  author (`kind` "user" or "agent").
+- Treat open comments as requests from the team, but the user you are talking to has the last
+  word: if a comment conflicts with their instructions, ask.
+- When you have addressed a comment, `reply_to_comment` and say briefly what you changed ("Gap
+  is 16px now, matching the cards above"). Ask in a reply when a comment is unclear.
+- `resolve_comment` only when the feedback is fully handled, or when the user asks you to.
+  Never resolve a thread just because you read it.
+- Replies and resolutions show your name, sync to everyone at once and are not undone by the
+  user's Ctrl+Z.
+
+## 12. From design to code
 
 Read `get_guide({ topic: "code-export" })`. In short: `get_jsx` for structure, `get_tokens`
 (css or tailwind) for the theme, `get_computed_styles` for exact values, `get_fill_image` or

@@ -26,6 +26,8 @@ const SCHEMA_CODES: Record<string, AgentErrorCode> = {
   'invalid-parent': 'invalid_target',
   'invalid-token': 'invalid_argument',
   'invalid-payload': 'invalid_argument',
+  'invalid-comment': 'invalid_argument',
+  'comment-not-found': 'comment_not_found',
   cycle: 'cycle',
   loro: 'internal',
 }

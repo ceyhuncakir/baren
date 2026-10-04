@@ -883,8 +883,9 @@ failures are tool results `Error [<code>]: <message>`.
 | `get_screenshot` (JPEG, ≤ 1568 px / 1.15 MP), `get_fill_image`, `get_font_family_info`, `export` (png, jpg, webp, svg for vectors, pdf) | via the render window |
 | `create_tokens`, `set_tokens`, `create_artboard`, `write_html`, `update_styles`, `set_text_content`, `rename_nodes`, `duplicate_nodes` (`descendantIdMap`), `move_nodes`, `delete_nodes` | writes; per-entry errors in-band |
 | `finish_working_on_nodes` | presence only |
+| `get_comments` (read; `pageId`, `nodeId` = that layer and its descendants, `includeResolved`), `reply_to_comment`, `resolve_comment` | comment threads (`@baren/schema` comments); `get_basic_info` adds `comments: { open, resolved }` and `openComments` per artboard; writes commit with a `comment:` origin (out of design undo) and touch no artboard; author `{ id: 'agent:<name>', kind: 'agent' }`; unknown threads fail with `comment_not_found` |
 
-There are no comment tools. Node ids are TreeIDs and
+Node ids are TreeIDs and
 instance virtual ids; writes on virtual ids become overrides, structural writes on them fail
 with `instance_content`.
 

@@ -156,6 +156,9 @@ export type McpToolName =
   | 'delete_nodes'
   | 'finish_working_on_nodes'
   | 'export'
+  | 'get_comments'
+  | 'reply_to_comment'
+  | 'resolve_comment'
 
 /** Requests main sends to hosts and the render window that are not MCP tools (contract §4.6). */
 export type InternalToolName =
@@ -233,7 +236,9 @@ export type AgentErrorCode =
   | 'read_only'
   | 'token_exists'
   | 'token_not_found'
-  /** format/feature not available (video export, comments…) */
+  /** no comment thread with that id (deleted, or never existed) */
+  | 'comment_not_found'
+  /** format/feature not available (video export…) */
   | 'unsupported'
   /** output or input over a limit */
   | 'too_large'

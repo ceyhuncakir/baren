@@ -24,6 +24,8 @@ export const TOKEN_TYPES = [
 export const EXPORT_FORMATS = ['avif', 'jpg', 'mp4', 'pdf', 'png', 'svg', 'webm', 'webp'] as const
 export const SCALE_PATTERN = /^\d+(\.\d+)?(x|w|h|p)$/
 const TOKEN_NAME = /^--[a-zA-Z0-9_-]+$/
+/** `@baren/schema` MAX_COMMENT_LENGTH (main does not load the schema package; a test pins it). */
+export const MAX_COMMENT_LENGTH = 10_000
 
 const fileId = z
   .string()
@@ -241,6 +243,27 @@ export const schemas = {
       .optional(),
     nodeIds: z.array(z.string()).optional().describe('Artboards (or nodes in them) you finished.'),
   }),
+  get_comments: z.strictObject({
+    fileId,
+    pageId: z.string().optional().describe('Only this page (default: every page).'),
+    nodeId: z
+      .string()
+      .optional()
+      .describe(
+        'Only comments on this layer or inside it (an artboard ID gives all of its comments).',
+      ),
+    includeResolved: z.boolean().optional().describe('Include resolved threads (default false).'),
+  }),
+  reply_to_comment: z.strictObject({
+    fileId,
+    threadId: z.string().min(1).describe('Thread ID from get_comments.'),
+    body: z.string().min(1).max(MAX_COMMENT_LENGTH).describe('Your reply (plain text).'),
+  }),
+  resolve_comment: z.strictObject({
+    fileId,
+    threadId: z.string().min(1).describe('Thread ID from get_comments.'),
+    resolved: z.boolean().optional().describe('false reopens a resolved thread (default true).'),
+  }),
   export: z.strictObject({
     fileId,
     pageId: z.string().optional(),
@@ -307,7 +330,7 @@ export const TOOL_META: Record<McpToolName, ToolMeta> = {
     title: 'Get basic file info',
     kind: 'read',
     description:
-      'Get essential context about a design file: file name, the page, node count, artboards with their sizes and positions, pages, font families in use, design tokens and components. Call it first. Without fileId the file the user is looking at is used; without pageId the page they are viewing. worldX/worldY/width/height are null when they depend on layout and the node has not been measured. Pass pageId to work on another page without disturbing the user.',
+      'Get essential context about a design file: file name, the page, node count, artboards with their sizes and positions (and openComments when collaborators left comments on them), pages, font families in use, design tokens, components and comment counts. Call it first. Without fileId the file the user is looking at is used; without pageId the page they are viewing. worldX/worldY/width/height are null when they depend on layout and the node has not been measured. Pass pageId to work on another page without disturbing the user.',
   },
   list_files: {
     title: 'List files',
@@ -470,6 +493,24 @@ export const TOOL_META: Record<McpToolName, ToolMeta> = {
     kind: 'write',
     description:
       'MUST be called when you are done working. Removes your "working" indicator from the artboards you were editing. Call with no nodeIds to release all of them at once, or pass the IDs of the artboards you finished (preferred when several agents work in the file).',
+  },
+  get_comments: {
+    title: 'Get comments',
+    kind: 'read',
+    description:
+      'Read the comment threads collaborators pinned on layers: their feedback, questions and requests. Call it before you edit an artboard that has openComments in get_basic_info, and whenever the user mentions comments or feedback. Open threads only unless includeResolved is true; narrow with pageId or nodeId (a layer or artboard and everything inside it). Each thread has its status, the page, layer and artboard it is pinned on, its page position and its messages (author name and kind "user" or "agent", text, ISO time), oldest first.',
+  },
+  reply_to_comment: {
+    title: 'Reply to comment',
+    kind: 'write',
+    description:
+      "Reply in a comment thread as yourself (shown with your agent name, visible to every collaborator). Reply when you have addressed a comment: say briefly what you changed, or ask what you need to know. Your reply is not undone by the user's design undo. Returns the updated thread.",
+  },
+  resolve_comment: {
+    title: 'Resolve comment',
+    kind: 'write',
+    description:
+      'Mark a comment thread resolved (or open again with resolved: false). Resolve only when the feedback is fully handled, or when the user asks you to; reply first to say what you did. Returns the updated thread.',
   },
   export: {
     title: 'Export',

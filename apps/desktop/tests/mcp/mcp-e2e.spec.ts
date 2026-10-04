@@ -74,7 +74,7 @@ test('a full design session through the MCP server', async () => {
   // 1. Tools, guide, files.
   await test.step('lists the tools, the guide and the files', async () => {
     const tools = (await client.listTools()).tools
-    expect(tools).toHaveLength(30)
+    expect(tools).toHaveLength(33)
     const guide = await call(client, 'get_guide', { topic: 'baren-mcp-instructions' })
     expect(String(guide.body)).toMatch(/^# Working in Baren/)
     const files = (await call(client, 'list_files')).body as { files: unknown[] }
@@ -356,7 +356,7 @@ test('a full design session through the MCP server', async () => {
     await expect(client.callTool({ name: 'list_files', arguments: {} })).rejects.toThrow()
     const fresh = await connect({ url: endpoint.url, token: setup.token }, 'baren-e2e-2')
     clients.push(fresh)
-    expect((await fresh.listTools()).tools).toHaveLength(30)
+    expect((await fresh.listTools()).tools).toHaveLength(33)
   })
   if (process.env['BAREN_MCP_E2E_VERBOSE']) console.log('mcp e2e: all ten steps passed')
 })

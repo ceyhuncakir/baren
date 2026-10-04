@@ -263,7 +263,7 @@ test('the packaged app: an agent builds a screen, a collaborator watches it appe
   const ids: Record<string, string> = {}
 
   await test.step('the agent finds the shared file and reads the guide', async () => {
-    expect((await agent.listTools()).tools).toHaveLength(30)
+    expect((await agent.listTools()).tools).toHaveLength(33)
     const guide = String((await call(agent, 'get_guide', { topic: 'baren-mcp-instructions' })).body)
     expect(guide.length).toBeGreaterThan(2_000)
     const files = (await call(agent, 'list_files')).body as {
@@ -468,7 +468,7 @@ test('the packaged app: an agent builds a screen, a collaborator watches it appe
     const stdio = new Client({ name: 'cursor', version: '1.0.0' })
     await stdio.connect(transport)
     clients.push(stdio)
-    expect((await stdio.listTools()).tools).toHaveLength(30)
+    expect((await stdio.listTools()).tools).toHaveLength(33)
 
     // No fileId: the file in the most recently focused window (A's editor).
     const info = (await call(stdio, 'get_basic_info')).body as {

@@ -87,7 +87,7 @@ test('agents over HTTP and stdio survive an app restart', async () => {
   const http = await connect(endpoint, 'claude-code')
   clients.push(http)
   const { client: stdio, stderr } = await stdioClient('codex-mcp-client')
-  expect((await stdio.listTools()).tools).toHaveLength(30)
+  expect((await stdio.listTools()).tools).toHaveLength(33)
 
   const file = (await call(stdio, 'create_file', { name: 'Restart' })).body as { fileId: string }
   const board = (

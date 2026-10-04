@@ -5,8 +5,32 @@ import { describe, expect, it } from 'vitest'
 import { isAuthUrl, isHomeUrl } from '../hosts'
 import { pngHasAlpha } from '../assets'
 import { deadlines, fileUrl, parseFileRef, underDeadline } from './context'
-import { hostArgs } from './host'
+import { MAX_COMMENT_LENGTH as SCHEMA_MAX_COMMENT_LENGTH } from '@baren/schema'
+import { HOST_TOOLS, hostArgs } from './host'
 import { exportMultiplier, parseScale, sanitizeFileName, uniquePath } from './pixels'
+import { MAX_COMMENT_LENGTH, schemas } from './schemas'
+
+describe('comment tools', () => {
+  it("run in the host and share the schema package's comment length limit", () => {
+    expect(MAX_COMMENT_LENGTH).toBe(SCHEMA_MAX_COMMENT_LENGTH)
+    for (const tool of ['get_comments', 'reply_to_comment', 'resolve_comment'] as const) {
+      expect(HOST_TOOLS).toContain(tool)
+    }
+    const reply = schemas.reply_to_comment
+    expect(reply.safeParse({ threadId: 't', body: 'x'.repeat(MAX_COMMENT_LENGTH) }).success).toBe(
+      true,
+    )
+    expect(
+      reply.safeParse({ threadId: 't', body: 'x'.repeat(MAX_COMMENT_LENGTH + 1) }).success,
+    ).toBe(false)
+    expect(reply.safeParse({ threadId: 't', body: '' }).success).toBe(false)
+    expect(schemas.get_comments.safeParse({ includeResolved: true, nodeId: 'n' }).success).toBe(
+      true,
+    )
+    expect(schemas.resolve_comment.safeParse({ threadId: 't', extra: 1 }).success).toBe(false)
+    expect(hostArgs('get_comments', { fileId: 'f', pageId: 'p' }, null)).toEqual({ pageId: 'p' })
+  })
+})
 
 describe('file references (contract §4.5)', () => {
   it('accepts ids and the documented URL forms', () => {

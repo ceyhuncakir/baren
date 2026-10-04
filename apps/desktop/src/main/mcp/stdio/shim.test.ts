@@ -99,7 +99,7 @@ describe('stdio shim', () => {
       version: '0.1.0-shim',
     })
     const tools = await client.listTools()
-    expect(tools.tools).toHaveLength(30)
+    expect(tools.tools).toHaveLength(33)
     const guide = await client.callTool({ name: 'get_guide', arguments: { topic: 'images' } })
     expect((guide.content as { text: string }[])[0]!.text).toMatch(/^# Images/)
     expect(svc.agents.all().map((a) => a.name)).toContain('stdio-only-client')

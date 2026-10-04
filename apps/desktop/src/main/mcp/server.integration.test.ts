@@ -336,8 +336,13 @@ describe('MCP server over Streamable HTTP (SDK client)', () => {
       version: '0.1.0-test',
     })
     expect(client.getInstructions()).toContain('get_guide')
-    const tools = (await client.listTools()).tools.map((t) => t.name).sort()
+    const listed = (await client.listTools()).tools
+    const tools = listed.map((t) => t.name).sort()
     expect(tools).toEqual([...TOOL_NAMES].sort())
+    const annotations = (name: string) => listed.find((t) => t.name === name)?.annotations
+    expect(annotations('get_comments')).toMatchObject({ readOnlyHint: true })
+    expect(annotations('reply_to_comment')).toMatchObject({ readOnlyHint: false })
+    expect(annotations('resolve_comment')).toMatchObject({ readOnlyHint: false })
     const agent = svc.status().agents.find((a) => a.connected)
     expect(agent).toMatchObject({ name: 'Claude Code', client: 'claude-code', version: '2.1.0' })
   })
@@ -715,7 +720,7 @@ describe('MCP server over Streamable HTTP (SDK client)', () => {
     })
     await expect(old.callTool({ name: 'list_files', arguments: {} })).rejects.toThrow()
     const fresh = await connect('claude-code', setup.token)
-    expect((await fresh.listTools()).tools).toHaveLength(30)
+    expect((await fresh.listTools()).tools).toHaveLength(33)
 
     const off = await svc.setEnabled(false)
     expect(off).toMatchObject({ state: 'off', enabled: false, url: null })

@@ -30,8 +30,9 @@ and teams grow through email invites.
   files and app windows (Ctrl+C/X/V, Ctrl+Shift+V, Ctrl+D) that carries styles, images, tokens and
   components. All of it works live between collaborators.
 - **Built-in MCP server:** coding agents (Claude Code, Cursor, Codex, any MCP client) read and
-  edit your files live through 30 tools: read the layer tree, write HTML into the document,
-  change styles and text, take screenshots, and export JSX and images. Every agent edit appears
+  edit your files live through 33 tools: read the layer tree, write HTML into the document,
+  change styles and text, take screenshots, export JSX and images, and read and answer
+  collaborators' comments. Every agent edit appears
   on the canvas at once, syncs to collaborators and undoes as one step, and the agent shows up
   like a collaborator. See [Connect your agent](#connect-your-agent).
 
@@ -235,7 +236,7 @@ Mac warning and is required for Mac auto-update; both would be set up in
 
 The desktop app runs an MCP server for coding agents while it is open. It listens on
 `http://127.0.0.1:29170/mcp` (loopback only; if that port is taken, the next free one) and
-every request needs the app's bearer token. The server has 30 tools:
+every request needs the app's bearer token. The server has 33 tools:
 
 - **Read:** `get_basic_info` (pages, artboards, fonts, tokens and components; agents call it
   first), `get_tree_summary`, `get_children`, `get_node_info`, `find_nodes`, `get_selection`,
@@ -246,6 +247,9 @@ every request needs the app's bearer token. The server has 30 tools:
 - **Look and export:** `get_screenshot`, `get_jsx` (Tailwind or inline styles), `export`
   (PNG, JPG, WebP, PDF; SVG for vector layers), `get_fill_image`, `get_font_family_info`.
 - **Files and pages:** `list_files`, `open_file`, `create_file`, `create_page`, `rename_pages`.
+- **Comments:** `get_comments` reads the threads collaborators pinned on layers (`get_basic_info`
+  counts the open ones per artboard), `reply_to_comment` answers one and `resolve_comment`
+  closes it. Agent replies show with the agent's name and are not undone by design undo.
 - **Session:** `get_guide` serves the instructions an agent reads before it starts, and
   `finish_working_on_nodes` tells collaborators the agent is done.
 
