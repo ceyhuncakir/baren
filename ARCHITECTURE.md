@@ -871,7 +871,9 @@ parentId, worldX/worldY, size), a tree `summary` and `warnings`.
 
 ### Agent presence and UI
 
-- Main's agent registry: display name from `clientInfo` (e.g. "Claude Code"), per-file activity
+- Main's agent registry: display name from `clientInfo` (e.g. "Claude Code"); sessions with the
+  same display name are **one agent** (one presence id kept across reconnects, one MCP row, one
+  avatar, one working badge, merged working sets that any of its sessions can release), per-file activity
   and **working sets** (artboards touched by write calls; renewed by any call touching them;
   cleared by `finish_working_on_nodes`, 120 s idle, or the session ending), recent agents
   (`agents.json`). Every agent uses the one agent accent (`--color-agent` and its ring, glow and

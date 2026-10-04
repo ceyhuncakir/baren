@@ -685,12 +685,13 @@ describe('MCP server over Streamable HTTP (SDK client)', () => {
     }
   })
 
-  it('keeps two sessions apart and ends one with DELETE', async () => {
+  it('keeps two sessions apart, shows them as one agent and ends one with DELETE', async () => {
     const a = await connect('claude-code')
     const b = await connect('claude-code')
-    const names = svc.agents.all().map((s) => s.name)
-    expect(names).toContain('Claude Code')
-    expect(names).toContain('Claude Code 2')
+    const claude = svc.agents.all().filter((s) => s.name === 'Claude Code')
+    expect(claude.length).toBeGreaterThanOrEqual(2)
+    expect(new Set(claude.map((s) => s.presenceId)).size).toBe(1)
+    expect(svc.agents.statusAgents().filter((s) => s.name === 'Claude Code')).toHaveLength(1)
     const before = svc.sessions.size
     const transport = (b as unknown as { transport: StreamableHTTPClientTransport }).transport
     await transport.terminateSession()

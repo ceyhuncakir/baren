@@ -3,6 +3,11 @@
  * activity and working sets (the "<name> is working" indicators), plus the recently seen agents
  * of `<userData>/mcp/agents.json` for the home card.
  *
+ * Sessions with the same display name are one agent: a client that reconnects, or a script that
+ * opens a session per run, shows as one row, one avatar and one working badge (presence id, MCP
+ * section, `statusAgents`). Their working sets are merged and `finish_working_on_nodes` from any
+ * of them releases the agent's indicators.
+ *
  * - Every successful write adds the response's `touched` artboards to the session's working set
  *   for that file (expiry now + 120 s); any later call touching an artboard renews it;
  *   `finish_working_on_nodes` releases; a sweep drops expired entries; closing a session drops
@@ -56,15 +61,6 @@ export function baseDisplayName(info: ClientInfo | null | undefined): string {
   return name || 'Agent'
 }
 
-/** `base`, or `base 2`, `base 3`… so live sessions never share a name. */
-export function uniqueName(base: string, taken: ReadonlySet<string>): string {
-  if (!taken.has(base)) return base
-  for (let i = 2; ; i++) {
-    const candidate = `${base} ${i}`
-    if (!taken.has(candidate)) return candidate
-  }
-}
-
 /** 12 random base36 characters: the agent's id in presence data. */
 export function newPresenceId(): string {
   const bytes = randomBytes(12)
@@ -86,8 +82,7 @@ export interface AgentSession {
   presenceId: string
   client: string
   version: string | null
-  /** Base display name (without the " 2" suffix). */
-  baseName: string
+  /** Display name; sessions that share it are one agent (one presence id). */
   name: string
   identified: boolean
   connectedAt: number
@@ -230,6 +225,8 @@ export interface AgentRegistryOptions {
 
 export class AgentRegistry {
   private readonly sessions = new Map<string, AgentSession>()
+  /** Display name → presence id, kept for the process so a reconnecting agent keeps its id. */
+  private readonly presenceIds = new Map<string, string>()
 
   constructor(private readonly options: AgentRegistryOptions = {}) {}
 
@@ -256,10 +253,9 @@ export class AgentRegistry {
     const now = this.now()
     const session: AgentSession = {
       sessionId,
-      presenceId: newPresenceId(),
+      presenceId: this.presenceIdFor('Agent'),
       client: 'unknown',
       version: null,
-      baseName: 'Agent',
       name: 'Agent',
       identified: false,
       connectedAt: now,
@@ -271,16 +267,22 @@ export class AgentRegistry {
     }
     this.sessions.set(sessionId, session)
     if (client) this.identify(sessionId, client)
-    else session.name = this.uniqueFor(session, session.baseName)
     this.options.onChange?.()
     return session
   }
 
-  private uniqueFor(session: AgentSession, base: string): string {
-    const taken = new Set(
-      [...this.sessions.values()].filter((s) => s !== session).map((s) => s.name),
-    )
-    return uniqueName(base, taken)
+  private presenceIdFor(name: string): string {
+    let id = this.presenceIds.get(name)
+    if (id === undefined) {
+      id = newPresenceId()
+      this.presenceIds.set(name, id)
+    }
+    return id
+  }
+
+  /** The session and every other live session of the same agent. */
+  private siblings(session: AgentSession): AgentSession[] {
+    return [...this.sessions.values()].filter((s) => s.presenceId === session.presenceId)
   }
 
   /** `clientInfo` from `initialize`: sets the display name. */
@@ -289,8 +291,8 @@ export class AgentRegistry {
     if (!session) return undefined
     session.client = client.name || 'unknown'
     session.version = client.version ?? null
-    session.baseName = baseDisplayName(client)
-    session.name = this.uniqueFor(session, session.baseName)
+    session.name = baseDisplayName(client)
+    session.presenceId = this.presenceIdFor(session.name)
     session.identified = true
     this.options.onChange?.()
     for (const fileId of session.files.keys()) this.options.onFilePresence?.(fileId)
@@ -325,7 +327,7 @@ export class AgentRegistry {
       if (!wasActive) this.options.onFilePresence?.(fileId)
     }
     this.options.recent?.update({
-      name: session.baseName,
+      name: session.name,
       client: session.client,
       lastActivityAt: now,
       lastFileId: session.lastFileId,
@@ -373,21 +375,25 @@ export class AgentRegistry {
     }
   }
 
-  /** Artboards in this session's working set for a file (or every file). */
+  /** Artboards in the working set of this session's agent for a file (or every file). */
   working(sessionId: string, fileId: string | null = null): Map<string, string[]> {
-    const out = new Map<string, string[]>()
+    const sets = new Map<string, Set<string>>()
     const session = this.sessions.get(sessionId)
-    if (!session) return out
-    for (const [id, a] of session.files) {
-      if (fileId !== null && id !== fileId) continue
-      if (a.working.size > 0) out.set(id, [...a.working.keys()])
+    if (!session) return new Map()
+    for (const s of this.siblings(session)) {
+      for (const [id, a] of s.files) {
+        if ((fileId !== null && id !== fileId) || a.working.size === 0) continue
+        const set = sets.get(id) ?? new Set<string>()
+        for (const artboard of a.working.keys()) set.add(artboard)
+        sets.set(id, set)
+      }
     }
-    return out
+    return new Map([...sets].map(([id, set]) => [id, [...set]]))
   }
 
   /**
-   * Release working indicators: every one of the session in `fileId` (or in every file when
-   * null), or only `artboardIds`. Never fails for ids that were not marked.
+   * Release working indicators of this session's agent: every one in `fileId` (or in every file
+   * when null), or only `artboardIds`. Never fails for ids that were not marked.
    */
   release(
     sessionId: string,
@@ -396,24 +402,26 @@ export class AgentRegistry {
   ): { released: string[]; remaining: string[] } {
     const session = this.sessions.get(sessionId)
     if (!session) return { released: [], remaining: [] }
-    const released: string[] = []
-    const remaining: string[] = []
-    for (const [id, a] of session.files) {
-      const inScope = fileId === null || id === fileId
-      let changed = false
-      for (const artboard of [...a.working.keys()]) {
-        if (inScope && (artboardIds === null || artboardIds.includes(artboard))) {
-          a.working.delete(artboard)
-          released.push(artboard)
-          changed = true
-        } else if (inScope) {
-          remaining.push(artboard)
+    const released = new Set<string>()
+    const remaining = new Set<string>()
+    const changedFiles = new Set<string>()
+    for (const s of this.siblings(session)) {
+      for (const [id, a] of s.files) {
+        if (fileId !== null && id !== fileId) continue
+        for (const artboard of [...a.working.keys()]) {
+          if (artboardIds === null || artboardIds.includes(artboard)) {
+            a.working.delete(artboard)
+            released.add(artboard)
+            changedFiles.add(id)
+          } else {
+            remaining.add(artboard)
+          }
         }
       }
-      if (changed) this.options.onFilePresence?.(id)
     }
-    if (released.length > 0) this.options.onChange?.()
-    return { released, remaining }
+    for (const id of changedFiles) this.options.onFilePresence?.(id)
+    if (released.size > 0) this.options.onChange?.()
+    return { released: [...released], remaining: [...remaining].filter((a) => !released.has(a)) }
   }
 
   /**
@@ -473,42 +481,63 @@ export class AgentRegistry {
     return [...out]
   }
 
-  /** The `agent:presence` list for a file. */
+  /** The `agent:presence` list for a file: one entry per agent, its sessions merged. */
   presenceFor(fileId: string): AgentPresence[] {
     const now = this.now()
-    const out: AgentPresence[] = []
+    const byAgent = new Map<string, AgentPresence>()
     for (const s of this.sessions.values()) {
       if (!this.isActiveIn(s, fileId, now)) continue
       const a = s.files.get(fileId)
-      out.push({
-        id: s.presenceId,
-        name: s.name,
-        working: a ? [...a.working.keys()] : [],
-        activeAt: a?.lastActivityAt ?? s.lastActivityAt,
-      })
+      const activeAt = a?.lastActivityAt ?? s.lastActivityAt
+      const working = a ? [...a.working.keys()] : []
+      const entry = byAgent.get(s.presenceId)
+      if (!entry) {
+        byAgent.set(s.presenceId, { id: s.presenceId, name: s.name, working, activeAt })
+        continue
+      }
+      for (const w of working) if (!entry.working.includes(w)) entry.working.push(w)
+      entry.activeAt = Math.max(entry.activeAt, activeAt)
     }
-    return out.sort((x, y) => y.activeAt - x.activeAt)
+    return [...byAgent.values()].sort((x, y) => y.activeAt - x.activeAt)
   }
 
-  /** `McpStatus.agents`: live sessions, then recently seen agents without one. */
+  /**
+   * `McpStatus.agents`: live agents (their sessions merged; the most recently active one names
+   * the client, version and last file), then recently seen agents without a live session.
+   */
   statusAgents(): McpAgentInfo[] {
-    const live: McpAgentInfo[] = [...this.sessions.values()]
+    const byAgent = new Map<string, AgentSession[]>()
+    for (const s of this.sessions.values()) {
+      byAgent.set(s.presenceId, [...(byAgent.get(s.presenceId) ?? []), s])
+    }
+    const live: McpAgentInfo[] = [...byAgent.values()]
+      .map((group) => {
+        const sorted = group.sort((a, b) => b.lastActivityAt - a.lastActivityAt)
+        const s = sorted[0] as AgentSession
+        const files = new Map<string, Set<string>>()
+        for (const member of sorted) {
+          for (const [fileId, a] of member.files) {
+            if (a.working.size === 0) continue
+            const set = files.get(fileId) ?? new Set<string>()
+            for (const w of a.working.keys()) set.add(w)
+            files.set(fileId, set)
+          }
+        }
+        return {
+          name: s.name,
+          client: s.client,
+          version: s.version,
+          connected: true,
+          presenceId: s.presenceId,
+          connectedAt: Math.min(...sorted.map((m) => m.connectedAt)),
+          lastActivityAt: s.lastActivityAt,
+          lastFileId: sorted.find((m) => m.lastFileId !== null)?.lastFileId ?? null,
+          lastFileName: sorted.find((m) => m.lastFileName !== null)?.lastFileName ?? null,
+          files: [...files].map(([fileId, set]) => ({ fileId, working: [...set] })),
+        }
+      })
       .sort((a, b) => b.lastActivityAt - a.lastActivityAt)
-      .map((s) => ({
-        name: s.name,
-        client: s.client,
-        version: s.version,
-        connected: true,
-        presenceId: s.presenceId,
-        connectedAt: s.connectedAt,
-        lastActivityAt: s.lastActivityAt,
-        lastFileId: s.lastFileId,
-        lastFileName: s.lastFileName,
-        files: [...s.files]
-          .filter(([, a]) => a.working.size > 0)
-          .map(([fileId, a]) => ({ fileId, working: [...a.working.keys()] })),
-      }))
-    const liveNames = new Set([...this.sessions.values()].map((s) => s.baseName))
+    const liveNames = new Set([...this.sessions.values()].map((s) => s.name))
     const recent: McpAgentInfo[] = (this.options.recent?.list() ?? [])
       .filter((r) => !liveNames.has(r.name))
       .map((r) => ({

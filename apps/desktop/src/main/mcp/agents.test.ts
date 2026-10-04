@@ -9,7 +9,6 @@ import {
   RecentAgentsStore,
   baseDisplayName,
   newPresenceId,
-  uniqueName,
 } from './agents'
 
 describe('display names (contract §4.4)', () => {
@@ -40,12 +39,6 @@ describe('display names (contract §4.4)', () => {
     expect(baseDisplayName(null)).toBe('Agent')
   })
 
-  it('suffixes duplicates of live sessions', () => {
-    expect(uniqueName('Cursor', new Set())).toBe('Cursor')
-    expect(uniqueName('Cursor', new Set(['Cursor']))).toBe('Cursor 2')
-    expect(uniqueName('Cursor', new Set(['Cursor', 'Cursor 2']))).toBe('Cursor 3')
-  })
-
   it('generates 12-character base36 presence ids', () => {
     expect(newPresenceId()).toMatch(/^[0-9a-z]{12}$/)
   })
@@ -68,20 +61,64 @@ describe('AgentRegistry', () => {
     return { reg, presence }
   }
 
-  it('names sessions on identify, with suffixes for live duplicates', () => {
+  it('names sessions on identify; sessions with the same name are one agent', () => {
     const { reg } = registry()
     reg.open('s1')
     reg.identify('s1', { name: 'claude-code', version: '2.0.1' })
     reg.open('s2', { name: 'claude-code' })
+    reg.open('s3', { name: 'cursor' })
     expect(reg.get('s1')).toMatchObject({
       name: 'Claude Code',
       client: 'claude-code',
       version: '2.0.1',
     })
-    expect(reg.get('s2')?.name).toBe('Claude Code 2')
+    expect(reg.get('s2')?.name).toBe('Claude Code')
+    expect(reg.get('s2')?.presenceId).toBe(reg.get('s1')?.presenceId)
+    expect(reg.get('s3')?.presenceId).not.toBe(reg.get('s1')?.presenceId)
+    // A reconnect keeps the agent's presence id.
+    const id = reg.get('s1')!.presenceId
     reg.close('s1')
-    reg.open('s3', { name: 'claude-code' })
-    expect(reg.get('s3')?.name).toBe('Claude Code')
+    reg.close('s2')
+    reg.open('s4', { name: 'claude-code' })
+    expect(reg.get('s4')?.presenceId).toBe(id)
+  })
+
+  it('merges the sessions of one agent in presence, status and releases', () => {
+    const { reg } = registry()
+    reg.open('s1', { name: 'copy' })
+    reg.noteCall('s1', 'f1', 'File')
+    reg.touch('s1', 'f1', ['a1'], true)
+    now += 1_000
+    reg.open('s2', { name: 'copy' })
+    reg.noteCall('s2', 'f1', 'File')
+    reg.touch('s2', 'f1', ['a1', 'a2'], true)
+    now += 1_000
+    reg.open('s3', { name: 'copy' })
+
+    const presence = reg.presenceFor('f1')
+    expect(presence).toHaveLength(1)
+    expect(presence[0]).toMatchObject({
+      name: 'copy',
+      working: ['a1', 'a2'],
+      activeAt: now - 1_000,
+    })
+
+    const status = reg.statusAgents()
+    expect(status).toHaveLength(1)
+    expect(status[0]).toMatchObject({
+      name: 'copy',
+      connected: true,
+      connectedAt: 1_000_000,
+      lastFileName: 'File',
+      files: [{ fileId: 'f1', working: ['a1', 'a2'] }],
+    })
+
+    // Any session of the agent sees and releases the agent's indicators.
+    expect(reg.working('s3').get('f1')).toEqual(['a1', 'a2'])
+    expect(reg.release('s3', 'f1', ['a1'])).toEqual({ released: ['a1'], remaining: ['a2'] })
+    expect(reg.presenceFor('f1')[0]!.working).toEqual(['a2'])
+    expect(reg.release('s1', null, null)).toEqual({ released: ['a2'], remaining: [] })
+    expect(reg.hasWorkingSet('f1')).toBe(false)
   })
 
   it('adds written artboards to the working set, renews on reads, expires after 120 s', () => {
