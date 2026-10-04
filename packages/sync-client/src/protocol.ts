@@ -90,6 +90,17 @@ export interface AgentWirePresence {
   working: string[]
 }
 
+/**
+ * The world rectangle a client's canvas shows, so collaborators can follow it. Finite, size ≥ 0
+ * (the server drops frames otherwise). Additive: old servers drop it, old clients ignore it.
+ */
+export interface ViewportPresence {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 /** What a client reports about itself; identity is added by the server. */
 export interface ClientPresence {
   pageId: string | null
@@ -99,6 +110,8 @@ export interface ClientPresence {
   transient?: TransientPresence | null
   /** MCP agents working through this client; absent or empty when there are none. */
   agents?: AgentWirePresence[]
+  /** Absent or `null` when unknown (e.g. the canvas is not mounted yet). */
+  viewport?: ViewportPresence | null
 }
 
 /** One connected client, as fanned out by the server. */
@@ -130,6 +143,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function isViewport(value: unknown): value is ViewportPresence {
+  if (!isRecord(value)) return false
+  const { x, y, width, height } = value
+  return (
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
+    (width as number) >= 0 &&
+    (height as number) >= 0
+  )
+}
+
 function isAgent(value: unknown): value is AgentWirePresence {
   return (
     isRecord(value) &&
@@ -155,12 +181,13 @@ export function parseServerText(text: string): ServerText | null {
       return typeof value['clientId'] === 'string' ? (value as ServerText) : null
     case 'presence': {
       if (typeof value['clientId'] !== 'string' || !Array.isArray(value['selection'])) return null
-      // Agents are optional (Phase 4); malformed entries are dropped, never the whole frame.
+      // Agents and viewport are optional; malformed values are dropped, never the whole frame.
+      const frame: Record<string, unknown> = { ...value }
       if ('agents' in value) {
-        const agents = Array.isArray(value['agents']) ? value['agents'].filter(isAgent) : []
-        return { ...value, agents } as ServerText
+        frame['agents'] = Array.isArray(value['agents']) ? value['agents'].filter(isAgent) : []
       }
-      return value as ServerText
+      if ('viewport' in value && !isViewport(value['viewport'])) frame['viewport'] = null
+      return frame as unknown as ServerText
     }
     case 'error':
       return typeof value['code'] === 'string' ? (value as ServerText) : null

@@ -11,10 +11,10 @@
  *    resolved node's sections with override dots (31); main components add the Component
  *    section above the frame sections
  */
-import { Avatar, EditorPanel, PanelHeader } from '@baren/ui'
-import { memo } from 'react'
+import { Avatar, cx, EditorPanel, PanelHeader } from '@baren/ui'
+import { memo, type CSSProperties } from 'react'
 import { uniquePeers } from '../collab/presence'
-import { useEditorState, useSelectedNodes } from '../session/context'
+import { useEditor, useEditorState, useSelectedNodes } from '../session/context'
 import { TokenInspector } from '../theme/TokenInspector'
 import { BlendingSection, FillSection, RadiusSection } from './sections/AppearanceSections'
 import { ComponentSection, hasComponentSection } from './sections/ComponentSection'
@@ -42,10 +42,15 @@ export function agentTooltip(agent: Pick<EditorAgent, 'name' | 'via'>): string {
   return agent.via ? `${agent.name} (${agent.via}'s agent)` : `${agent.name} (agent)`
 }
 
-/** People first (circles), then agents (rounded squares, 35), then "+N". */
+/**
+ * People first (circles), then agents (rounded squares, 35), then "+N". A collaborator's avatar
+ * toggles following them (`collab/follow`); the followed one gets a ring in their colour.
+ */
 const Collaborators = memo(function Collaborators() {
+  const { store } = useEditor()
   const identity = useEditorState((s) => s.identity)
   const peers = useEditorState((s) => s.peers)
+  const following = useEditorState((s) => s.following)
   const agents = useEditorAgents()
   const others = uniquePeers(peers, identity?.userId ?? null)
   const seen = new Set<string>()
@@ -58,9 +63,24 @@ const Collaborators = memo(function Collaborators() {
         size={22}
         {...(identity ? {} : { variant: 'muted' as const })}
       />
-      {others.slice(0, MAX_PEOPLE).map((p) => (
-        <Avatar key={p.userId} name={p.name} size={22} color={p.color} title={p.name} />
-      ))}
+      {others.slice(0, MAX_PEOPLE).map((p) => {
+        const on = following === p.userId
+        const label = on ? `Stop following ${p.name}` : `Follow ${p.name}`
+        return (
+          <button
+            key={p.userId}
+            type="button"
+            className={cx(css.follow, on && css.following)}
+            style={{ '--follow-color': p.color } as CSSProperties}
+            title={label}
+            aria-label={label}
+            aria-pressed={on}
+            onClick={() => store.setState({ following: on ? null : p.userId })}
+          >
+            <Avatar name={p.name} size={22} color={p.color} />
+          </button>
+        )
+      })}
       {bots.slice(0, MAX_AGENTS).map((a) => (
         <Avatar
           key={a.id}

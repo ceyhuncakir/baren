@@ -24,6 +24,29 @@
   box-shadow: 0 0 0 2px var(--color-surface);
 }
 
+/* A collaborator's avatar: a button that toggles following them. */
+.follow {
+  display: flex;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  cursor: pointer;
+}
+
+.follow:focus-visible {
+  outline: 2px solid var(--color-selection);
+  outline-offset: 2px;
+}
+
+.avatars > .following {
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 3.5px var(--follow-color);
+}
+
 /* Hug/Fit/Fill shown as the field text (not a muted placeholder). */
 .modeField input::placeholder {
   color: var(--color-foreground);

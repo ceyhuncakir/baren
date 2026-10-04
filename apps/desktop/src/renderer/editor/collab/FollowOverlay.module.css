@@ -1,0 +1,44 @@
+/* Following a collaborator: border and pill in their colour (`--follow-color`). */
+
+.frame {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 2px solid var(--follow-color);
+  pointer-events: none;
+}
+
+.pill {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  padding: 0 2px 0 10px;
+  border-radius: var(--radius-full);
+  background: var(--follow-color);
+  color: var(--follow-fg);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.label {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stop {
+  border-radius: var(--radius-full);
+  color: inherit;
+}
+
+.stop:hover {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  color: inherit;
+}

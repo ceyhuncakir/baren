@@ -621,6 +621,7 @@ impl Room {
             selection: presence.selection,
             transient: presence.transient,
             agents: presence.agents,
+            viewport: presence.viewport,
         })
         .to_json()
         .into();

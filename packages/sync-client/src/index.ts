@@ -29,6 +29,7 @@ export {
   type Point,
   type ServerText,
   type TransientPresence,
+  type ViewportPresence,
   type WelcomeMessage,
 } from './protocol.ts'
 export {

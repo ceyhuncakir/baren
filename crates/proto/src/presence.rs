@@ -15,6 +15,9 @@
 //! Both directions may also carry an optional `agents` list (Phase 4): the MCP agents working
 //! through that client (`{ id, name, working }`, `working` = artboard ids with a "… is working"
 //! indicator). Additive: old servers drop it, old clients ignore it.
+//!
+//! And an optional `viewport`: the world rectangle the peer currently sees, so others can follow
+//! them. Additive in the same way.
 
 use serde::{Deserialize, Serialize};
 
@@ -60,6 +63,11 @@ impl Rect {
             && self.y.is_finite()
             && self.width.is_finite()
             && self.height.is_finite()
+    }
+
+    /// Finite, with a non-negative size.
+    pub fn is_valid_area(&self) -> bool {
+        self.is_finite() && self.width >= 0.0 && self.height >= 0.0
     }
 }
 
@@ -121,6 +129,8 @@ pub struct ClientPresence {
     pub transient: Option<Transient>,
     /// MCP agents working through this client (absent = none).
     pub agents: Vec<AgentPresence>,
+    /// World rectangle visible in this client's canvas (for following); absent = unknown.
+    pub viewport: Option<Rect>,
 }
 
 impl ClientPresence {
@@ -139,6 +149,9 @@ impl ClientPresence {
             if t.nodes.iter().any(|n| !n.rect.is_finite()) {
                 return Err("transient rects must be finite");
             }
+        }
+        if self.viewport.is_some_and(|v| !v.is_valid_area()) {
+            return Err("viewport must be finite with a non-negative size");
         }
         if self.agents.len() > MAX_AGENTS {
             return Err("too many agents");
@@ -166,6 +179,9 @@ pub struct Presence {
     /// MCP agents working through this client; omitted when empty.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub agents: Vec<AgentPresence>,
+    /// World rectangle visible in this client's canvas; omitted when unknown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub viewport: Option<Rect>,
 }
 
 /// Every text frame the server sends.
@@ -218,6 +234,7 @@ mod tests {
             selection: vec![],
             transient: None,
             agents: vec![],
+            viewport: None,
         });
         let json = serde_json::to_value(&p).unwrap();
         assert_eq!(json["type"], "presence");
@@ -288,6 +305,7 @@ mod tests {
             selection: vec![],
             transient: p.transient.clone(),
             agents: vec![],
+            viewport: None,
         };
         let json = serde_json::to_value(ServerText::Presence(presence)).unwrap();
         assert_eq!(json["transient"]["kind"], "move");
@@ -303,6 +321,7 @@ mod tests {
             selection: vec![],
             transient: None,
             agents: vec![],
+            viewport: None,
         }))
         .unwrap();
         assert!(idle.get("transient").is_none(), "absent when idle");
@@ -354,6 +373,7 @@ mod tests {
             selection: vec![],
             transient: None,
             agents: p.agents.clone(),
+            viewport: None,
         };
         let json = serde_json::to_value(ServerText::Presence(presence)).unwrap();
         assert_eq!(json["agents"][0]["id"], "k3v9q2m1x8z0");
@@ -394,5 +414,58 @@ mod tests {
             ..Default::default()
         };
         assert!(ok.validate().is_ok());
+    }
+
+    #[test]
+    fn viewport_round_trips_and_is_validated() {
+        let p: ClientPresence = serde_json::from_str(
+            r#"{"selection":[],"viewport":{"x":-120.5,"y":40,"width":1440,"height":900}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            p.viewport,
+            Some(Rect {
+                x: -120.5,
+                y: 40.0,
+                width: 1440.0,
+                height: 900.0
+            })
+        );
+        assert!(p.validate().is_ok());
+        let none: ClientPresence = serde_json::from_str(r#"{"viewport":null}"#).unwrap();
+        assert!(none.viewport.is_none());
+
+        let presence = |viewport: Option<Rect>| Presence {
+            client_id: "c".into(),
+            user_id: "u".into(),
+            name: "n".into(),
+            color: "#6D4AFF".into(),
+            page_id: None,
+            cursor: None,
+            selection: vec![],
+            transient: None,
+            agents: vec![],
+            viewport,
+        };
+        let json = serde_json::to_value(ServerText::Presence(presence(p.viewport))).unwrap();
+        assert_eq!(json["viewport"]["width"], 1440.0);
+        let back: ServerText = serde_json::from_value(json).unwrap();
+        assert_eq!(back, ServerText::Presence(presence(p.viewport)));
+        let unknown = serde_json::to_value(ServerText::Presence(presence(None))).unwrap();
+        assert!(unknown.get("viewport").is_none(), "absent when unknown");
+
+        let bad = |viewport: Rect| ClientPresence {
+            viewport: Some(viewport),
+            ..Default::default()
+        };
+        let rect = |x: f64, width: f64| Rect {
+            x,
+            y: 0.0,
+            width,
+            height: 10.0,
+        };
+        assert!(bad(rect(f64::INFINITY, 10.0)).validate().is_err());
+        assert!(bad(rect(0.0, -1.0)).validate().is_err());
+        assert!(bad(rect(0.0, 0.0)).validate().is_ok());
     }
 }

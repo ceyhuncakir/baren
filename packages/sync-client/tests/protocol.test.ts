@@ -67,6 +67,21 @@ describe('parseServerText', () => {
     expect(parseServerText(`{${base}}`)).not.toHaveProperty('agents')
   })
 
+  it('keeps a valid viewport and nulls a malformed one', () => {
+    const base =
+      '"type":"presence","clientId":"c","userId":"u","name":"n","color":"#fff","pageId":null,"cursor":null,"selection":[]'
+    expect(
+      parseServerText(`{${base},"viewport":{"x":-10,"y":20.5,"width":1440,"height":900}}`),
+    ).toMatchObject({ viewport: { x: -10, y: 20.5, width: 1440, height: 900 } })
+    for (const bad of ['"nope"', '{"x":1,"y":2,"width":-3,"height":4}', '{"x":1,"y":2}']) {
+      expect(parseServerText(`{${base},"viewport":${bad}}`)).toMatchObject({
+        type: 'presence',
+        viewport: null,
+      })
+    }
+    expect(parseServerText(`{${base}}`)).not.toHaveProperty('viewport')
+  })
+
   it('ignores junk', () => {
     for (const text of [
       '',

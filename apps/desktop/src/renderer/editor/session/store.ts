@@ -73,6 +73,8 @@ export interface EditorState {
   remoteId: string | null
   peers: readonly PeerPresence[]
   self: WelcomeMessage | null
+  /** The collaborator (user id) whose page and viewport this canvas follows (`collab/follow`). */
+  following: string | null
   /** MCP agents in this file, local first (Phase 4 contract §10.2; `EditorSession.agents`). */
   agents: readonly EditorAgent[]
 }
@@ -113,6 +115,7 @@ export function createEditorStore(
     remoteId: null,
     peers: [],
     self: null,
+    following: null,
     agents: [],
     ...init,
   }))

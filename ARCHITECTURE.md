@@ -342,9 +342,15 @@ Live sync: `GET /ws/files/:id?token=…` (WebSocket). Binary frames, first byte 
 - `0x03` updates since that version (server → client; empty = already in sync).
 
 Text frames are presence JSON, never persisted. Client → server: `{ pageId, cursor: {x,y} | null,
-selection: string[], transient?: { kind: 'move'|'resize', nodes: {id, rect:{x,y,width,height}}[] } | null }`
-(world coordinates, ≤ 30 Hz). Server → client messages carry `type`: `welcome {clientId, userId,
-name, color, role}`, `presence` (the client fields + `clientId, userId, name, color`, identity filled
+selection: string[], transient?: { kind: 'move'|'resize', nodes: {id, rect:{x,y,width,height}}[] } | null,
+viewport?: {x,y,width,height} | null }` (world coordinates, ≤ 30 Hz; `viewport` is the world
+rectangle the canvas shows, finite with a non-negative size, additive: old servers drop it). It
+drives **Follow**: clicking a collaborator's avatar in the inspector header sets
+`EditorState.following` (their user id) and `editor/collab/follow.ts` shows their page and keeps
+their rectangle centred and whole in this canvas (through the window whose presence changed last),
+with a border and a "Following <name>" pill in their colour; panning, zooming, a click on the
+canvas, Escape, picking another page or the user leaving ends it. Server → client messages carry
+`type`: `welcome {clientId, userId, name, color, role}`, `presence` (the client fields + `clientId, userId, name, color`, identity filled
 in by the server), `leave {clientId, userId}`, `error {code, message}` (e.g. `read_only` for viewers).
 Close codes: `4401`/`4403`/`4404` terminal (bad token / no access / no file); `4400`, `4408`, `4429`,
 `4500`, `1012` retryable. The server keeps one `LoroDoc` per open room in its own task,

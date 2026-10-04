@@ -5,6 +5,8 @@
  * dragged over the column highlight the artboard they would land in and are inserted
  * at the drop point; components dragged from the Components panel or the picker highlight
  * the deepest frame that can take them (no component cycles) and become instances there.
+ * The visible world rectangle goes to collaborators as presence, and following a collaborator
+ * (`collab/follow`) drives the camera from theirs.
  */
 import type {
   CanvasController,
@@ -18,6 +20,9 @@ import { EmptyCanvasHint } from '@baren/ui'
 import { useCallback, useEffect, useMemo, useRef, type DragEvent } from 'react'
 import { wouldCreateCycleForKeys } from '@baren/schema'
 import { resolveCanvasAsset } from '../../lib/assets'
+import { FollowOverlay } from '../collab/FollowOverlay'
+import { visibleWorldRect } from '../collab/follow'
+import { useFollow } from '../collab/useFollow'
 import { draggedComponent, endComponentDrag } from '../components/componentDrag'
 import { dragHasFiles, imageFilesOf, insertImageFiles } from '../images/insert'
 import { PREVIEW_ORIGIN_PREFIX } from '../model/previewEdits'
@@ -30,6 +35,8 @@ import css from '../Editor.module.css'
 const UNDO_EXCLUDE = ['remote', 'sync', 'bench', 'fixture', PREVIEW_ORIGIN_PREFIX, 'derived']
 /** DesignCanvas defaults to `position: relative`; the canvas fills the column instead. */
 const CANVAS_STYLE = { position: 'absolute', inset: 0 } as const
+/** Viewport events during gestures: presence rate (30 Hz), so followers move smoothly. */
+const VIEWPORT_EMIT_MS = 33
 
 export function CanvasArea() {
   const session = useEditor()
@@ -39,6 +46,7 @@ export function CanvasArea() {
   useLayerTreeVersion()
   const empty = tree.children(pageId).length === 0
   const visited = useRef(new Set<string>())
+  const follow = useFollow(session)
 
   // The initial viewport applies only to the page the canvas is created with.
   const initialViewport = useMemo(() => session.initialViewports[pageId] ?? ('fit' as const), [doc])
@@ -49,6 +57,7 @@ export function CanvasArea() {
       if (!controller) return
       visited.current.add(controller.getPageId())
       store.setState({ zoom: controller.getViewport().zoom, tool: controller.getTool() })
+      session.presence.setViewport(visibleWorldRect(controller.getViewport()))
       controller.focus()
     },
     [session, store],
@@ -63,6 +72,9 @@ export function CanvasArea() {
     if (v) canvas.setViewport(v, { animate: false })
     store.setState({ zoom: canvas.getViewport().zoom })
   }, [pageId, session, store])
+
+  // After the page effects above: a page switch made by following gets its camera now.
+  useEffect(() => follow.onCanvasPage(), [pageId, follow])
 
   const onSelectionChange = useCallback(
     (ids: string[]) => {
@@ -81,8 +93,10 @@ export function CanvasArea() {
     (v: Viewport) => {
       if (store.getState().zoom !== v.zoom) store.setState({ zoom: v.zoom })
       session.rememberViewport(store.getState().pageId, v)
+      session.presence.setViewport(visibleWorldRect(v))
+      follow.onViewport(v)
     },
-    [session, store],
+    [session, store, follow],
   )
   const onToolChange = useCallback((tool: Tool) => store.setState({ tool }), [store])
   const onHistoryChange = useCallback(
@@ -189,6 +203,7 @@ export function CanvasArea() {
         doc={doc}
         pageId={pageId}
         viewport={initialViewport}
+        viewportChangeThrottleMs={VIEWPORT_EMIT_MS}
         keyboard="canvas"
         undoExcludeOriginPrefixes={UNDO_EXCLUDE}
         resolveAsset={resolveCanvasAsset}
@@ -205,6 +220,7 @@ export function CanvasArea() {
         onTransientChange={session.presence.setTransient}
       />
       {empty && <EmptyCanvasHint className={css.emptyHint} />}
+      <FollowOverlay />
       {!leftOpen && <PanelToggle floating />}
     </div>
   )

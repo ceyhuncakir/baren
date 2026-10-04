@@ -4,7 +4,7 @@
  * sync-client connection (which throttles to 30 Hz itself).
  */
 import type { Point, RemotePresence, TransientChange } from '@baren/canvas'
-import type { PeerPresence } from '@baren/sync-client'
+import type { PeerPresence, ViewportPresence } from '@baren/sync-client'
 import type { AgentWirePresence } from '../../agent/presence'
 
 export { agentPresences } from '../../agent/presence'
@@ -15,10 +15,16 @@ export interface PresenceSink {
 
 export class PresenceRelay {
   private sink: PresenceSink | null = null
-  private state: { pageId: string | null; cursor: Point | null; selection: string[] } = {
+  private state: {
+    pageId: string | null
+    cursor: Point | null
+    selection: string[]
+    viewport: ViewportPresence | null
+  } = {
     pageId: null,
     cursor: null,
     selection: [],
+    viewport: null,
   }
   /** MCP agents connected to this app, relayed to collaborators (Phase 4 contract §10.3). */
   private agents: AgentWirePresence[] = []
@@ -45,6 +51,12 @@ export class PresenceRelay {
   readonly setSelection = (selection: string[]): void => {
     this.state.selection = selection
     this.sink?.setPresence({ selection })
+  }
+
+  /** The world rectangle this canvas shows, so collaborators can follow it (`collab/follow`). */
+  readonly setViewport = (viewport: ViewportPresence | null): void => {
+    this.state.viewport = viewport
+    this.sink?.setPresence({ viewport })
   }
 
   /**
