@@ -82,6 +82,11 @@ export class FollowController {
   private applied: Viewport | null = null
   /** A page this controller switched to that the canvas does not show yet. */
   private pendingPage: string | null = null
+  /**
+   * True while this controller moves the camera: the canvas reports that move synchronously
+   * (its throttle emits on the leading edge), before `applied` holds the new camera.
+   */
+  private applying = false
   private readonly activity = new PeerActivity()
 
   constructor(
@@ -129,6 +134,7 @@ export class FollowController {
 
   /** The canvas camera moved or resized. */
   onViewport(v: Viewport): void {
+    if (this.applying) return
     if (this.store.getState().following === null || this.pendingPage !== null) return
     const applied = this.applied
     if (applied === null) return
@@ -162,7 +168,14 @@ export class FollowController {
     const rect = peer.viewport
     if (rect) {
       const target = cameraFor(rect, current.width, current.height)
-      if (!sameCamera(target, current)) canvas.setViewport(target, { animate: false })
+      if (!sameCamera(target, current)) {
+        this.applying = true
+        try {
+          canvas.setViewport(target, { animate: false })
+        } finally {
+          this.applying = false
+        }
+      }
     }
     this.applied = canvas.getViewport()
   }

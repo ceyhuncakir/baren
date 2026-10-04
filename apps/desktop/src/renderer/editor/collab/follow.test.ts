@@ -16,12 +16,17 @@ function peer(over: Partial<PeerPresence> & Pick<PeerPresence, 'clientId'>): Pee
   }
 }
 
-/** A canvas stand-in: page, camera and the calls the controller made. */
+/**
+ * A canvas stand-in: page, camera and the calls the controller made. `onChange` mirrors the
+ * real canvas, whose throttled `onViewportChange` fires synchronously inside `setViewport` when
+ * the last emit was long enough ago.
+ */
 function fakeCanvas(pageId = 'p1') {
   const state = {
     pageId,
     viewport: { x: 0, y: 0, zoom: 1, width: 1000, height: 800 } as Viewport,
     sets: 0,
+    onChange: null as ((v: Viewport) => void) | null,
   }
   const canvas = {
     getPageId: () => state.pageId,
@@ -29,6 +34,7 @@ function fakeCanvas(pageId = 'p1') {
     setViewport: (v: Partial<Viewport>) => {
       state.viewport = { ...state.viewport, ...v }
       state.sets += 1
+      state.onChange?.({ ...state.viewport })
     },
   } as unknown as CanvasController
   return { state, canvas }
@@ -104,6 +110,24 @@ describe('FollowController', () => {
     })
     expect(state.viewport).toMatchObject({ x: 100, zoom: 2 })
     expect(store.getState().following).toBe('u2')
+  })
+
+  it('keeps following while they pan and zoom (the canvas reports each move at once)', () => {
+    const { store, state, follow } = setup()
+    state.onChange = (v) => follow.onViewport(v)
+    const move = (viewport: { x: number; y: number; width: number; height: number }) =>
+      store.setState({ peers: [peer({ clientId: 'c', viewport })] })
+    move({ x: 0, y: 0, width: 500, height: 400 })
+    store.setState({ following: 'u2' })
+    move({ x: 300, y: 50, width: 500, height: 400 })
+    move({ x: 300, y: 50, width: 2000, height: 1600 })
+    move({ x: -40, y: 10, width: 250, height: 200 })
+    expect(store.getState().following).toBe('u2')
+    expect(state.viewport).toMatchObject({ x: -40, y: 10, zoom: 4 })
+    // A camera move of this user's own still ends following.
+    state.viewport = { ...state.viewport, x: state.viewport.x + 25 }
+    follow.onViewport({ ...state.viewport })
+    expect(store.getState().following).toBeNull()
   })
 
   it('switches to their page and applies the viewport once the canvas shows it', () => {
