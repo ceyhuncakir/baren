@@ -20,7 +20,7 @@ import { autoShareTeam, shareLocalFilesOnce } from '../state/autoShare'
 import { selectView } from '../state/fileViews'
 import { useFiles } from '../state/files'
 import { useSession } from '../state/session'
-import { pullTeamFilesOnce } from '../state/teamFiles'
+import { pullTeamFilesOnce, snapshotThumbnail } from '../state/teamFiles'
 import { useUi, type ViewMode } from '../state/ui'
 import { FileActions, type FileMenuState } from './FileActions'
 import { toCards } from './fileCards'
@@ -104,7 +104,11 @@ export function FilesScreen({ view }: { view: HomeView }) {
         })
         changed = shared > 0
       }
-      const { added } = await pullTeamFilesOnce(teams, { api, files: bridge.files })
+      const { added } = await pullTeamFilesOnce(teams, {
+        api,
+        files: bridge.files,
+        thumbnail: snapshotThumbnail,
+      })
       if (alive && (changed || added.length > 0)) void useFiles.getState().load()
     }
     const run = () => {

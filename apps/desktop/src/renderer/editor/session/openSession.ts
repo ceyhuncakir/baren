@@ -1,7 +1,8 @@
 /**
  * Open a design file for editing: load the Loro snapshot through the bridge, seed design
  * fixtures (browser fixture mode only), build the session caches and the save pipeline.
- * `close()` flushes pending changes, saves preferences and captures the file thumbnail.
+ * `close()` flushes pending changes and saves preferences; the file thumbnail is written once
+ * saves settle and on close (thumbnailWriter.ts).
  *
  * Opens and closes of the same file are serialized: React StrictMode mounts the editor
  * twice in development, and the second open must see what the first one saved.
@@ -14,13 +15,7 @@ import { getChildIds, loadDoc } from '@baren/schema'
 import { toast } from '@baren/ui'
 import { attachAgentHost } from '../../agent/host/attach'
 import { AgentPresenceStore } from '../../agent/presence'
-import {
-  assetsArrived,
-  drawableAssetUrls,
-  getAssetBytes,
-  putAsset,
-  sniffImageMime,
-} from '../../lib/assets'
+import { assetsArrived, getAssetBytes, putAsset, sniffImageMime } from '../../lib/assets'
 import { bridge } from '../../lib/bridge'
 import { AssetSync } from '../collab/assetSync'
 import { EditorActions } from '../commands/actions'
@@ -34,8 +29,9 @@ import { createWatchers, type EditorSession, type InitialViewport } from './cont
 import { DocEvents } from './docEvents'
 import { Persistence } from './persistence'
 import { persistFilePrefs, readFilePrefs } from './prefs'
-import { renderNodePng } from './raster'
 import { createEditorStore } from './store'
+import { saveThumbnail } from './thumbnail'
+import { ThumbnailWriter } from './thumbnailWriter'
 
 export interface SessionHandle {
   session: EditorSession
@@ -55,24 +51,6 @@ async function acquire(fileId: string): Promise<() => void> {
     release()
     if (locks.get(fileId) === chain) locks.delete(fileId)
   }
-}
-
-const THUMB_WIDTH = 640
-
-/** PNG of the first artboard of the first page (cropped to 4:3) → bridge thumbnail. */
-async function captureThumbnail(session: EditorSession): Promise<void> {
-  const { doc, fileId } = session
-  const firstPage = getChildIds(doc, null)[0]
-  const firstBoard = firstPage === undefined ? undefined : getChildIds(doc, firstPage)[0]
-  if (firstBoard === undefined) return
-  const urls = drawableAssetUrls()
-  const png = await renderNodePng(doc, firstBoard, {
-    maxWidth: THUMB_WIDTH,
-    maxAspect: 0.75,
-    assetUrl: urls.assetUrl,
-  }).finally(() => urls.release())
-  if (!png) return
-  await bridge.files.setThumbnail(fileId, new Uint8Array(await png.arrayBuffer()))
 }
 
 export interface OpenSessionOptions {
@@ -120,6 +98,11 @@ export async function openSession(
     })
     const prefsWriter = fixture.enabled || headless ? null : persistFilePrefs(fileId, store, prefs)
 
+    // The Home card preview: written once saves settle and on close (thumbnailWriter.ts).
+    const thumbnails = new ThumbnailWriter({
+      save: () => saveThumbnail(fileId, doc),
+      has: async () => (await bridge.files.getThumbnail(fileId)) !== null,
+    })
     let lastSaveError = 0
     const persistence = new Persistence(
       doc,
@@ -134,6 +117,7 @@ export async function openSession(
             `Couldn't save changes: ${error instanceof Error ? error.message : 'unknown error'}`,
           )
         },
+        onSaved: () => thumbnails.saved(),
       },
     )
 
@@ -190,10 +174,9 @@ export async function openSession(
         agents.dispose()
         prefsWriter?.dispose()
         assets.dispose()
-        const changed = persistence.changed
         await persistence.dispose()
         events.dispose()
-        if (changed) await captureThumbnail(session).catch(() => undefined)
+        await thumbnails.close()
       } finally {
         release()
       }

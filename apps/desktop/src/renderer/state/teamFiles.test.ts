@@ -73,4 +73,21 @@ describe('pullTeamFiles', () => {
     expect(second.added).toEqual([])
     expect(api.downloads).toEqual(['r3'])
   })
+
+  it('gives each pulled file its preview from the snapshot it downloaded', async () => {
+    const bridge = createMockBridge()
+    const snapshot = exportSnapshot(createEmptyDoc('Landing page'))
+    const api = fakeApi(
+      { t1: [remoteFile('r1', 't1', 'Landing page'), remoteFile('r3', 't1', 'Broken')] },
+      { r1: snapshot },
+    )
+    const previews: [string, Uint8Array][] = []
+    const { added } = await pullTeamFiles([{ id: 't1' }], {
+      api,
+      files: bridge.files,
+      thumbnail: (fileId, bytes) => previews.push([fileId, bytes]),
+    })
+    // Only the imported file, with its local id (r3 failed to download).
+    expect(previews).toEqual([[added[0]?.id, snapshot]])
+  })
 })

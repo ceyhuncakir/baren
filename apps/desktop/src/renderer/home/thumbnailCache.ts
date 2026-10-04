@@ -3,6 +3,10 @@
  * virtualized grid mount and unmount while scrolling, so URLs are cached by file id and
  * version (updatedAt); concurrent requests share one bridge call. Least recently used
  * entries are revoked past the cap.
+ *
+ * A thumbnail is written after its file's last save (when edits settle, on close, or when a
+ * team file is pulled), so the version alone would keep a stale "no thumbnail" cached: the
+ * writer calls `thumbnailChanged`, and the cards showing that file reload it.
  */
 import { bridge } from '../lib/bridge'
 
@@ -15,6 +19,24 @@ interface Entry {
 
 const entries = new Map<string, Entry>()
 const pending = new Map<string, Promise<string | null>>()
+/** Bumped by `thumbnailChanged`: a load started before a rewrite is not cached. */
+const generations = new Map<string, number>()
+const listeners = new Set<(id: string) => void>()
+
+/** `id`'s thumbnail was rewritten: forget the cached one; cards showing it reload. */
+export function thumbnailChanged(id: string): void {
+  generations.set(id, (generations.get(id) ?? 0) + 1)
+  const entry = entries.get(id)
+  // NaN never matches a version: the next load replaces (and revokes) the old URL.
+  if (entry) entries.set(id, { version: Number.NaN, url: entry.url })
+  for (const listener of [...listeners]) listener(id)
+}
+
+/** Called with a file id whenever its thumbnail is rewritten. */
+export function onThumbnailChanged(listener: (id: string) => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
 
 function touch(id: string, entry: Entry): void {
   entries.delete(id)
@@ -37,7 +59,8 @@ export function peekThumbnail(id: string, version: number): string | null | unde
 export function loadThumbnail(id: string, version: number): Promise<string | null> {
   const cached = peekThumbnail(id, version)
   if (cached !== undefined) return Promise.resolve(cached)
-  const key = `${id}@${version}`
+  const generation = generations.get(id) ?? 0
+  const key = `${id}@${version}#${generation}`
   let request = pending.get(key)
   if (!request) {
     request = bridge.files
@@ -49,6 +72,11 @@ export function loadThumbnail(id: string, version: number): Promise<string | nul
       )
       .catch(() => null)
       .then((url) => {
+        if ((generations.get(id) ?? 0) !== generation) {
+          // Rewritten while loading: this one may be stale, and a fresh load follows.
+          if (url) URL.revokeObjectURL(url)
+          return null
+        }
         const previous = entries.get(id)
         if (previous?.url && previous.url !== url) URL.revokeObjectURL(previous.url)
         touch(id, { version, url })

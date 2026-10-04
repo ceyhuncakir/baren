@@ -15,6 +15,7 @@ import { parseDeepLink, type DeepLink } from '../lib/deepLink'
 import { linkedLocalFile, localFileFor, requestReveal } from '../state/fileLinks'
 import { useFiles } from '../state/files'
 import { useSession } from '../state/session'
+import { snapshotThumbnail } from '../state/teamFiles'
 import { runAppAction } from './actions'
 import { paths } from './routes'
 
@@ -50,9 +51,11 @@ async function openFileLink(
       if (session.status === 'signedOut') navigate(paths.signIn)
       return
     }
-    fileId = await localFileFor(link.fileId, session.teams, { api, files: bridge.files }).catch(
-      () => null,
-    )
+    fileId = await localFileFor(link.fileId, session.teams, {
+      api,
+      files: bridge.files,
+      thumbnail: snapshotThumbnail,
+    }).catch(() => null)
     if (!fileId) {
       toast("You don't have access to this file. Ask a teammate to invite you to its team.")
       return

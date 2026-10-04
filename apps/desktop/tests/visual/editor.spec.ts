@@ -926,3 +926,70 @@ test.describe('editor images', () => {
     await expect.poll(async () => (await nodesOfType(page, 'image')).length).toBe(3)
   })
 })
+
+// ---------------------------------------------------------------------------
+// File previews on Home (thumbnails written by the editor session).
+// ---------------------------------------------------------------------------
+
+test.describe('file previews', () => {
+  test('a file shows its preview on Files after editing, and the preview follows edits', async ({
+    page,
+  }) => {
+    type Agent = { __barenAgent: { dispatch(t: string, a: unknown, o: unknown): Promise<any> } }
+    const call = (tool: string, args: Record<string, unknown>) =>
+      page.evaluate(([t, a]) => (window as unknown as Agent).__barenAgent.dispatch(t, a, {}), [
+        tool,
+        args,
+      ] as const)
+    const preview = () =>
+      page
+        .getByRole('button', { name: /^Untitled/ })
+        .first()
+        .locator('img')
+
+    await page.goto('/?fixture=design#/files')
+    await page.getByRole('button', { name: 'New file' }).click()
+    await page.getByTestId('editor').waitFor()
+    await page.waitForFunction(
+      () =>
+        ((window as unknown as { __barenAgent?: { hosts(): unknown[] } }).__barenAgent?.hosts()
+          .length ?? 0) > 0,
+    )
+    const board = await call('create_artboard', {
+      name: 'Card',
+      styles: { width: '800px', height: '600px', backgroundColor: '#2F80FF' },
+    })
+    const boardId = board.result.id as string
+    await call('write_html', {
+      targetNodeId: boardId,
+      mode: 'insert-children',
+      html: '<h1 style="font-size:64px;color:#FFFFFF;padding:48px">Hello preview</h1>',
+    })
+    const fileHash = new URL(page.url()).hash
+
+    // Back on Files: the card shows the preview the editor wrote on the way out.
+    await page.evaluate(() => (location.hash = '#/files'))
+    await expect(preview()).toBeVisible()
+    const first = await preview().getAttribute('src')
+
+    // Edit again: the card gets the new preview (not the cached old one).
+    await page.evaluate((hash) => (location.hash = hash), fileHash)
+    await page.getByTestId('editor').waitFor()
+    await page.waitForFunction(
+      () =>
+        ((window as unknown as { __barenAgent?: { hosts(): unknown[] } }).__barenAgent?.hosts()
+          .length ?? 0) > 0,
+    )
+    await call('update_styles', {
+      updates: [{ nodeIds: [boardId], styles: { backgroundColor: '#F04E1E' } }],
+    })
+    await page.evaluate(() => (location.hash = '#/files'))
+    await expect.poll(() => preview().getAttribute('src')).not.toBe(first)
+    await expect(preview()).toBeVisible()
+    if (process.env['PREVIEW_SHOT'])
+      await page.screenshot({
+        path: process.env['PREVIEW_SHOT'],
+        clip: { x: 280, y: 60, width: 1160, height: 330 },
+      })
+  })
+})
