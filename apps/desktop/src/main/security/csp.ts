@@ -9,10 +9,13 @@
  *   (thumbnails, image assets, canvas bitmap stand-ins).
  * - `baren-asset:` (main serves stored image assets by hash) for images, media and
  *   fetch(). Remote images from the server origin stay allowed in img-src.
+ * - `baren-font:` (main serves cached Google Fonts files) for the fonts designs use.
  */
+import { FONT_SCHEME } from '../../renderer/lib/fontUrls'
 import { ASSET_SCHEME } from '../protocol/assetRequest'
 
 const ASSET_SOURCE = `${ASSET_SCHEME}:`
+const FONT_SOURCE = `${FONT_SCHEME}:`
 
 export function serverOrigins(serverUrl: string): string[] {
   let url: URL
@@ -33,7 +36,7 @@ export function buildCsp(serverUrl: string): string {
     'script-src': ["'self'", "'wasm-unsafe-eval'"],
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', ASSET_SOURCE, ...server.slice(0, 1)],
-    'font-src': ["'self'", 'data:'],
+    'font-src': ["'self'", 'data:', FONT_SOURCE],
     'connect-src': ["'self'", ASSET_SOURCE, ...server],
     'worker-src': ["'self'", 'blob:'],
     'media-src': ["'self'", 'data:', 'blob:', ASSET_SOURCE],

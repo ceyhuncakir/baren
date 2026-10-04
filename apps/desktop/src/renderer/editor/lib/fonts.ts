@@ -3,9 +3,26 @@
  * JetBrains Mono. @fontsource registers Inter as "Inter Variable", but design documents
  * (and the canvas defaults) say `fontFamily: 'Inter'`, so the editor registers the same
  * files under "Inter" too — otherwise design text silently falls back to a system font.
+ *
+ * Every other family a document uses that is on Google Fonts is registered from the files main
+ * downloads (`bridge.fonts`, `baren-font://`), so it renders the same on every collaborator's
+ * machine whether or not they have it installed. Registering is cheap: Chromium fetches a face
+ * (one unicode-range subset of one style) only when text on screen needs it, and the canvas
+ * re-measures text when it arrives.
  */
 import interLatinExt from '@fontsource-variable/inter/files/inter-latin-ext-opsz-normal.woff2?url'
 import interLatin from '@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2?url'
+import {
+  NODE_KEY,
+  getNode,
+  getTokens,
+  nodesTree,
+  type NodeChangeBatch,
+  type Token,
+} from '@baren/schema'
+import type { LoroDoc } from 'loro-crdt'
+import { bridge } from '../../lib/bridge'
+import { familyList, findGoogleFont } from '../../lib/googleFonts'
 
 /** Families offered by the Typography section (bundled, so identical on every machine). */
 export const FONT_FAMILIES: readonly { value: string; label: string }[] = [
@@ -57,6 +74,119 @@ export function ensureDesignFonts(): Promise<void> {
   for (const face of faces) document.fonts.add(face)
   registered = Promise.all(faces.map((f) => f.load().catch(() => undefined))).then(() => undefined)
   return registered
+}
+
+/** Families the app bundles: never replaced by their Google Fonts version. */
+const BUNDLED_FAMILIES = new Set(['inter', 'inter variable', 'jetbrains mono'])
+
+/** Google Fonts families registered in this window (lowercase name → registered). */
+const googleFamilies = new Map<string, Promise<boolean>>()
+
+/**
+ * Register the Google Fonts faces of these families in this window (once each). Families that
+ * are bundled, generic, local-only or unknown are skipped. Resolves once the faces are
+ * registered (not loaded); a family that could not be fetched is retried on the next call.
+ */
+export function ensureFontFamilies(names: Iterable<string>): Promise<void> {
+  const waits: Promise<boolean>[] = []
+  for (const name of names) {
+    const font = findGoogleFont(name)
+    if (!font) continue
+    const key = font.family.toLowerCase()
+    if (BUNDLED_FAMILIES.has(key)) continue
+    let pending = googleFamilies.get(key)
+    if (!pending) {
+      pending = registerGoogleFamily(font.family)
+      googleFamilies.set(key, pending)
+      void pending.then((ok) => {
+        if (!ok) googleFamilies.delete(key)
+      })
+    }
+    waits.push(pending)
+  }
+  return Promise.all(waits).then(() => undefined)
+}
+
+async function registerGoogleFamily(family: string): Promise<boolean> {
+  if (typeof document === 'undefined' || typeof FontFace === 'undefined') return true
+  const faces = await bridge.fonts.faces(family).catch(() => null)
+  if (!faces) return false
+  for (const face of faces) {
+    const descriptors: FontFaceDescriptors = {
+      style: face.style,
+      weight: face.weight,
+      display: 'swap',
+    }
+    if (face.unicodeRange) descriptors.unicodeRange = face.unicodeRange
+    document.fonts.add(new FontFace(family, `url("${face.url}") format('woff2')`, descriptors))
+  }
+  return true
+}
+
+function addFamilies(value: unknown, out: Set<string>): void {
+  if (typeof value === 'string' && !value.includes('var(')) {
+    for (const family of familyList(value)) out.add(family)
+  }
+}
+
+function addOverrideFamilies(overrides: unknown, out: Set<string>): void {
+  if (typeof overrides !== 'object' || overrides === null) return
+  for (const entry of Object.values(overrides as Record<string, unknown>)) {
+    const styles = (entry as { styles?: Record<string, unknown> } | null)?.styles
+    addFamilies(styles?.['fontFamily'], out)
+  }
+}
+
+function addTokenFamilies(tokens: Record<string, Token>, out: Set<string>): void {
+  for (const token of Object.values(tokens)) {
+    if (token.type === 'fontFamily') addFamilies(token.value, out)
+  }
+}
+
+/**
+ * Every font family `doc` uses: text styles, instance overrides and font-family tokens (what
+ * `var(--font-…)` resolves to). One wasm→JS call for the tree (`toJSON`).
+ */
+export function docFontFamilies(doc: LoroDoc): Set<string> {
+  const out = new Set<string>()
+  addTokenFamilies(getTokens(doc), out)
+  const roots = nodesTree(doc).toJSON() as unknown
+  const stack: unknown[] = Array.isArray(roots) ? [...roots] : []
+  for (let raw = stack.pop(); raw !== undefined; raw = stack.pop()) {
+    if (typeof raw !== 'object' || raw === null) continue
+    const r = raw as { meta?: Record<string, unknown>; children?: unknown }
+    const styles = r.meta?.[NODE_KEY.styles] as Record<string, unknown> | undefined
+    addFamilies(styles?.['fontFamily'], out)
+    addOverrideFamilies(r.meta?.[NODE_KEY.overrides], out)
+    if (Array.isArray(r.children)) for (const c of r.children) stack.push(c)
+  }
+  return out
+}
+
+/** Families a change batch introduced (new nodes, font changes, overrides, font tokens). */
+export function batchFontFamilies(doc: LoroDoc, batch: NodeChangeBatch): Set<string> {
+  const out = new Set<string>()
+  for (const change of batch.changes) {
+    const relevant =
+      change.kind === 'created' ||
+      change.kind === 'overrides' ||
+      (change.kind === 'styles' && change.keys.includes('fontFamily'))
+    if (!relevant) continue
+    const node = getNode(doc, change.id)
+    if (!node) continue
+    addFamilies(node.styles['fontFamily'], out)
+    addOverrideFamilies(node.overrides, out)
+  }
+  if (batch.tokens.length > 0) {
+    const tokens = getTokens(doc)
+    const changed: Record<string, Token> = {}
+    for (const name of batch.tokens) {
+      const token = tokens[name]
+      if (token) changed[name] = token
+    }
+    addTokenFamilies(changed, out)
+  }
+  return out
 }
 
 /** First family of a CSS font-family list, unquoted ("'Inter Variable', Inter" → "Inter Variable"). */

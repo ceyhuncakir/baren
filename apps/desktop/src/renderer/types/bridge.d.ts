@@ -3,6 +3,9 @@
  * (ARCHITECTURE.md, "Desktop bridge"). Implemented for real by desktop-shell
  * (src/preload) and in memory by lib/mockBridge.ts for browser/Playwright runs.
  */
+import type { FontFaceSpec } from '../lib/fontUrls'
+
+export type { FontFaceSpec }
 
 export interface FileMeta {
   id: string
@@ -323,6 +326,14 @@ export interface BarenBridge {
     /** Stores the bytes and returns their content hash (blake3 hex in the real bridge). */
     put(bytes: Uint8Array, mime: string): Promise<string>
     get(hash: string): Promise<Uint8Array | null>
+  }
+  /** Google Fonts for designs (main downloads and caches the files). */
+  fonts: {
+    /**
+     * The faces of a Google Fonts family, sources on `baren-font://`; null when the family is not
+     * in the catalog or cannot be fetched (offline before its first use).
+     */
+    faces(family: string): Promise<FontFaceSpec[] | null>
   }
   export: {
     html(fileId: string, nodeId: string): Promise<string>

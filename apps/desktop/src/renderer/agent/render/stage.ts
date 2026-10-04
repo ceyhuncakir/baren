@@ -4,6 +4,8 @@
  * `prepare` builds a `RenderJob`'s HTML, waits for fonts and images, measures the stage root and
  * scales it to the effective output scale; main then captures the window.
  */
+import { ensureFontFamilies } from '../../editor/lib/fonts'
+import { familyList } from '../../lib/googleFonts'
 import type { RenderJob } from '../../types/bridge'
 import { STAGE_BASE_CSS, bodyTextStyles } from '../measure'
 import { stageComputedStyles } from './styles'
@@ -22,6 +24,36 @@ export interface PrepareResult {
   scale: number
   outWidth: number
   outHeight: number
+}
+
+/**
+ * Font families a stage may use: `font-family` declarations and custom property values (what
+ * `var(--font-…)` tokens resolve to). Values that are not font names are skipped later, by the
+ * Google Fonts lookup.
+ */
+export function stageFontFamilies(stage: RenderJob['stage']): Set<string> {
+  const out = new Set<string>()
+  const styles = [...stage.html.matchAll(/\sstyle="([^"]*)"/g)].map(([, v]) => decodeAttr(v ?? ''))
+  for (const source of [stage.css, ...styles]) {
+    for (const [, value] of source.matchAll(/(?:font-family|--[\w-]+)\s*:\s*([^;{}]+)/g)) {
+      for (const family of familyList(value ?? '')) out.add(family)
+    }
+  }
+  return out
+}
+
+function decodeAttr(value: string): string {
+  return value.replace(/&(quot|#34|#39|apos|lt|gt|amp);/g, (_, e: string) =>
+    e === 'quot' || e === '#34'
+      ? '"'
+      : e === '#39' || e === 'apos'
+        ? "'"
+        : e === 'lt'
+          ? '<'
+          : e === 'gt'
+            ? '>'
+            : '&',
+  )
 }
 
 /** Contract §4.7 step 2: the scale the output is rendered at. */
@@ -70,6 +102,8 @@ export class RenderStage {
 
   /** Build the job's stage (no scaling); resolves once fonts and images are ready (≤ 5 s). */
   async build(job: RenderJob, transparent: boolean): Promise<HTMLElement> {
+    // Google Fonts the design uses, registered before layout so their loads start with it.
+    await Promise.race([ensureFontFamilies(stageFontFamilies(job.stage)), timeout(3_000)])
     const shadow = this.open()
     const host = this.host as HTMLDivElement
     host.style.background = 'transparent'
@@ -84,6 +118,9 @@ export class RenderStage {
     if (!transparent && job.background) container.style.background = job.background
     container.innerHTML = job.stage.html
     shadow.replaceChildren(style, container)
+    // Lay out now: font faces start loading when text is shaped, and `fonts.ready` only waits
+    // for loads that have started.
+    void container.offsetHeight
     const waits: Promise<unknown>[] = []
     if (document.fonts) waits.push(document.fonts.ready)
     for (const img of container.querySelectorAll('img'))

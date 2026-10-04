@@ -1,7 +1,7 @@
 /**
- * Typography (artboard 14): family (bundled fonts), weight, size, line height, letter
- * spacing, alignment and text options. Token references (`var(--text-xl)`) are resolved
- * for display; edits write plain values.
+ * Typography (artboard 14): family (bundled fonts and Google Fonts), weight, size, line
+ * height, letter spacing, alignment and text options. Token references (`var(--text-xl)`) are
+ * resolved for display; edits write plain values.
  */
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import {
   TokensIcon,
 } from '@baren/ui'
 import { useMemo, useRef, useState } from 'react'
+import { findGoogleFont, weightList } from '../../../lib/googleFonts'
 import {
   FONT_FAMILIES,
   FONT_WEIGHTS,
@@ -41,6 +42,7 @@ import { tokenGroup } from '../../model/tokens'
 import { useTokens } from '../../session/context'
 import type { NodesSnapshot } from '../../session/docEvents'
 import { MenuSelect } from '../controls'
+import { FontFamilyPicker } from '../FontFamilyPicker'
 import { resolveStyles, useStyleEdit } from '../hooks'
 import { nullable } from './LayoutSection'
 import { SectionTitle } from '../marks'
@@ -87,7 +89,17 @@ export function TypographySection({ snapshot }: { snapshot: NodesSnapshot }) {
     ([name, t]) => tokenGroup(name, t) === 'typography',
   )
 
-  const familyOptions = FONT_FAMILIES.map((f) => ({ value: f.value, label: f.label }))
+  // A Google Fonts family offers the weights it has (plus the current one, whatever it is).
+  const google = typeof family === 'string' ? findGoogleFont(family) : null
+  const available = google
+    ? new Set([
+        ...weightList(google.weights),
+        ...(google.italic === null ? [] : weightList(google.italic)),
+      ])
+    : null
+  const weightOptions = FONT_WEIGHTS.filter(
+    (w) => available === null || available.has(w.value) || w.value === weight,
+  )
   const familyValue =
     family === MIXED || family === undefined
       ? family
@@ -109,14 +121,12 @@ export function TypographySection({ snapshot }: { snapshot: NodesSnapshot }) {
         </span>
       }
     >
-      <MenuSelect
+      <FontFamilyPicker
         value={familyValue}
         display={
           family === MIXED ? 'Mixed' : familyLabel(typeof family === 'string' ? family : 'Inter')
         }
-        options={familyOptions}
         onChange={(v) => edit(() => ({ fontFamily: v }))}
-        aria-label="Font family"
       />
       <InspectorRow>
         <MenuSelect
@@ -124,7 +134,7 @@ export function TypographySection({ snapshot }: { snapshot: NodesSnapshot }) {
           display={
             weight === MIXED ? 'Mixed' : weightLabel(typeof weight === 'number' ? weight : 400)
           }
-          options={FONT_WEIGHTS.map((w) => ({ value: String(w.value), label: w.label }))}
+          options={weightOptions.map((w) => ({ value: String(w.value), label: w.label }))}
           onChange={(v) => edit(() => ({ fontWeight: Number(v) }))}
           aria-label="Font weight"
         />

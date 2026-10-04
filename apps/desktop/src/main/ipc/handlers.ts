@@ -34,6 +34,7 @@ import { CLIPBOARD_LIMITS, type ClipboardService } from '../clipboard/clipboard'
 import type { CoreBackend } from '../core/types'
 import type { DeepLinkRouter, DeepLinkTarget } from '../deeplink/router'
 import type { Logger } from '../log'
+import type { FontFaceSpec } from '../../renderer/lib/fontUrls'
 import { isAppUrl, isSafeExternalUrl } from '../security/urls'
 import type { WindowManager } from '../windows/windowManager'
 import { IpcArgumentError, MiB, agentIs, args, is } from './validate'
@@ -75,6 +76,10 @@ export interface IpcContext {
     /** Before a window opens a file: a headless host holding it flushes and closes (§4.5). */
     beforeFileOpen(sender: WebContents, fileId: string): Promise<void>
   }
+  /** Google Fonts for designs (`fonts/googleFonts.ts`, loaded on first use). */
+  fonts: {
+    faces(family: string): Promise<FontFaceSpec[] | null>
+  }
   log: Logger
 }
 
@@ -88,6 +93,7 @@ const LIMITS = {
   agentResponse: 32 * MiB,
   thumbnail: 16 * MiB,
   asset: 256 * MiB,
+  fontFamily: 256,
 } as const
 
 type SenderEvent = IpcMainEvent | IpcMainInvokeEvent
@@ -232,6 +238,7 @@ export function registerIpcHandlers(ipcMain: IpcMain, ctx: IpcContext): void {
     async (_e, bytes, mime) => (await ctx.core()).putAsset(bytes, mime),
   )
   handle('assets:get', args(is.id), async (_e, hash) => (await ctx.core()).getAsset(hash))
+  handle('fonts:faces', args(is.string(LIMITS.fontFamily)), (_e, family) => ctx.fonts.faces(family))
   handle('export:html', args(is.id, is.id), async (_e, fileId, nodeId) =>
     (await ctx.core()).exportHtml(fileId, nodeId),
   )

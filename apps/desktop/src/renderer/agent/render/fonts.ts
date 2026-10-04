@@ -1,13 +1,15 @@
 /**
  * get_font_family_info's body (contract §6.17), computed in the render window: the bundled
- * families are known exactly; other families are detected locally by comparing canvas text
- * metrics against three generic fallbacks. Web fonts are never fetched.
+ * families and Google Fonts (the catalog; the app downloads them for every collaborator) are
+ * known exactly; other families are detected locally by comparing canvas text metrics against
+ * three generic fallbacks.
  */
+import { findGoogleFont, weightList } from '../../lib/googleFonts'
 
 export interface FontFamilyInfo {
   familyName: string
   available: boolean
-  source: 'bundled' | 'local' | null
+  source: 'bundled' | 'google' | 'local' | null
   weights: number[] | null
   styles: ('normal' | 'italic')[] | null
   isVariable: boolean
@@ -55,8 +57,11 @@ const GENERIC = new Set([
   'fantasy',
 ])
 
-const LOCAL_NOTE = 'Installed on this computer only; collaborators without it see a fallback.'
-const MISSING_NOTE = 'Not installed. Baren does not download web fonts.'
+const GOOGLE_NOTE =
+  'Google Fonts: Baren downloads it, so it renders the same for every collaborator.'
+const LOCAL_NOTE =
+  'Installed on this computer only and not on Google Fonts; collaborators without it see a fallback.'
+const MISSING_NOTE = 'Not installed and not on Google Fonts.'
 
 /** Normalise a requested family (quotes, whitespace). */
 export function cleanFamily(name: string): string {
@@ -92,6 +97,20 @@ export function fontFamilyInfo(names: readonly string[], detect: FontDetector): 
     const key = familyName.toLowerCase()
     const bundled = BUNDLED[key]
     if (bundled) return { familyName, ...bundled }
+    const google = findGoogleFont(familyName)
+    if (google) {
+      const weights = weightList(google.weights)
+      const italics = google.italic === null ? [] : weightList(google.italic)
+      return {
+        familyName: google.family,
+        available: true,
+        source: 'google' as const,
+        weights: [...new Set([...weights, ...italics])].sort((a, b) => a - b),
+        styles: italics.length > 0 ? ['normal' as const, 'italic' as const] : ['normal' as const],
+        isVariable: !Array.isArray(google.weights),
+        note: GOOGLE_NOTE,
+      }
+    }
     if (GENERIC.has(key)) {
       return {
         familyName,

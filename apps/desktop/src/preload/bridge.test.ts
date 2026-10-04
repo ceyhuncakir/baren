@@ -49,6 +49,7 @@ describe('createBridge', () => {
         'clipboard',
         'export',
         'files',
+        'fonts',
         'agent',
         'mcp',
         'onDeepLink',
@@ -254,6 +255,15 @@ describe('createBridge', () => {
     expect(a).toEqual([{ state: 'downloading', version: '1.2.0', progress: 40 }])
     expect(b).toEqual(['downloading', 'ready'])
     expect(fake.listenerCount('updates:status')).toBe(0)
+  })
+})
+
+describe('fonts', () => {
+  it('asks main for a Google Fonts family on fonts:faces', async () => {
+    const fake = fakeIpcRenderer()
+    const bridge = createBridge(createTypedIpc(fake.ipc), 'linux')
+    await bridge.fonts.faces('Geist')
+    expect(fake.invoked).toEqual([['fonts:faces', ['Geist']]])
   })
 })
 

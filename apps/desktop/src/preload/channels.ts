@@ -22,6 +22,7 @@ import type {
   ThemePreference,
   UpdateStatus,
 } from '../renderer/types/bridge'
+import type { FontFaceSpec } from '../renderer/lib/fontUrls'
 
 export interface InvokeChannels {
   'window:is-maximized': { args: []; result: boolean }
@@ -60,6 +61,8 @@ export interface InvokeChannels {
   /** URL, token and snippets; rejects with "The MCP server is off" when not running. */
   'mcp:setup': { args: []; result: McpSetup }
   'mcp:reset-token': { args: []; result: McpSetup }
+  /** A Google Fonts family's faces (`baren-font://` sources), or null when it is not one. */
+  'fonts:faces': { args: [family: string]; result: FontFaceSpec[] | null }
 }
 
 /**

@@ -21,6 +21,7 @@ import {
   ipcMain,
   nativeTheme,
   safeStorage,
+  net,
   session,
   shell,
   type WebContents,
@@ -42,6 +43,7 @@ import { createClipboardService } from './clipboard/clipboard'
 import { registerIpcHandlers } from './ipc/handlers'
 import { createLogger } from './log'
 import { serveAssets } from './protocol/assetProtocol'
+import { serveFonts } from './protocol/fontProtocol'
 import { RENDERER_ENTRY_URL, RENDERER_ORIGIN, serveRenderer } from './protocol/rendererProtocol'
 import { registerPrivilegedSchemes } from './protocol/schemes'
 import { buildCsp } from './security/csp'
@@ -120,6 +122,17 @@ const savedThemePreference = loadThemePreference(themeFile, log.child('theme'))
 
 let windows: WindowManager | null = null
 let updates: UpdateController | null = null
+// Google Fonts for designs: loaded on the first font request (the catalog stays off the cold path).
+let fontService: Promise<import('./fonts/googleFonts').GoogleFontService> | null = null
+const googleFonts = () =>
+  (fontService ??= import('./fonts/googleFonts').then(
+    ({ GoogleFontService }) =>
+      new GoogleFontService({
+        dir: join(userDataDir, 'fonts', 'google'),
+        fetch: (url, init) => net.fetch(url, init),
+        log: log.child('fonts'),
+      }),
+  ))
 let quitting = false
 let smoke: SmokeSession | null = null
 let firstContents: WebContents | null = null
@@ -616,6 +629,11 @@ async function bootstrap(
     async (hash) => (await core()).backend.getAssetEntry(hash),
     log.child('assets'),
   )
+  serveFonts(
+    session.defaultSession,
+    async (path) => (await googleFonts()).file(path),
+    log.child('fonts'),
+  )
   installPermissionHandlers(session.defaultSession, appOrigins)
 
   // Before the first window: it is created with the resolved theme's background.
@@ -704,6 +722,7 @@ async function bootstrap(
     onRendererMilestone,
     clipboard: createClipboardService(clipboard, (record) => new ClipboardItem(record)),
     mcp: mcpIpc,
+    fonts: { faces: async (family) => (await googleFonts()).faces(family) },
     log: log.child('ipc'),
   })
 

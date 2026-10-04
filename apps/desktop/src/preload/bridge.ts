@@ -113,6 +113,10 @@ export function createBridge(
       get: (hash) => ipc.invoke('assets:get', hash),
     },
 
+    fonts: {
+      faces: (family) => ipc.invoke('fonts:faces', family),
+    },
+
     export: {
       html: (fileId, nodeId) => ipc.invoke('export:html', fileId, nodeId),
       json: (fileId) => ipc.invoke('export:json', fileId),

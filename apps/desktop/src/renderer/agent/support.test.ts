@@ -123,14 +123,16 @@ describe('fonts', () => {
     expect(splitTopLevel('a, "b, c", fn(d, e)')).toEqual(['a', ' "b, c"', ' fn(d, e)'])
   })
 
-  it('reports bundled, generic, local and missing families (contract §6.17)', () => {
+  it('reports bundled, Google, generic, local and missing families (contract §6.17)', () => {
     const body = fontFamilyInfo(
-      ['Inter', "'JetBrains Mono'", 'serif', 'Helvetica', 'Nope'],
-      (f) => f === 'Helvetica',
+      ['Inter', "'JetBrains Mono'", 'geist mono', 'Cardo', 'serif', 'Helvetica', 'Nope'],
+      (f) => f === 'Helvetica' || f === 'geist mono',
     )
     expect(body.map((f) => [f.familyName, f.available, f.source])).toEqual([
       ['Inter', true, 'bundled'],
       ['JetBrains Mono', true, 'bundled'],
+      ['Geist Mono', true, 'google'],
+      ['Cardo', true, 'google'],
       ['serif', true, 'local'],
       ['Helvetica', true, 'local'],
       ['Nope', false, null],
@@ -138,7 +140,14 @@ describe('fonts', () => {
     expect(body[0]?.isVariable).toBe(true)
     expect(body[0]?.weights).toEqual([100, 200, 300, 400, 500, 600, 700, 800, 900])
     expect(body[1]?.weights).toEqual([400, 500, 600])
-    expect(body[4]?.note).toBe('Not installed. Baren does not download web fonts.')
+    expect(body[2]).toMatchObject({
+      isVariable: true,
+      weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+      styles: ['normal', 'italic'],
+    })
+    expect(body[3]).toMatchObject({ isVariable: false, weights: [400, 700] })
+    expect(body[2]?.note).toContain('renders the same for every collaborator')
+    expect(body[6]?.note).toBe('Not installed and not on Google Fonts.')
   })
 })
 

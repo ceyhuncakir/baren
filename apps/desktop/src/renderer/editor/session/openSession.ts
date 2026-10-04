@@ -21,7 +21,12 @@ import { AssetSync } from '../collab/assetSync'
 import { EditorActions } from '../commands/actions'
 import { PresenceRelay } from '../collab/presence'
 import { fixtureView, prepareFixtureAssets, seedFixture } from '../fixtures'
-import { ensureDesignFonts } from '../lib/fonts'
+import {
+  batchFontFamilies,
+  docFontFamilies,
+  ensureDesignFonts,
+  ensureFontFamilies,
+} from '../lib/fonts'
 import { fixtureMode } from '../lib/env'
 import { createPage } from '../model/docOps'
 import { LayerTree } from '../model/layerTree'
@@ -137,6 +142,13 @@ export async function openSession(
       onError: (error) => console.warn('[assets]', error),
     })
     events.subscribe((batch) => assets.onBatch(doc, batch))
+    // Google Fonts the design uses (and later adds): registered so they render the same here as
+    // for every collaborator. After the first paint: the canvas re-measures text as faces arrive.
+    const fontsTimer = setTimeout(() => void ensureFontFamilies(docFontFamilies(doc)), 0)
+    events.subscribe((batch) => {
+      const families = batchFontFamilies(doc, batch)
+      if (families.size > 0) void ensureFontFamilies(families)
+    })
     const agents = new AgentPresenceStore()
     agents.subscribe(() => store.setState({ agents: agents.get() }))
     session = {
@@ -169,6 +181,7 @@ export async function openSession(
     const close = async (): Promise<void> => {
       if (closed) return
       closed = true
+      clearTimeout(fontsTimer)
       try {
         agentHost.dispose()
         agents.dispose()

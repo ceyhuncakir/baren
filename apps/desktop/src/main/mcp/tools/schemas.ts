@@ -292,7 +292,7 @@ HTML and CSS rules:
 - Any CSS colour format works: hex, rgb(a), hsl(a), oklch, oklab, color-mix().
 - Icons: inline <svg>; fill and stroke may use var(--token) and currentColor. Never use emoji as icons.
 - Images: <img src> with an absolute local path, an https URL, a data URI or baren-asset://<hash> (get_guide topic "images"). AI image generation is not available.
-- Fonts: Inter and JetBrains Mono are bundled; other installed fonts work on this computer only (get_font_family_info).
+- Fonts: Inter, JetBrains Mono and every Google Fonts family render the same for every collaborator; other installed fonts work on this computer only (get_font_family_info).
 The result lists the created layers and warnings for anything that was dropped or changed.`
 
 /** Titles, kinds and the exact descriptions of contract §6. */
@@ -396,7 +396,7 @@ export const TOOL_META: Record<McpToolName, ToolMeta> = {
     title: 'Get font family info',
     kind: 'read',
     description:
-      'Check whether font families are available and which weights and styles they have. Call before your first typographic styling. Inter and JetBrains Mono are bundled and render the same for every collaborator; other installed fonts work on this computer only.',
+      'Check whether font families are available and which weights and styles they have. Call before your first typographic styling. Inter and JetBrains Mono are bundled and Google Fonts families are downloaded, so they render the same for every collaborator; other installed fonts work on this computer only.',
   },
   get_tokens: {
     title: 'Get tokens',

@@ -160,11 +160,11 @@ like a black box; seeing content appear every few seconds builds trust.
 
 ## 7. Typography
 
-- Call `get_font_family_info` before your first typographic styles in a session. The fonts
-  that render identically for every collaborator are the bundled ones: **Inter** (variable,
-  weights 100–900) and **JetBrains Mono** (400, 500, 600), plus `system-ui`. Fonts installed
-  on this computer work too, but collaborators without them see a fallback. Web fonts are not
-  downloaded.
+- Call `get_font_family_info` before your first typographic styles in a session. Fonts that
+  render identically for every collaborator: the bundled **Inter** (variable, weights 100–900)
+  and **JetBrains Mono** (400, 500, 600), and every **Google Fonts** family (Geist, Roboto,
+  Playfair Display…): Baren downloads the ones a design uses on each computer. Fonts that are
+  only installed on this computer work too, but collaborators without them see a fallback.
 - Prefer the families `get_basic_info` reports unless the user asks otherwise.
 - Font sizes in px. Letter spacing in em (unless the design already uses px). Line height in px,
   or a unitless ratio that does not produce sub-pixel line boxes. Text without a line height

@@ -658,6 +658,13 @@ export function createMockBridge(options: MockBridgeOptions = {}): MockBridge {
       },
     },
 
+    // Browser mode has no main process to download Google Fonts: designs use installed fonts.
+    fonts: {
+      async faces() {
+        return null
+      },
+    },
+
     export: {
       async html(fileId, nodeId) {
         const { doc, schema } = await loadFileDoc(getFile(fileId))
