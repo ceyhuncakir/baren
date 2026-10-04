@@ -47,6 +47,8 @@ export interface NodeChangeBatch {
   meta: boolean
   /** Component registry keys that were added or changed. */
   components: string[]
+  /** Comment threads that were added, changed or removed. */
+  comments: string[]
 }
 
 export type NodeChangeListener = (batch: NodeChangeBatch) => void
@@ -101,6 +103,7 @@ export function toNodeChangeBatch(batch: LoroEventBatch): NodeChangeBatch {
   const vectorIds = new Set<string>()
   const tokenNames = new Set<string>()
   const componentKeys = new Set<string>()
+  const commentIds = new Set<string>()
   let meta = false
 
   for (const event of batch.events) {
@@ -143,6 +146,12 @@ export function toNodeChangeBatch(batch: LoroEventBatch): NodeChangeBatch {
       } else if (typeof path[1] === 'string') {
         tokenNames.add(path[1])
       }
+    } else if (root === CONTAINER.comments) {
+      if (path.length === 1 && diff.type === 'map') {
+        for (const k of Object.keys(diff.updated)) commentIds.add(k)
+      } else if (typeof path[1] === 'string') {
+        commentIds.add(path[1])
+      }
     } else if (root === CONTAINER.meta) {
       meta = true
     }
@@ -172,17 +181,24 @@ export function toNodeChangeBatch(batch: LoroEventBatch): NodeChangeBatch {
     tokens: [...tokenNames],
     meta,
     components: [...componentKeys],
+    comments: [...commentIds],
   }
 }
 
 /**
- * Subscribe to node/token/meta changes. Fires after each commit or import
+ * Subscribe to node/token/meta/component/comment changes. Fires after each commit or import
  * (Loro emits events after a microtask). Returns an unsubscribe function.
  */
 export function subscribeNodes(doc: LoroDoc, listener: NodeChangeListener): () => void {
   return doc.subscribe((batch) => {
     const out = toNodeChangeBatch(batch)
-    if (out.changes.length > 0 || out.tokens.length > 0 || out.meta || out.components.length > 0)
+    if (
+      out.changes.length > 0 ||
+      out.tokens.length > 0 ||
+      out.meta ||
+      out.components.length > 0 ||
+      out.comments.length > 0
+    )
       listener(out)
   })
 }

@@ -11,6 +11,7 @@
 import {
   createComponentResolver,
   getChildIds,
+  getCommentThreads,
   getDocName,
   getNode,
   getParentId,
@@ -22,6 +23,7 @@ import {
   parseVirtualId,
   subscribeNodes,
   type AffectedByBatch,
+  type CommentThread,
   type ComponentInfo,
   type ComponentResolver,
   type ResolvedNode,
@@ -199,6 +201,42 @@ export class TokensWatcher {
 
   getSnapshot = (): Record<string, Token> => this.snapshot
   getOrders = (): Record<string, number> => this.orders
+}
+
+/**
+ * External store for the comment threads (every page; re-read only when a batch reports
+ * comment changes, local or from collaborators).
+ */
+export class CommentsWatcher {
+  private snapshot: readonly CommentThread[]
+  private listeners = new Set<() => void>()
+  private off: (() => void) | null = null
+
+  constructor(private readonly events: DocEvents) {
+    this.snapshot = getCommentThreads(events.doc)
+  }
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener)
+    if (!this.off) {
+      // Changes while nobody listened: catch up.
+      this.snapshot = getCommentThreads(this.events.doc)
+      this.off = this.events.subscribe((batch) => {
+        if (batch.comments.length === 0 && batch.by !== 'checkout') return
+        this.snapshot = getCommentThreads(this.events.doc)
+        for (const l of [...this.listeners]) l()
+      })
+    }
+    return () => {
+      this.listeners.delete(listener)
+      if (this.listeners.size === 0) {
+        this.off?.()
+        this.off = null
+      }
+    }
+  }
+
+  getSnapshot = (): readonly CommentThread[] => this.snapshot
 }
 
 /** External store for the document name (meta.name). */

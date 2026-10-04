@@ -47,6 +47,11 @@ export function newComponentKey(random?: () => number): string {
   return randomKey(16, random)
 }
 
+/** A new comment thread or message id: 16 chars of `[0-9a-z]`. */
+export function newCommentId(random?: () => number): string {
+  return randomKey(16, random)
+}
+
 /** A new node key (address inside a main): 10 chars of `[0-9a-z]`. */
 export function newNodeKey(random?: () => number): string {
   return randomKey(10, random)

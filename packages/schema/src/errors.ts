@@ -8,6 +8,8 @@ export type SchemaErrorCode =
   | 'cycle'
   | 'invalid-ref'
   | 'invalid-payload'
+  | 'invalid-comment'
+  | 'comment-not-found'
 
 /** Thrown by schema helpers when an operation would violate the document model. */
 export class SchemaError extends Error {

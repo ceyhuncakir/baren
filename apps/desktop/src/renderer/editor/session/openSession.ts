@@ -160,6 +160,7 @@ export async function openSession(
       components: watchers.components,
       tokens: watchers.tokens,
       docName: watchers.docName,
+      comments: watchers.comments,
       store,
       canvas: { current: null },
       canvasEl: { current: null },

@@ -305,6 +305,28 @@ Both copies share the Loro history, so live sync only exchanges new ops. While a
 the editor runs `connectFile` (remote edits arrive as Loro imports; local commits are sent as
 updates; presence drives cursors, selections, gesture ghosts and avatars).
 
+### Comments
+
+Comment threads live in the document's root map `comments` (data model and helpers:
+`packages/schema/src/comments.ts`): a thread is pinned to a layer (`nodeId`, an offset from its
+top-left) or a point on a page, keeps its last page position (`worldX/worldY`) for when the layer
+is deleted, and holds messages keyed by id (concurrent replies merge) with author
+`{ id, name, kind: 'user' | 'agent' }`, resolve state and edit times. Being part of the document,
+comments sync to collaborators with the live room, work offline and are readable by agents;
+`NodeChangeBatch.comments` lists the threads a batch changed (`CommentsWatcher` in the editor).
+Every comment write commits with a `comment:` origin, which the canvas undo manager excludes
+(`UNDO_EXCLUDE`), so Ctrl+Z never touches comments. Viewers read comments but cannot write them:
+the server rejects their document updates, so the editor disables commenting for them.
+
+Editor (`renderer/editor/comments/`): comment mode (the rail's comment button with the page's open
+count, or C; Escape or a tool leaves it) takes canvas clicks in the capture phase and pins a
+composer on the deepest layer under the pointer (`CanvasController.nodePathAt`). Pins (author
+avatar, message count, resolved check) and the thread card are DOM over the canvas, kept on their
+world points by one rAF loop (`pinLayout.ts`, through the `translate` property so a pin's hover
+`scale` grows it in place) while any are shown. Pins and cards show in comment mode only; leaving
+it closes the open thread. In comment mode the inspector lists the page's threads (open first, newest
+activity first, "Show resolved"); a row centres the canvas on its pin and opens it.
+
 ## Server API (`crates/server`, default `http://127.0.0.1:8787`)
 
 REST, JSON, `Authorization: Bearer <token>`. Errors are always `{ error: { code, message } }` with

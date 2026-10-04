@@ -75,6 +75,12 @@ export interface EditorState {
   self: WelcomeMessage | null
   /** The collaborator (user id) whose page and viewport this canvas follows (`collab/follow`). */
   following: string | null
+  /** Comment mode: clicks on the canvas pin a new comment; the inspector lists comments. */
+  commentMode: boolean
+  /** Resolved comment threads are shown (pins and the Comments list). */
+  showResolvedComments: boolean
+  /** The comment thread whose popover is open. */
+  openCommentId: string | null
   /** MCP agents in this file, local first (Phase 4 contract §10.2; `EditorSession.agents`). */
   agents: readonly EditorAgent[]
 }
@@ -101,7 +107,12 @@ export function createEditorStore(
     selectedToken: null,
     tokenQuery: '',
     collapsedGroups: new Set(['spacing', 'radius']),
-    viewToggles: { pixelGrid: true, snapToPixel: true, rulers: false, outline: false },
+    viewToggles: {
+      pixelGrid: true,
+      snapToPixel: true,
+      rulers: false,
+      outline: false,
+    },
     contextMenu: null,
     shareOpen: false,
     zoomMenuOpen: false,
@@ -116,6 +127,9 @@ export function createEditorStore(
     peers: [],
     self: null,
     following: null,
+    commentMode: false,
+    showResolvedComments: false,
+    openCommentId: null,
     agents: [],
     ...init,
   }))

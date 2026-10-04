@@ -1,11 +1,12 @@
 /**
  * Tool rail (all editor artboards): select, hand | artboard, rectangle, pen, text, insert |
- * component, image, generate. Canvas tools (pen included) switch the canvas tool; the others
- * are actions: the insert menu, the component picker (32), the image picker; generate is not
- * available yet.
+ * component, image, generate | comment. Canvas tools (pen included) switch the canvas tool; the
+ * others are actions: the insert menu, the component picker (32), the image picker; generate is
+ * not available yet. Comment toggles comment mode and shows the page's open comment count.
  */
 import {
   ArtboardToolIcon,
+  CommentIcon,
   ComponentIcon,
   DropdownMenu,
   GenerateToolIcon,
@@ -22,10 +23,47 @@ import {
   ToolRail,
 } from '@baren/ui'
 import { memo, useRef, type ReactNode } from 'react'
-import { useEditor, useEditorState } from '../session/context'
+import { useCommentThreads, useEditor, useEditorState } from '../session/context'
 import type { EditorTool } from '../session/store'
-import { pickAndInsertImage, runTool } from '../commands/tools'
+import { pickAndInsertImage, runTool, toggleCommentMode } from '../commands/tools'
+import { openCount } from '../comments/model'
 import { ComponentPicker } from '../components/ComponentPicker'
+import commentCss from '../comments/Comments.module.css'
+
+/** The comment tool and the page's open comment count. */
+const CommentButton = memo(function CommentButton() {
+  const session = useEditor()
+  const active = useEditorState((s) => s.commentMode)
+  const pageId = useEditorState((s) => s.pageId)
+  const viewer = useEditorState((s) => s.self?.role === 'viewer')
+  const count = openCount(useCommentThreads(), pageId)
+  const label = count > 0 ? `Comments, ${count} open` : 'Comments'
+  const button = (
+    <ToolButton
+      label={label}
+      shortcut="C"
+      active={active}
+      disabled={viewer}
+      className={commentCss.railButton}
+      onClick={() => toggleCommentMode(session)}
+    >
+      <CommentIcon size={16} />
+      {count > 0 && (
+        <span className={commentCss.railBadge} aria-hidden="true">
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </ToolButton>
+  )
+  // A disabled button gets no pointer events: the wrapper carries the explanation.
+  return viewer ? (
+    <span className={commentCss.railDisabled} title="Viewers can't comment">
+      {button}
+    </span>
+  ) : (
+    button
+  )
+})
 
 interface ToolDef {
   id: EditorTool
@@ -97,6 +135,8 @@ export const EditorToolRail = memo(function EditorToolRail() {
       </ToolButton>
       <ToolDivider />
       {TOOLS_3.map(button)}
+      <ToolDivider />
+      <CommentButton />
       <ComponentPicker anchorRef={componentRef} />
       <DropdownMenu
         open={insertOpen}

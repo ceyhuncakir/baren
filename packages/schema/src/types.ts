@@ -14,6 +14,8 @@ export const CONTAINER = {
   tokens: 'tokens',
   /** Component registry: `componentKey` → mergeable `{ mainId }` (Phase 3). */
   components: 'components',
+  /** Comment threads: `threadId` → mergeable thread map (`comments.ts`). */
+  comments: 'comments',
 } as const
 
 /** Keys of a tree node's `data` map. */

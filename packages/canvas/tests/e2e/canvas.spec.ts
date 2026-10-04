@@ -385,6 +385,25 @@ test.describe('editing', () => {
     expect(await page.evaluate((id) => window.__e2e.node(id)?.styles['width'], n.second)).toBe(150)
   })
 
+  test('nodePathAt: the top-level node down to the deepest layer under a point', async ({
+    page,
+  }) => {
+    const n = await ids(page)
+    await frames(page)
+    const r = await page.evaluate((id) => {
+      const c = window.__e2e.canvas()
+      const b = c.getNodeBounds(id)
+      if (!b) return null
+      return {
+        path: c.nodePathAt({ x: b.x + b.width / 2, y: b.y + b.height / 2 }),
+        empty: c.nodePathAt({ x: -99_999, y: -99_999 }),
+      }
+    }, n.second)
+    expect(r?.path?.at(-1)).toBe(n.second)
+    expect(r?.path?.length).toBeGreaterThan(1)
+    expect(r?.empty).toBeNull()
+  })
+
   test('keyboard: nudge, delete, undo, duplicate, escape', async ({ page }) => {
     const n = await ids(page)
     const c = await centerOf(page, 'floating')

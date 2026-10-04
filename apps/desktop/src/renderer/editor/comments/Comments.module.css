@@ -1,0 +1,437 @@
+/* Comments: pins over the canvas, the thread card, the composer and the Comments list. */
+
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Comment mode: a speech-bubble cursor over the canvas (pins and cards keep theirs). */
+.commentCursor,
+.commentCursor * {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M7.9 20A9 9 0 1 0 4 16.1L2 22Z' fill='white' stroke='%23111' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M12 8v6M9 11h6' stroke='%23111' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
+      2 22,
+    crosshair !important;
+}
+
+.commentCursor [data-comment-ui],
+.commentCursor [data-comment-ui] * {
+  cursor: auto !important;
+}
+
+.commentCursor [data-comment-ui] button,
+.commentCursor [data-comment-ui] [role='button'] {
+  cursor: pointer !important;
+}
+
+/* ---- Pins ---- */
+
+.pin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
+  pointer-events: auto;
+  transform-origin: bottom left;
+  transition:
+    scale var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) linear;
+}
+
+.pin:hover {
+  scale: 1.08;
+}
+
+.pin:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-selection),
+    var(--shadow-popover);
+}
+
+.pin[data-open] {
+  box-shadow:
+    0 0 0 2px var(--color-selection),
+    var(--shadow-popover);
+}
+
+.pin[data-resolved] {
+  opacity: 0.55;
+}
+
+.pin[data-resolved]:hover,
+.pin[data-resolved][data-open] {
+  opacity: 1;
+}
+
+.pinCount {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-foreground);
+  color: var(--color-surface);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pinResolved {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  color: var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+/* The new comment's pin while its text is written. */
+.draftPin {
+  composes: pin;
+  color: var(--color-foreground-muted);
+}
+
+/* ---- Thread card and composer ---- */
+
+.card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  max-height: min(460px, calc(100% - 16px));
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
+  color: var(--color-foreground);
+  font-size: var(--text-sm);
+  pointer-events: auto;
+}
+
+.cardHeader {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 6px 6px 6px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cardTitle {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardAnchor {
+  color: var(--color-foreground-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+.resolvedBanner {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-muted);
+  color: var(--color-foreground-muted);
+  font-size: var(--text-xs);
+}
+
+.messages {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px 10px;
+}
+
+.message + .message {
+  padding-top: 4px;
+}
+
+.messageBody {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.messageMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+}
+
+.author {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agentTag {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-agent) 14%, transparent);
+  color: var(--color-agent);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+}
+
+.time {
+  flex-shrink: 0;
+  color: var(--color-foreground-subtle);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.messageMenu {
+  margin-left: auto;
+  opacity: 0;
+}
+
+.message:hover .messageMenu,
+.messageMenu[aria-expanded='true'],
+.messageMenu:focus-visible {
+  opacity: 1;
+}
+
+.text {
+  line-height: 18px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.composer {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.composerAlone {
+  border-top: 0;
+  padding-top: 12px;
+}
+
+.input {
+  width: 100%;
+  min-height: 34px;
+  max-height: 160px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-field);
+  background: var(--color-surface);
+  color: var(--color-foreground);
+  font: inherit;
+  line-height: 18px;
+  resize: none;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-selection);
+  box-shadow: var(--shadow-focus);
+}
+
+.input::placeholder {
+  color: var(--color-foreground-subtle);
+}
+
+.composerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint {
+  flex: 1 1 0;
+  color: var(--color-foreground-subtle);
+  font-size: var(--text-xs);
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-top: 6px;
+}
+
+.viewerNote {
+  flex-shrink: 0;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-foreground-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---- Comments list (inspector, comment mode) ---- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 6px 8px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-foreground);
+  text-align: left;
+}
+
+.row:hover {
+  background: var(--color-muted);
+}
+
+.row[aria-current='true'] {
+  background: var(--color-selection-subtle);
+}
+
+.row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--color-selection);
+}
+
+.rowResolved {
+  opacity: 0.6;
+}
+
+.rowBody {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowTop {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--text-xs);
+}
+
+.rowAuthor {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowPreview {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 18px;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.rowFoot {
+  display: flex;
+  gap: 8px;
+  color: var(--color-foreground-muted);
+  font-size: var(--text-xs);
+}
+
+.rowAnchor {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 4px 12px 12px;
+  color: var(--color-foreground-muted);
+  font-size: var(--text-xs);
+  line-height: 16px;
+}
+
+.resolvedSwitch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-foreground-muted);
+  font-size: var(--text-xs);
+}
+
+/* Tool rail: the open-thread count on the comment button. */
+.railButton {
+  position: relative;
+}
+
+.railDisabled {
+  display: flex;
+}
+
+.railBadge {
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-brand);
+  color: var(--color-brand-foreground);
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}

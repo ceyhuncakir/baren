@@ -6,6 +6,7 @@ export {
   newComponentKey,
   newNodeKey,
   newSubpathId,
+  newCommentId,
   isComponentKey,
   isNodeKey,
   isSubpathId,
@@ -28,6 +29,7 @@ export {
   nodesTree,
   metaMap,
   tokensMap,
+  commentsMap,
   type CommitOptions,
   type CreateEmptyDocOptions,
 } from './doc.ts'
@@ -49,6 +51,23 @@ export {
   type CreateNodeOptions,
 } from './nodes.ts'
 export { setTokens, getTokens, isTokenName, type SetTokensOptions } from './tokens.ts'
+export {
+  MAX_COMMENT_LENGTH,
+  addCommentMessage,
+  createCommentThread,
+  decodeCommentThread,
+  deleteCommentMessage,
+  deleteCommentThread,
+  editCommentMessage,
+  getCommentThread,
+  getCommentThreads,
+  moveCommentThread,
+  setCommentResolved,
+  type CommentAuthor,
+  type CommentMessage,
+  type CommentPin,
+  type CommentThread,
+} from './comments.ts'
 export { toSnapshot, toSubtreeSnapshot } from './snapshot.ts'
 export {
   subscribeNodes,

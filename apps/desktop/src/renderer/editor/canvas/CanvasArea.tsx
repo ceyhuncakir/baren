@@ -21,6 +21,8 @@ import { useCallback, useEffect, useMemo, useRef, type DragEvent } from 'react'
 import { wouldCreateCycleForKeys } from '@baren/schema'
 import { resolveCanvasAsset } from '../../lib/assets'
 import { FollowOverlay } from '../collab/FollowOverlay'
+import { CommentsLayer } from '../comments/CommentsLayer'
+import { COMMENT_ORIGIN } from '../comments/ops'
 import { visibleWorldRect } from '../collab/follow'
 import { useFollow } from '../collab/useFollow'
 import { draggedComponent, endComponentDrag } from '../components/componentDrag'
@@ -31,8 +33,19 @@ import { useEditor, useEditorState, useLayerTreeVersion } from '../session/conte
 import { sameIds } from '../session/store'
 import css from '../Editor.module.css'
 
-/** Not undoable (contract §8.1): remote/sync, fixtures, inspector previews, derived refits. */
-const UNDO_EXCLUDE = ['remote', 'sync', 'bench', 'fixture', PREVIEW_ORIGIN_PREFIX, 'derived']
+/**
+ * Not undoable (contract §8.1): remote/sync, fixtures, inspector previews, derived refits, and
+ * comments (`comment:*`: Ctrl+Z undoes design edits, never a comment).
+ */
+const UNDO_EXCLUDE = [
+  'remote',
+  'sync',
+  'bench',
+  'fixture',
+  PREVIEW_ORIGIN_PREFIX,
+  'derived',
+  COMMENT_ORIGIN,
+]
 /** DesignCanvas defaults to `position: relative`; the canvas fills the column instead. */
 const CANVAS_STYLE = { position: 'absolute', inset: 0 } as const
 /** Viewport events during gestures: presence rate (30 Hz), so followers move smoothly. */
@@ -98,7 +111,11 @@ export function CanvasArea() {
     },
     [session, store, follow],
   )
-  const onToolChange = useCallback((tool: Tool) => store.setState({ tool }), [store])
+  // A tool picked on the canvas (V, R, …) leaves comment mode, like the rail's tools.
+  const onToolChange = useCallback(
+    (tool: Tool) => store.setState({ tool, commentMode: false }),
+    [store],
+  )
   const onHistoryChange = useCallback(
     (h: HistoryState) => store.setState({ canUndo: h.canUndo, canRedo: h.canRedo }),
     [store],
@@ -220,6 +237,7 @@ export function CanvasArea() {
         onTransientChange={session.presence.setTransient}
       />
       {empty && <EmptyCanvasHint className={css.emptyHint} />}
+      <CommentsLayer />
       <FollowOverlay />
       {!leftOpen && <PanelToggle floating />}
     </div>

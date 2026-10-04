@@ -9,7 +9,7 @@ export type EditorKeyAction =
   | { kind: 'zoomIn' | 'zoomOut' | 'zoom100' | 'zoomToFit' | 'zoomToSelection' }
   | { kind: 'duplicate' | 'bringToFront' | 'sendToBack' | 'addFlex' | 'wrapInFrame' }
   | { kind: 'copyHtml' | 'copyAgentContext' | 'rename' | 'toggleLock' | 'toggleHide' }
-  | { kind: 'toggleClip' }
+  | { kind: 'toggleClip' | 'toggleComments' }
   | { kind: 'togglePixelGrid' | 'toggleRulers' | 'toggleOutline' | 'toggleLeftPanel' }
   | { kind: 'group' | 'ungroup' | 'createComponent' | 'detachInstance' | 'pasteInPlace' }
   | { kind: 'tool'; tool: EditorTool }
@@ -83,6 +83,7 @@ export function editorKeyAction(e: KeyLike, platform: string): EditorKeyAction |
     return null
   }
   if (key === 'F2') return { kind: 'rename' }
+  if (key === 'c') return { kind: 'toggleComments' }
   const tool = TOOL_KEYS[key]
   return tool ? { kind: 'tool', tool } : null
 }

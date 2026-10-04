@@ -27,7 +27,8 @@ const UNAVAILABLE: Partial<Record<EditorTool, string>> = {
 
 export function runTool(session: EditorSession, tool: EditorTool): void {
   if (isCanvasTool(tool)) {
-    session.store.setState({ tool })
+    // A canvas tool leaves comment mode (as in other design tools).
+    session.store.setState({ tool, commentMode: false })
     session.canvas.current?.setTool(tool)
     session.canvas.current?.focus()
     return
@@ -46,6 +47,19 @@ export function runTool(session: EditorSession, tool: EditorTool): void {
   }
   const what = UNAVAILABLE[tool]
   if (what) toast(`${what} isn't available yet.`)
+}
+
+/**
+ * Comment mode (C, the rail's comment button): click the canvas to pin a comment. Viewers read
+ * comments (pins, threads) but cannot write them: the server rejects their document updates.
+ */
+export function toggleCommentMode(session: EditorSession): void {
+  const s = session.store.getState()
+  if (!s.commentMode && s.self?.role === 'viewer') {
+    toast("Viewers can't comment. Ask an editor of this file for edit access.")
+    return
+  }
+  session.store.setState({ commentMode: !s.commentMode, openCommentId: null })
 }
 
 /** Tool-rail image button / Insert → Image…: pick files and insert them as layers. */

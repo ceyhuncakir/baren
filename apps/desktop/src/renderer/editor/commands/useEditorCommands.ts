@@ -9,7 +9,7 @@ import { registerCommand, type CommandId } from '../../lib/commands'
 import type { EditorSession } from '../session/context'
 import { useEditorState } from '../session/context'
 import { editorKeyAction, isEditableTarget, type EditorKeyAction } from './keymap'
-import { runTool } from './tools'
+import { runTool, toggleCommentMode } from './tools'
 
 function useRegistered(id: CommandId, enabled: boolean, run: () => void): void {
   useEffect(() => {
@@ -92,6 +92,8 @@ export function useEditorCommands(session: EditorSession): void {
           return actions.toggleHide()
         case 'toggleClip':
           return actions.toggleClip()
+        case 'toggleComments':
+          return toggleCommentMode(session)
         case 'togglePixelGrid':
         case 'toggleRulers':
         case 'toggleOutline': {

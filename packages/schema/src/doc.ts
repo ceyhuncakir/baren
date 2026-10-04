@@ -23,6 +23,10 @@ export function metaMap(doc: LoroDoc): LoroMap {
   return doc.getMap(CONTAINER.meta)
 }
 
+export function commentsMap(doc: LoroDoc): LoroMap {
+  return doc.getMap(CONTAINER.comments)
+}
+
 export function tokensMap(doc: LoroDoc): LoroMap {
   return doc.getMap(CONTAINER.tokens)
 }

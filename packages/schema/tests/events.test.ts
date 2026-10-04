@@ -40,6 +40,7 @@ describe('subscribeNodes', () => {
       tokens: [],
       meta: false,
       components: [],
+      comments: [],
     })
   })
 

@@ -902,6 +902,11 @@ class Canvas implements CanvasController, InputHost {
     return this.scenes.boundsOf(id)
   }
 
+  nodePathAt(world: Point): string[] | null {
+    if (this.pendingBatches.length > 0) this.flushBatches()
+    return this.scenes.hitTestWorld(world, false)
+  }
+
   getNodeFrame(id: string): NodeFrame | null {
     // Apply committed changes to the DOM first (commands may run right after an edit).
     if (this.pendingBatches.length > 0) this.flushBatches()

@@ -1,5 +1,6 @@
 /**
  * Inspector (right panel). Header: collaborators, zoom chip/menu, Share. Body by state:
+ *  - comment mode → the page's comments (`comments/CommentsPanel`)
  *  - theme mode with a token selected → token inspector (07)
  *  - nothing selected → Page + MCP (04)
  *  - frames/artboards → Layout, Flex, Radius, Blending, Fill, effects, Selection colors (06)
@@ -16,6 +17,7 @@ import { memo, type CSSProperties } from 'react'
 import { uniquePeers } from '../collab/presence'
 import { useEditor, useEditorState, useSelectedNodes } from '../session/context'
 import { TokenInspector } from '../theme/TokenInspector'
+import { CommentsPanel } from '../comments/CommentsPanel'
 import { BlendingSection, FillSection, RadiusSection } from './sections/AppearanceSections'
 import { ComponentSection, hasComponentSection } from './sections/ComponentSection'
 import { EffectSections } from './sections/EffectSections'
@@ -106,7 +108,9 @@ const Collaborators = memo(function Collaborators() {
 function InspectorBody() {
   const mode = useEditorState((s) => s.mode)
   const token = useEditorState((s) => s.selectedToken)
+  const commentMode = useEditorState((s) => s.commentMode)
   const snapshot = useSelectedNodes()
+  if (commentMode) return <CommentsPanel />
   if (mode === 'theme' && token) return <TokenInspector name={token} />
   const nodes = snapshot.nodes
   if (nodes.length === 0) {

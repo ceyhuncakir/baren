@@ -212,6 +212,12 @@ export interface CanvasController {
    */
   getNodeBounds(id: string): Rect | null
   /**
+   * The layers under a world point: the path from the top-level node down to the deepest
+   * visible node there (groups never stop it); null when nothing is under the point. Measured
+   * artboards only resolve to their deepest layer; unmeasured ones answer with their own id.
+   */
+  nodePathAt(world: Point): string[] | null
+  /**
    * World frame (unrotated box + accumulated rotation, contract 2.3) of a real or virtual node
    * on this page; measures synchronously when needed (commands only, never per frame).
    */
