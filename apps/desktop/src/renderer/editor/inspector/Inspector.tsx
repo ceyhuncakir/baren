@@ -1,6 +1,7 @@
 /**
  * Inspector (right panel). Header: collaborators, zoom chip/menu, Share. Body by state:
  *  - comment mode → the page's comments (`comments/CommentsPanel`)
+ *  - version history open → the file's versions (`history/VersionHistoryPanel`)
  *  - theme mode with a token selected → token inspector (07)
  *  - nothing selected → Page + MCP (04)
  *  - frames/artboards → Layout, Flex, Radius, Blending, Fill, effects, Selection colors (06)
@@ -11,13 +12,19 @@
  *    Shadow, Filters (30); instances and their content → a Component section first, then the
  *    resolved node's sections with override dots (31); main components add the Component
  *    section above the frame sections
+ * A viewer of a shared file sees the same values under a "view only" note and cannot change them
+ * (`session/readOnly.ts`); comments, version history and the MCP section stay as they are.
  */
-import { Avatar, cx, EditorPanel, PanelHeader } from '@baren/ui'
-import { memo, type CSSProperties } from 'react'
+import { Avatar, cx, DropdownMenu, EditorPanel, MenuItem, MenuLabel, PanelHeader } from '@baren/ui'
+import { memo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { uniquePeers } from '../collab/presence'
+import { startSpotlight, stopSpotlight } from '../collab/spotlight'
 import { useEditor, useEditorState, useSelectedNodes } from '../session/context'
+import type { NodesSnapshot } from '../session/docEvents'
+import { useViewer } from '../session/readOnly'
 import { TokenInspector } from '../theme/TokenInspector'
 import { CommentsPanel } from '../comments/CommentsPanel'
+import { VersionHistoryPanel } from '../history/VersionHistoryPanel'
 import { BlendingSection, FillSection, RadiusSection } from './sections/AppearanceSections'
 import { ComponentSection, hasComponentSection } from './sections/ComponentSection'
 import { EffectSections } from './sections/EffectSections'
@@ -45,6 +52,54 @@ export function agentTooltip(agent: Pick<EditorAgent, 'name' | 'via'>): string {
 }
 
 /**
+ * Your own avatar opens the spotlight menu ("Ask everyone to follow you", `collab/spotlight`)
+ * and gets a ring in your colour while you spotlight.
+ */
+function SelfAvatar() {
+  const { store } = useEditor()
+  const identity = useEditorState((s) => s.identity)
+  const self = useEditorState((s) => s.self)
+  const spotlight = useEditorState((s) => s.spotlight)
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLButtonElement>(null)
+  const on = spotlight !== null
+  const name = identity?.name ?? 'You'
+  return (
+    <>
+      <button
+        ref={ref}
+        type="button"
+        className={cx(css.follow, on && css.following)}
+        style={{ '--follow-color': self?.color ?? 'var(--color-selection)' } as CSSProperties}
+        title={on ? 'You are spotlighting' : name}
+        aria-label={on ? `${name}, spotlighting` : name}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Avatar name={name} size={22} {...(identity ? {} : { variant: 'muted' as const })} />
+      </button>
+      <DropdownMenu
+        open={open}
+        onOpenChange={setOpen}
+        anchorRef={ref}
+        width={232}
+        aria-label="Spotlight"
+      >
+        {on ? (
+          <MenuItem onSelect={() => stopSpotlight(store)}>Stop spotlight</MenuItem>
+        ) : (
+          <MenuItem disabled={self === null} onSelect={() => startSpotlight(store)}>
+            Ask everyone to follow you
+          </MenuItem>
+        )}
+        {self === null && <MenuLabel>Share this file to spotlight it to your team.</MenuLabel>}
+      </DropdownMenu>
+    </>
+  )
+}
+
+/**
  * People first (circles), then agents (rounded squares, 35), then "+N". A collaborator's avatar
  * toggles following them (`collab/follow`); the followed one gets a ring in their colour.
  */
@@ -60,11 +115,7 @@ const Collaborators = memo(function Collaborators() {
   const hidden = Math.max(0, others.length - MAX_PEOPLE) + Math.max(0, bots.length - MAX_AGENTS)
   return (
     <span className={css.avatars} data-testid="collaborators">
-      <Avatar
-        name={identity?.name ?? 'You'}
-        size={22}
-        {...(identity ? {} : { variant: 'muted' as const })}
-      />
+      <SelfAvatar />
       {others.slice(0, MAX_PEOPLE).map((p) => {
         const on = following === p.userId
         const label = on ? `Stop following ${p.name}` : `Follow ${p.name}`
@@ -105,22 +156,57 @@ const Collaborators = memo(function Collaborators() {
   )
 })
 
+/** `children` as they are; for a viewer, under a note and impossible to change (inert). */
+function ViewOnly({ viewer, children }: { viewer: boolean; children: ReactNode }) {
+  if (!viewer) return children
+  return (
+    <>
+      <p className={css.viewOnly} role="note">
+        You can view this file but not edit it.
+      </p>
+      <div className={css.viewOnlyBody} inert>
+        {children}
+      </div>
+    </>
+  )
+}
+
 function InspectorBody() {
   const mode = useEditorState((s) => s.mode)
   const token = useEditorState((s) => s.selectedToken)
   const commentMode = useEditorState((s) => s.commentMode)
+  const historyOpen = useEditorState((s) => s.historyOpen)
+  const viewer = useViewer()
   const snapshot = useSelectedNodes()
+  if (historyOpen) return <VersionHistoryPanel />
   if (commentMode) return <CommentsPanel />
-  if (mode === 'theme' && token) return <TokenInspector name={token} />
-  const nodes = snapshot.nodes
-  if (nodes.length === 0) {
+  if (mode === 'theme' && token) {
+    return (
+      <ViewOnly viewer={viewer}>
+        <TokenInspector name={token} />
+      </ViewOnly>
+    )
+  }
+  if (snapshot.nodes.length === 0) {
     return (
       <>
-        <PageSection />
+        <ViewOnly viewer={viewer}>
+          <PageSection />
+        </ViewOnly>
         <McpSection />
       </>
     )
   }
+  return (
+    <ViewOnly viewer={viewer}>
+      <SelectionSections snapshot={snapshot} />
+    </ViewOnly>
+  )
+}
+
+/** The sections of the selected layers (by type, see the header). */
+function SelectionSections({ snapshot }: { snapshot: NodesSnapshot }) {
+  const nodes = snapshot.nodes
   const types = new Set(nodes.map((n) => n.type))
   const allText = types.size === 1 && types.has('text')
   const allVector = types.size === 1 && types.has('vector')

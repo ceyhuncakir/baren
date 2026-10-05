@@ -5,6 +5,7 @@
 import type {
   AgentErrorCode,
   AgentHostState,
+  AgentRunRequest,
   AgentResponse,
   FileHeader,
 } from '../../renderer/types/bridge'
@@ -203,6 +204,41 @@ function fileHeader(value: unknown): FileHeader | null | undefined {
   return {
     file: { id: file['id'].slice(0, 256), name: file['name'].slice(0, 1024) },
     contentHash: { tokens: hash['tokens'].slice(0, 64) },
+  }
+}
+
+function nodeRef(value: unknown): { id: string; name: string } | null | undefined {
+  if (value === null) return null
+  if (!isPlainRecord(value)) return undefined
+  const { id, name } = value
+  if (typeof id !== 'string' || id === '' || id.length > 256) return undefined
+  if (typeof name !== 'string' || name.length > 1024) return undefined
+  return { id, name }
+}
+
+/** `agentRuns:start` payloads: ids ≤ 256, names ≤ 1024, the comment ≤ 10 000 characters. */
+export function agentRunRequest(value: unknown, i: number): AgentRunRequest {
+  if (!isPlainRecord(value)) return bad(i, 'an agent run request')
+  const text = (key: string, max: number, allowEmpty = false): string => {
+    const v = value[key]
+    if (typeof v !== 'string' || v.length > max || (!allowEmpty && v === '')) {
+      return bad(i, `an agent run request with a valid ${key}`)
+    }
+    return v
+  }
+  const layer = nodeRef(value['layer'])
+  const artboard = nodeRef(value['artboard'])
+  if (layer === undefined || artboard === undefined) return bad(i, 'an agent run request')
+  return {
+    fileId: text('fileId', 256),
+    fileName: text('fileName', 1024, true),
+    pageName: text('pageName', 1024, true),
+    threadId: text('threadId', 256),
+    messageId: text('messageId', 256),
+    authorName: text('authorName', 1024),
+    body: text('body', 10_000),
+    layer,
+    artboard,
   }
 }
 

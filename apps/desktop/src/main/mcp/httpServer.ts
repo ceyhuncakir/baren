@@ -6,7 +6,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Logger } from '../log'
-import { AuthRateLimiter, checkRequest, type SecurityContext } from './security'
+import { AuthRateLimiter, checkRequest, type RunScope, type SecurityContext } from './security'
 import { sendJsonRpcError } from './sessions'
 
 export const MCP_HOST = '127.0.0.1'
@@ -15,8 +15,8 @@ export const MCP_PATH = '/mcp'
 export interface McpHttpServerOptions {
   /** The current token and extra origins (the port is filled in once bound). */
   security(): Omit<SecurityContext, 'port'>
-  /** Authenticated `/mcp` requests. */
-  handle(req: IncomingMessage, res: ServerResponse): Promise<void>
+  /** Authenticated `/mcp` requests; `scope` is set for a comment request's run token. */
+  handle(req: IncomingMessage, res: ServerResponse, scope: RunScope | null): Promise<void>
   log?: Logger
   limiter?: AuthRateLimiter
 }
@@ -122,7 +122,7 @@ export class McpHttpServer {
         )
         return
       }
-      await this.options.handle(req, res)
+      await this.options.handle(req, res, check.scope)
     } catch (error) {
       this.options.log?.error('MCP request failed', error)
       sendJsonRpcError(res, 500, 'Internal server error', -32603)

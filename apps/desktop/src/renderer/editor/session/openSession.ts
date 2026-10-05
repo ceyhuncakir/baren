@@ -161,6 +161,7 @@ export async function openSession(
       tokens: watchers.tokens,
       docName: watchers.docName,
       comments: watchers.comments,
+      versions: watchers.versions,
       store,
       canvas: { current: null },
       canvasEl: { current: null },

@@ -12,10 +12,11 @@ import {
   Switch,
   toast,
 } from '@baren/ui'
-import { useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Dialog } from '../components/Dialog'
 import { FormError } from '../components/FormError'
 import { api, errorMessage } from '../lib/api'
+import { startAgentRuns, useAgentRuns, useAgentRunnerStatus } from '../state/agentRuns'
 import { useMcp, useMcpStatus } from '../state/mcp'
 import { useSession } from '../state/session'
 import { useUi } from '../state/ui'
@@ -76,6 +77,38 @@ function McpRow() {
   )
 }
 
+/**
+ * "Comment requests": a comment that @mentions Claude Code runs it in the background on this
+ * computer (`main/agentRuns`). Needs the `claude` CLI; the detail shows where it was found.
+ */
+function AgentRunsRow() {
+  const status = useAgentRunnerStatus()
+  const switching = useAgentRuns((s) => s.switching)
+  const setEnabled = useAgentRuns((s) => s.setEnabled)
+  // Look for `claude` again each time Preferences opens (it may have been installed meanwhile).
+  useEffect(() => startAgentRuns(true), [])
+  const installed = status?.claudePath != null
+  const on = installed && status?.enabled === true
+  let detail = "Claude Code isn't installed on this computer"
+  if (installed) {
+    detail = on
+      ? `On · @Claude Code in your comments runs ${status?.claudePath ?? 'claude'}`
+      : 'Off · Mentions of Claude Code stay plain mentions'
+  }
+  return (
+    <Row label="Comment requests" detail={status ? detail : undefined}>
+      <Switch
+        checked={on}
+        label="Comment requests to Claude Code"
+        disabled={!installed || switching}
+        onCheckedChange={(next) =>
+          void setEnabled(next).catch((error: unknown) => toast(errorMessage(error)))
+        }
+      />
+    </Row>
+  )
+}
+
 export function PreferencesDialog({ onClose }: { onClose: () => void }) {
   const signedIn = useSession((s) => s.status === 'signedIn' && s.user !== null)
   const email = useSession((s) => s.user?.email ?? null)
@@ -101,6 +134,7 @@ export function PreferencesDialog({ onClose }: { onClose: () => void }) {
           </Row>
         )}
         <McpRow />
+        <AgentRunsRow />
         <Row label="Version" detail={version ? `Baren ${version}` : undefined}>
           <Button
             variant="outline"

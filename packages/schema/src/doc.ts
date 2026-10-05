@@ -27,6 +27,10 @@ export function commentsMap(doc: LoroDoc): LoroMap {
   return doc.getMap(CONTAINER.comments)
 }
 
+export function versionsMap(doc: LoroDoc): LoroMap {
+  return doc.getMap(CONTAINER.versions)
+}
+
 export function tokensMap(doc: LoroDoc): LoroMap {
   return doc.getMap(CONTAINER.tokens)
 }

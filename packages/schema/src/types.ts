@@ -16,6 +16,8 @@ export const CONTAINER = {
   components: 'components',
   /** Comment threads: `threadId` → mergeable thread map (`comments.ts`). */
   comments: 'comments',
+  /** Version history: `versionId` → mergeable version map (`versions.ts`). */
+  versions: 'versions',
 } as const
 
 /** Keys of a tree node's `data` map. */

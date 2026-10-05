@@ -53,6 +53,8 @@ async function main(): Promise<void> {
     tokens: unused,
     deepLinks: { subscribe: () => undefined, unsubscribe: () => undefined },
     appOrigins: ['app://renderer'],
+    // The harness's windows are app windows (ipc/senders.ts).
+    senderKind: () => 'app',
     version: () => 'harness',
     quit: () => undefined,
     checkForUpdates: async () => undefined,

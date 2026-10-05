@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPage, deletePage, nextPageName, renameNode, ORIGIN } from '../model/docOps'
 import { useEditor, useEditorState, useLayerTreeVersion } from '../session/context'
+import { canEdit } from '../session/readOnly'
 import css from '../Editor.module.css'
 
 export function PagesSection() {
@@ -35,9 +36,14 @@ export function PagesSection() {
     [store],
   )
 
+  // A viewer switches pages but adds, renames and deletes none (`session/readOnly`).
   const addPage = () => {
+    if (!canEdit(session)) return
     const id = createPage(doc, nextPageName(doc))
     store.setState({ pageId: id, selection: [], renamingId: id, pagesExpanded: true })
+  }
+  const startRename = (id: string) => {
+    if (canEdit(session)) store.setState({ renamingId: id })
   }
 
   return (
@@ -62,7 +68,7 @@ export function PagesSection() {
                 key={id}
                 name={meta.name}
                 onDone={(name) => {
-                  if (name !== null) renameNode(doc, id, name, ORIGIN.pages)
+                  if (name !== null && canEdit(session)) renameNode(doc, id, name, ORIGIN.pages)
                   store.setState({ renamingId: null })
                 }}
               />
@@ -73,7 +79,7 @@ export function PagesSection() {
               key={id}
               active={id === pageId}
               onClick={() => selectPage(id)}
-              onDoubleClick={() => store.setState({ renamingId: id })}
+              onDoubleClick={() => startRename(id)}
               onContextMenu={(e) => {
                 e.preventDefault()
                 setMenu({ x: e.clientX, y: e.clientY, id })
@@ -81,7 +87,7 @@ export function PagesSection() {
               onKeyDown={(e) => {
                 if (e.key === 'F2') {
                   e.preventDefault()
-                  store.setState({ renamingId: id })
+                  startRename(id)
                 }
               }}
             >
@@ -97,23 +103,16 @@ export function PagesSection() {
         onClose={() => setMenu(null)}
         aria-label="Page"
       >
-        <MenuItem shortcut="F2" onSelect={() => menu && store.setState({ renamingId: menu.id })}>
+        <MenuItem shortcut="F2" onSelect={() => menu && startRename(menu.id)}>
           Rename
         </MenuItem>
-        <MenuItem
-          onSelect={() => {
-            const id = createPage(doc, nextPageName(doc))
-            store.setState({ pageId: id, selection: [], renamingId: id })
-          }}
-        >
-          Add page
-        </MenuItem>
+        <MenuItem onSelect={addPage}>Add page</MenuItem>
         <MenuSeparator />
         <MenuItem
           destructive
           disabled={pages.length <= 1}
           onSelect={() => {
-            if (!menu) return
+            if (!menu || !canEdit(session)) return
             const wasCurrent = store.getState().pageId === menu.id
             if (deletePage(doc, menu.id) && wasCurrent) {
               const next = tree.pages().find((p) => p !== menu.id)

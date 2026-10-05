@@ -9,6 +9,7 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/renderer/types/bridge.d.ts",
+    "src/renderer/lib/agentRunTarget.ts",
     "src/renderer/lib/fontUrls.ts",
     "src/renderer/lib/googleFonts.ts",
     "electron.vite.config.ts",

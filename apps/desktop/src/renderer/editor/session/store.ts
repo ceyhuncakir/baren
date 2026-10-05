@@ -75,14 +75,29 @@ export interface EditorState {
   self: WelcomeMessage | null
   /** The collaborator (user id) whose page and viewport this canvas follows (`collab/follow`). */
   following: string | null
+  /** When this client started a spotlight ("follow me", `collab/spotlight`); null when not. */
+  spotlight: number | null
+  /** The collaborator's spotlight that started the current follow; null for a manual follow. */
+  followSpotlight: SpotlightFollow | null
   /** Comment mode: clicks on the canvas pin a new comment; the inspector lists comments. */
   commentMode: boolean
   /** Resolved comment threads are shown (pins and the Comments list). */
   showResolvedComments: boolean
   /** The comment thread whose popover is open. */
   openCommentId: string | null
+  /** The inspector shows the file's version history (`history/`). */
+  historyOpen: boolean
+  /** The version the canvas previews read-only; null shows the live document. */
+  previewVersionId: string | null
   /** MCP agents in this file, local first (Phase 4 contract §10.2; `EditorSession.agents`). */
   agents: readonly EditorAgent[]
+}
+
+/** A spotlight being followed: whose, and when it started (epoch ms). */
+export interface SpotlightFollow {
+  userId: string
+  name: string
+  at: number
 }
 
 export type EditorStore = StoreApi<EditorState>
@@ -127,9 +142,13 @@ export function createEditorStore(
     peers: [],
     self: null,
     following: null,
+    spotlight: null,
+    followSpotlight: null,
     commentMode: false,
     showResolvedComments: false,
     openCommentId: null,
+    historyOpen: false,
+    previewVersionId: null,
     agents: [],
     ...init,
   }))

@@ -43,6 +43,7 @@ describe('createBridge', () => {
     const bridge = createBridge(createTypedIpc(fakeIpcRenderer().ipc), 'linux')
     expect(Object.keys(bridge).sort()).toEqual(
       [
+        'agentRuns',
         'app',
         'assets',
         'auth',
@@ -255,6 +256,40 @@ describe('createBridge', () => {
     expect(a).toEqual([{ state: 'downloading', version: '1.2.0', progress: 40 }])
     expect(b).toEqual(['downloading', 'ready'])
     expect(fake.listenerCount('updates:status')).toBe(0)
+  })
+})
+
+describe('agentRuns', () => {
+  it('maps comment request calls onto agentRuns:* channels and fans out updates', async () => {
+    const fake = fakeIpcRenderer()
+    const bridge = createBridge(createTypedIpc(fake.ipc), 'linux')
+    await bridge.agentRuns.status()
+    await bridge.agentRuns.setEnabled(false)
+    await bridge.agentRuns.stop('r1')
+    await bridge.agentRuns.list()
+    expect(fake.invoked).toEqual([
+      ['agentRuns:status', []],
+      ['agentRuns:set-enabled', [false]],
+      ['agentRuns:stop', ['r1']],
+      ['agentRuns:list', []],
+    ])
+    const seen: string[] = []
+    const off = bridge.agentRuns.onUpdate((run) => seen.push(run.state))
+    expect(fake.listenerCount('agentRuns:update')).toBe(1)
+    fake.emit('agentRuns:update', {
+      id: 'r1',
+      fileId: 'f',
+      threadId: 't',
+      messageId: 'm',
+      state: 'working',
+      activity: 'Replying',
+      error: null,
+      startedAt: 1,
+      endedAt: null,
+    })
+    off()
+    expect(seen).toEqual(['working'])
+    expect(fake.listenerCount('agentRuns:update')).toBe(0)
   })
 })
 

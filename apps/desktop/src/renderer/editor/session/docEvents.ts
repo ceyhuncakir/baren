@@ -12,6 +12,7 @@ import {
   createComponentResolver,
   getChildIds,
   getCommentThreads,
+  getVersions,
   getDocName,
   getNode,
   getParentId,
@@ -24,6 +25,7 @@ import {
   subscribeNodes,
   type AffectedByBatch,
   type CommentThread,
+  type DocVersion,
   type ComponentInfo,
   type ComponentResolver,
   type ResolvedNode,
@@ -237,6 +239,39 @@ export class CommentsWatcher {
   }
 
   getSnapshot = (): readonly CommentThread[] => this.snapshot
+}
+
+/** External store for the file's versions (newest first): version history (`history/`). */
+export class VersionsWatcher {
+  private snapshot: readonly DocVersion[]
+  private listeners = new Set<() => void>()
+  private off: (() => void) | null = null
+
+  constructor(private readonly events: DocEvents) {
+    this.snapshot = getVersions(events.doc)
+  }
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener)
+    if (!this.off) {
+      // Changes while nobody listened: catch up.
+      this.snapshot = getVersions(this.events.doc)
+      this.off = this.events.subscribe((batch) => {
+        if (batch.versions.length === 0 && batch.by !== 'checkout') return
+        this.snapshot = getVersions(this.events.doc)
+        for (const l of [...this.listeners]) l()
+      })
+    }
+    return () => {
+      this.listeners.delete(listener)
+      if (this.listeners.size === 0) {
+        this.off?.()
+        this.off = null
+      }
+    }
+  }
+
+  getSnapshot = (): readonly DocVersion[] => this.snapshot
 }
 
 /** External store for the document name (meta.name). */

@@ -87,7 +87,32 @@ describe('mcp security checks (contract §4.1)', () => {
       code: 'unauthorized',
       headers: { 'WWW-Authenticate': 'Bearer realm="Baren"' },
     })
-    expect(checkRequest(good, ctx, new AuthRateLimiter(), false)).toEqual({ ok: true })
+    expect(checkRequest(good, ctx, new AuthRateLimiter(), false)).toEqual({ ok: true, scope: null })
+  })
+
+  it('accepts a live run token with its scope, and nothing once it is gone', () => {
+    const run = `brr_${'r'.repeat(43)}`
+    const scope = { runId: 'run1', fileId: 'file1' }
+    const runTokens = new Map([[run, scope]])
+    const asRun = { ...good, authorization: `Bearer ${run}` }
+    expect(checkRequest(asRun, { ...ctx, runTokens }, new AuthRateLimiter(), false)).toEqual({
+      ok: true,
+      scope,
+    })
+    // The app's token keeps its full access next to run tokens.
+    expect(checkRequest(good, { ...ctx, runTokens }, new AuthRateLimiter(), false)).toEqual({
+      ok: true,
+      scope: null,
+    })
+    expect(checkRequest(asRun, ctx, new AuthRateLimiter(), false)).toMatchObject({ status: 401 })
+    expect(
+      checkRequest(
+        { ...good, authorization: `Bearer ${run.slice(0, -1)}x` },
+        { ...ctx, runTokens },
+        new AuthRateLimiter(),
+        false,
+      ),
+    ).toMatchObject({ status: 401 })
   })
 
   it('rate-limits more than 30 failures in 60 s for 60 s, for every request', () => {
@@ -98,7 +123,7 @@ describe('mcp security checks (contract §4.1)', () => {
       expect(checkRequest(bad, ctx, limiter, false)).toMatchObject({ status: 401 })
       now += 100
     }
-    expect(checkRequest(good, ctx, limiter, false)).toEqual({ ok: true })
+    expect(checkRequest(good, ctx, limiter, false)).toEqual({ ok: true, scope: null })
     expect(checkRequest(bad, ctx, limiter, false)).toMatchObject({ status: 401 })
     // The 31st failure blocks everything, even the right token.
     expect(checkRequest(good, ctx, limiter, false)).toMatchObject({
@@ -108,7 +133,7 @@ describe('mcp security checks (contract §4.1)', () => {
     now += 59_000
     expect(checkRequest(good, ctx, limiter, false)).toMatchObject({ status: 429 })
     now += 2_000
-    expect(checkRequest(good, ctx, limiter, false)).toEqual({ ok: true })
+    expect(checkRequest(good, ctx, limiter, false)).toEqual({ ok: true, scope: null })
   })
 
   it('does not count requests without credentials (a web page cannot lock the agent out)', () => {
@@ -118,7 +143,7 @@ describe('mcp security checks (contract §4.1)', () => {
       expect(checkRequest(anonymous, ctx, limiter, false)).toMatchObject({ status: 401 })
     }
     expect(limiter.isBlocked()).toBe(false)
-    expect(checkRequest(good, ctx, limiter, false)).toEqual({ ok: true })
+    expect(checkRequest(good, ctx, limiter, false)).toEqual({ ok: true, scope: null })
   })
 
   it('forgets failures older than the window', () => {

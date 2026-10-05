@@ -10,6 +10,7 @@
  */
 import { docAssetRefs } from '@baren/schema'
 import type { FileConnection } from '@baren/sync-client'
+import { toast } from '@baren/ui'
 import { useEffect } from 'react'
 import { useStore } from 'zustand'
 import { bridge } from '../../lib/bridge'
@@ -34,6 +35,10 @@ function pushPresence(session: EditorSession): boolean {
   ])
   return true
 }
+
+/** The server refused this copy's changes (`read_only`): the user may only view the file. */
+const READ_ONLY_NOTICE =
+  "You can only view this file, so changes made in this copy aren't saved to the team's file."
 
 /** How long agent presence waits for the canvas to mount before giving up. */
 const CANVAS_WAIT_MS = 15_000
@@ -70,6 +75,11 @@ export function useCollaboration(session: EditorSession): void {
         doc: session.doc,
         onStatus: (status) => store.setState({ syncStatus: status }),
         onWelcome: (self) => store.setState({ self }),
+        // The server drops a viewer's document updates and says so once per connection: edits
+        // made in this copy (e.g. before the role was known) never reach the shared file.
+        onServerError: (error) => {
+          if (error.code === 'read_only' && !session.headless) toast(READ_ONLY_NOTICE)
+        },
         onPresence: (peers) => {
           store.setState({ peers })
           session.agents.setRemote(peers)

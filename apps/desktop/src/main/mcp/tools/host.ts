@@ -14,6 +14,7 @@ import {
 } from '../format'
 import type { ToolArgs } from './schemas'
 import { TOOL_META } from './schemas'
+import { OPEN_SOURCES, PUBLIC_SOURCES } from '../assets'
 import type { SessionRef, ToolRuntime } from './context'
 
 /** Tools forwarded to the host as they are. */
@@ -174,7 +175,10 @@ export async function runHostTool(
   const write = TOOL_META[tool].kind === 'write'
   const forwarded = hostArgs(tool, raw, ref.pageId)
   const sources = await imageSources(rt, tool, forwarded)
-  const assets = sources.length > 0 ? await rt.env.resolveSources(sources, signal) : undefined
+  const assets =
+    sources.length > 0
+      ? await rt.env.resolveSources(sources, signal, session.scope ? PUBLIC_SOURCES : OPEN_SOURCES)
+      : undefined
   const res = await rt.callHost(session, ref.fileId, tool, forwarded, {
     write,
     timeoutMs: timeoutFor(rt, tool),

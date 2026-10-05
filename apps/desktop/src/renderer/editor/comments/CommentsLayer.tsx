@@ -1,35 +1,49 @@
 /**
  * Comments over the canvas, in comment mode only: a pin per thread of the current page (open
- * ones, plus resolved ones when "Show resolved" is on), the open thread's card, and in comment mode the click that pins a new comment on the layer under
+ * ones, plus resolved ones when "Show resolved" is on; unread ones marked, "@" when they mention
+ * you), the open thread's card, and in comment mode the click that pins a new comment on the layer under
  * the pointer with its composer. Pins and cards stay glued to the canvas through `PinLayout`.
  *
  * Comment-mode clicks are taken in the capture phase on the canvas column, so the canvas neither
  * selects nor edits; the wheel, hover highlights and middle-button or Space panning still reach
  * it.
  */
-import type { CommentPin, CommentThread } from '@baren/schema'
+import { getCommentThread, type CommentPin, type CommentThread } from '@baren/schema'
 import { CheckIcon } from '@baren/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEditor, useCommentThreads, useEditorState } from '../session/context'
+import { useViewer } from '../session/readOnly'
 import { CommentAvatar, CommentInput } from './CommentParts'
 import { CommentThreadCard, tryWrite } from './CommentThreadCard'
-import { commentAuthor, pageThreads, pinAt, pinWorld } from './model'
+import { useCommentAuthor, useMentionToasts, useReads } from './hooks'
+import { pageThreads, pinAt, pinWorld } from './model'
+import { isRunning, useThreadRun } from '../../state/agentRuns'
+import { maybeRunAgent } from './agentRun'
 import { postThread } from './ops'
+import { useMentionCandidates } from './people'
 import { PinLayout, placeCard, placePin, usePinned } from './pinLayout'
+import { isUnread, unreadMention, useCommentReads } from './unread'
 import css from './Comments.module.css'
 
 function Pin({
   layout,
   thread,
   open,
+  unread,
+  mentioned,
   onOpen,
 }: {
   layout: PinLayout
   thread: CommentThread
   open: boolean
+  /** Someone else wrote in it since this user last opened it. */
+  unread: boolean
+  /** An unread message in it mentions this user. */
+  mentioned: boolean
   onOpen(): void
 }) {
-  const { canvas } = useEditor()
+  const { canvas, fileId } = useEditor()
+  const working = isRunning(useThreadRun(fileId, thread.id))
   const ref = usePinned(
     layout,
     `pin:${thread.id}`,
@@ -46,11 +60,20 @@ function Pin({
       className={css.pin}
       data-comment-ui=""
       data-open={open || undefined}
+      data-working={working || undefined}
       data-resolved={thread.resolved || undefined}
-      aria-label={`Comment by ${first.author.name}${replies > 0 ? `, ${replies} ${replies === 1 ? 'reply' : 'replies'}` : ''}${thread.resolved ? ', resolved' : ''}`}
+      data-unread={unread || undefined}
+      aria-label={`Comment by ${first.author.name}${replies > 0 ? `, ${replies} ${replies === 1 ? 'reply' : 'replies'}` : ''}${thread.resolved ? ', resolved' : ''}${mentioned ? ', mentions you' : unread ? ', unread' : ''}`}
       onClick={onOpen}
     >
       <CommentAvatar author={first.author} size={22} />
+      {mentioned ? (
+        <span className={css.pinMention} aria-hidden="true">
+          @
+        </span>
+      ) : (
+        unread && <span className={css.pinUnread} aria-hidden="true" />
+      )}
       {replies > 0 && <span className={css.pinCount}>{thread.messages.length}</span>}
       {thread.resolved && (
         <span className={css.pinResolved}>
@@ -69,8 +92,7 @@ export function CommentsLayer() {
   const commentMode = useEditorState((s) => s.commentMode)
   const showResolved = useEditorState((s) => s.showResolvedComments)
   const openId = useEditorState((s) => s.openCommentId)
-  const identity = useEditorState((s) => s.identity)
-  const viewer = useEditorState((s) => s.self?.role === 'viewer')
+  const viewer = useViewer()
   const layerRef = useRef<HTMLDivElement>(null)
   const layout = useMemo(
     () =>
@@ -84,8 +106,15 @@ export function CommentsLayer() {
 
   const [draft, setDraft] = useState<CommentPin | null>(null)
   const draftText = useRef('')
-  const me = commentAuthor(identity)
+  const me = useCommentAuthor()
+  const reads = useReads(me)
+  const readState = useCommentReads(reads)
+  const candidates = useMentionCandidates(me)
+  useMentionToasts(me)
   const canWrite = !viewer && canvas.current?.isReadOnly() !== true
+
+  // Forget read marks of deleted threads.
+  useEffect(() => reads.prune(threads), [reads, threads])
 
   const pins = commentMode ? pageThreads(threads, pageId, showResolved) : []
   const open = commentMode
@@ -216,6 +245,8 @@ export function CommentsLayer() {
           layout={layout}
           thread={t}
           open={t.id === openId}
+          unread={isUnread(t, readState, me)}
+          mentioned={unreadMention(t, readState, me)}
           onOpen={() => {
             setDraft(null)
             store.setState({ openCommentId: t.id === openId ? null : t.id })
@@ -228,6 +259,8 @@ export function CommentsLayer() {
           layout={layout}
           thread={open}
           open
+          unread={false}
+          mentioned={false}
           onOpen={() => store.setState({ openCommentId: null })}
         />
       )}
@@ -251,18 +284,22 @@ export function CommentsLayer() {
                     : 'Add a comment'
                 }
                 submitLabel="Post"
-                hint="Enter to post"
+                hint="Enter to post · @ to mention"
+                candidates={candidates}
                 autoFocus
                 onTextChange={(t) => (draftText.current = t)}
-                onSubmit={(text) => {
+                onSubmit={(text, mentions) => {
                   let id: string | null = null
                   const ok = tryWrite(() => {
-                    id = postThread(doc, draft, me, text)
+                    id = postThread(doc, draft, me, text, mentions)
                   })
-                  if (!ok) return false
+                  if (!ok || id === null) return false
                   draftText.current = ''
                   setDraft(null)
                   store.setState({ openCommentId: id })
+                  const thread = getCommentThread(doc, id)
+                  const first = thread?.messages[0]
+                  if (first) maybeRunAgent(session, thread, first.id, me.name, text, mentions)
                 }}
                 onCancel={() => {
                   draftText.current = ''
@@ -280,6 +317,8 @@ export function CommentsLayer() {
           anchorName={anchorName(open.nodeId)}
           me={me}
           canWrite={canWrite}
+          candidates={candidates}
+          reads={reads}
           onClose={() => store.setState({ openCommentId: null })}
           cardRef={openCardRef}
         />

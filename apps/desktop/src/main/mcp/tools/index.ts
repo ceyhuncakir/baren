@@ -8,6 +8,7 @@ import { isToolError, resultFromError, resultSize, type ToolResult } from '../fo
 import { parseFileRef, type SessionRef, type ToolRuntime } from './context'
 import { HOST_TOOLS, runHostTool, type HostToolName } from './host'
 import { createFile, finishWorking, getGuide, listFiles, openFile } from './main'
+import { scopedArgs } from './runScope'
 import {
   exportNodes,
   getComputedStyles,
@@ -20,7 +21,8 @@ import { TOOL_META, TOOL_NAMES, annotationsFor, schemas, type ToolArgs } from '.
 const HOST_TOOL_SET: ReadonlySet<string> = new Set(HOST_TOOLS)
 
 /** The file a call is about (its `fileId`, else the default file), for error headers and logs. */
-function targetFile(rt: ToolRuntime, args: unknown): string | null {
+function targetFile(rt: ToolRuntime, args: unknown, session?: SessionRef): string | null {
+  if (session?.scope) return session.scope.fileId
   const v = (args as { fileId?: unknown } | null)?.fileId
   if (typeof v !== 'string' || v.trim() === '') return rt.env.hosts.defaultFileId()
   return parseFileRef(v)?.fileId ?? null
@@ -31,13 +33,16 @@ export async function callTool(
   rt: ToolRuntime,
   session: SessionRef,
   name: McpToolName,
-  args: unknown,
+  given: unknown,
   signal: AbortSignal,
 ): Promise<ToolResult> {
   const started = Date.now()
   let result: ToolResult
+  let args = given
   try {
     rt.agentOf(session)
+    // A comment request's session: its own file only (runScope.ts).
+    if (session.scope) args = scopedArgs(session.scope, name, args)
     switch (name) {
       case 'get_guide':
         result = getGuide(rt, args as ToolArgs<'get_guide'>)
@@ -94,11 +99,11 @@ export async function callTool(
     }
   } catch (error) {
     if (!isToolError(error)) rt.env.log.error(`tool ${name} failed`, error)
-    result = resultFromError(error, rt.headerFor(targetFile(rt, args)))
+    result = resultFromError(error, rt.headerFor(targetFile(rt, args, session)))
   }
   rt.env.log.debug('tool call', {
     tool: name,
-    file: targetFile(rt, args),
+    file: targetFile(rt, args, session),
     ms: Date.now() - started,
     outcome: result.isError
       ? (/^Error \[([a-z_]+)\]/.exec(lastText(result))?.[1] ?? 'error')

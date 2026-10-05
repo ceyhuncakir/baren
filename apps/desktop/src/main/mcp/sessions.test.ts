@@ -4,19 +4,24 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { afterEach, describe, expect, it } from 'vitest'
 import { McpHttpServer } from './httpServer'
 import { allowedHosts, allowedOrigins } from './security'
-import { SessionManager } from './sessions'
+import { SessionManager, type SessionHandle } from './sessions'
 
 const TOKEN = 'brn_test'
+const RUN_TOKEN = 'brr_run'
+const RUN_SCOPE = { runId: 'run1', fileId: 'file1' }
 
 async function setup(opts: { maxSessions?: number } = {}) {
   let now = 1_000_000
   const opened: string[] = []
   const identified: string[] = []
   const closed: string[] = []
+  const refs: SessionHandle[] = []
   let http: McpHttpServer
   const sessions = new SessionManager({
-    createServer: () =>
-      new McpServer({ name: 'test', version: '1' }, { capabilities: { tools: {} } }),
+    createServer: (ref) => {
+      refs.push(ref)
+      return new McpServer({ name: 'test', version: '1' }, { capabilities: { tools: {} } })
+    },
     onOpened: (id) => opened.push(id),
     onIdentified: (_id, client) => identified.push(client?.name ?? '?'),
     onClosed: (id) => closed.push(id),
@@ -26,16 +31,20 @@ async function setup(opts: { maxSessions?: number } = {}) {
     ...(opts.maxSessions ? { maxSessions: opts.maxSessions } : {}),
   })
   http = new McpHttpServer({
-    security: () => ({ token: TOKEN, extraOrigins: [] }),
-    handle: (req, res) => sessions.handle(req, res),
+    security: () => ({
+      token: TOKEN,
+      runTokens: new Map([[RUN_TOKEN, RUN_SCOPE]]),
+      extraOrigins: [],
+    }),
+    handle: (req, res, scope) => sessions.handle(req, res, scope),
   })
   const port = await http.listen([0])
   const url = `http://127.0.0.1:${port}/mcp`
-  const connect = async (name: string) => {
+  const connect = async (name: string, token = TOKEN) => {
     const client = new Client({ name, version: '1' })
     await client.connect(
       new StreamableHTTPClientTransport(new URL(url), {
-        requestInit: { headers: { Authorization: `Bearer ${TOKEN}` } },
+        requestInit: { headers: { Authorization: `Bearer ${token}` } },
       }),
     )
     return client
@@ -53,6 +62,7 @@ async function setup(opts: { maxSessions?: number } = {}) {
     opened,
     identified,
     closed,
+    refs,
     cleanup,
     advance: (ms: number) => {
       now += ms
@@ -78,6 +88,36 @@ describe('SessionManager (contract §4.2)', () => {
     expect(t.sessions.size).toBe(2)
     expect(t.opened).toHaveLength(2)
     expect(t.identified.sort()).toEqual(['claude-code', 'cursor'])
+  })
+
+  it('keeps a run token session to that token, and closes it with the run', async () => {
+    const t = await setup()
+    cleanups.push(t.cleanup)
+    await t.connect('claude-code')
+    await t.connect('claude-code', RUN_TOKEN)
+    await settle()
+    const run = t.refs.find((r) => r.scope !== null)!
+    expect(run.scope).toEqual(RUN_SCOPE)
+    expect(t.refs.filter((r) => r.scope === null)).toHaveLength(1)
+    // The app's token cannot drive the run's session (nor the other way round).
+    const call = (token: string, sessionId: string) =>
+      fetch(t.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Mcp-Session-Id': sessionId,
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/list' }),
+      })
+    const app = t.refs.find((r) => r.scope === null)!
+    expect((await call(TOKEN, run.sessionId)).status).toBe(404)
+    expect((await call(RUN_TOKEN, app.sessionId)).status).toBe(404)
+    expect((await call(RUN_TOKEN, run.sessionId)).status).toBe(200)
+
+    await t.sessions.closeRun('run1')
+    expect(t.sessions.ids()).toEqual([app.sessionId])
   })
 
   it('refuses the initialize beyond the session limit with 503', async () => {

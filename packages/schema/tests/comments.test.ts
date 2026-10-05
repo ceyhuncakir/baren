@@ -154,6 +154,60 @@ describe('comment threads', () => {
     }
   })
 
+  it('records mentions on messages: round trip, dedupe, edit, defaults', () => {
+    const { doc, pageId } = docWithPage()
+    const benMention = { id: 'u2', name: 'Ben', kind: 'user' as const }
+    const agentMention = { id: 'agent:Claude Code', name: 'Claude Code', kind: 'agent' as const }
+    const id = createCommentThread(doc, {
+      ...pin(pageId),
+      author: ana,
+      body: '@Ben @Claude Code can you check the spacing?',
+      mentions: [benMention, agentMention, benMention],
+      now: 1,
+    })
+    const plain = addCommentMessage(doc, id, { author: ben, body: 'Looking', now: 2 })
+    let t = getCommentThread(doc, id)!
+    expect(t.messages[0]!.body).toBe('@Ben @Claude Code can you check the spacing?')
+    expect(t.messages[0]!.mentions).toEqual([benMention, agentMention])
+    expect(t.messages[1]!.mentions).toEqual([])
+
+    // Editing can change the mentions; without them, the old ones stay.
+    editCommentMessage(doc, id, plain, 'Looking, @Ana', 3, [
+      { id: 'u1', name: 'Ana', kind: 'user' },
+    ])
+    editCommentMessage(doc, id, t.messages[0]!.id, '@Ben check the spacing?', 4)
+    t = getCommentThread(doc, id)!
+    expect(t.messages[1]!.mentions).toEqual([{ id: 'u1', name: 'Ana', kind: 'user' }])
+    expect(t.messages[0]!.mentions).toEqual([benMention, agentMention])
+    editCommentMessage(doc, id, plain, 'Looking, @Ana', 5, [])
+    expect(getCommentThread(doc, id)!.messages[1]!.mentions).toEqual([])
+
+    expect(() =>
+      addCommentMessage(doc, id, {
+        author: ana,
+        body: 'x',
+        mentions: [{ id: '', name: 'Nobody', kind: 'user' }],
+      }),
+    ).toThrow(SchemaError)
+  })
+
+  it('merges mentions from two peers and reads messages without them', () => {
+    const { a, b, pageId } = twoPeers()
+    const id = createCommentThread(a, { ...pin(pageId), author: ana, body: 'Hi', now: 1 })
+    sync(a, b)
+    addCommentMessage(a, id, {
+      author: ana,
+      body: '@Ben?',
+      mentions: [{ id: 'u2', name: 'Ben', kind: 'user' }],
+      now: 2,
+    })
+    addCommentMessage(b, id, { author: ben, body: 'Here', now: 3 })
+    sync(a, b)
+    for (const doc of [a, b]) {
+      expect(getCommentThread(doc, id)!.messages.map((m) => m.mentions.length)).toEqual([0, 1, 0])
+    }
+  })
+
   it('stays out of design undo when committed with a comment: origin', () => {
     const { doc, pageId } = docWithPage()
     const board = createNode(doc, { type: 'frame', parentId: pageId, name: 'Board' })

@@ -7,7 +7,9 @@ import {
   collectCssUrlsFallback,
   collectImageSourcesFallback,
   imageSize,
+  isNonPublicAddress,
   looksLikeSvg,
+  PUBLIC_SOURCES,
   resolveImageSources,
   sniffImage,
   sourceName,
@@ -151,6 +153,80 @@ describe('image sources (contract §4.8)', () => {
     })
     expect(budget[join(dir, 'logo.png')]).toMatchObject({ kind: 'raster' })
     expect(budget[join(dir, 'big.png')]).toMatchObject({ error: 'budget' })
+  })
+
+  it('knows which addresses are not on the public internet', () => {
+    const nonPublic = [
+      '127.0.0.1',
+      '10.1.2.3',
+      '192.168.1.1',
+      '172.16.0.1',
+      '172.31.255.255',
+      '169.254.169.254',
+      '100.64.0.1',
+      '0.0.0.0',
+      '224.0.0.1',
+      '255.255.255.255',
+      '::1',
+      '::',
+      '[::1]',
+      '::ffff:127.0.0.1',
+      '::ffff:7f00:1',
+      '::ffff:c0a8:101',
+      '::7f00:1',
+      '64:ff9b::a00:1',
+      'fc00::1',
+      'fd12:3456::1',
+      'fe80::1%eth0',
+      'fec0::1',
+      'ff02::1',
+      'not an address',
+    ]
+    const public_ = [
+      '8.8.8.8',
+      '1.1.1.1',
+      '172.32.0.1',
+      '100.128.0.1',
+      '2606:4700:4700::1111',
+      '::ffff:8.8.8.8',
+      '::ffff:808:808',
+      '64:ff9b::808:808',
+    ]
+    for (const a of nonPublic) expect([a, isNonPublicAddress(a)]).toEqual([a, true])
+    for (const a of public_) expect([a, isNonPublicAddress(a)]).toEqual([a, false])
+  })
+
+  it('comment requests read no local files and fetch only from public hosts', async () => {
+    const fetched: string[] = []
+    const fetch: FetchLike = async (url) => {
+      fetched.push(url)
+      if (url.endsWith('/to-lan'))
+        return new Response(null, { status: 302, headers: { location: 'http://10.0.0.7/x.png' } })
+      return new Response(PNG, { status: 200 })
+    }
+    const { deps: d, puts } = deps(fetch)
+    const lookup = async (host: string) =>
+      host === 'intranet.example' ? ['192.168.1.20'] : ['93.184.216.34']
+    const sources = [
+      join(dir, 'logo.png'),
+      `file://${join(dir, 'icon.svg')}`,
+      'http://localhost:8787/a.png',
+      'http://127.0.0.1/a.png',
+      'http://2130706433/a.png',
+      'http://[::ffff:127.0.0.1]/a.png',
+      'http://169.254.169.254/latest/meta-data',
+      'https://intranet.example/a.png',
+      'https://cdn.example/to-lan',
+      'https://cdn.example/ok.png',
+    ]
+    const out = await resolveImageSources(sources, { ...d, lookup }, undefined, PUBLIC_SOURCES)
+    for (const source of sources.slice(0, 9)) {
+      expect([source, out[source]]).toMatchObject([source, { error: 'unsupported_source' }])
+    }
+    expect(out['https://cdn.example/ok.png']).toMatchObject({ kind: 'raster' })
+    // Nothing private was requested: only the public hop that redirected, and the public image.
+    expect(fetched).toEqual(['https://cdn.example/to-lan', 'https://cdn.example/ok.png'])
+    expect(puts).toHaveLength(1)
   })
 
   it('fetches URLs with ≤ 3 redirects, no cookies and a size cap', async () => {

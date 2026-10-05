@@ -14,6 +14,7 @@ import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { expect, test } from '@playwright/test'
 import { readEndpoint } from './harness'
 import { INITIALIZE, call, connect, launchOffline, raw, type OfflineApp } from './qa-helpers'
+import { TOOL_NAMES } from '../../src/main/mcp/tools/schemas'
 
 test.skip(!process.env['BAREN_MCP_E2E'], 'set BAREN_MCP_E2E=1 (needs a build)')
 test.describe.configure({ mode: 'serial' })
@@ -205,7 +206,7 @@ test('requests without any Authorization header do not lock out the real agent',
 test('token rotation closes old sessions; old tokens get 401, old session ids 404', async () => {
   const client = await connect(app.endpoint, 'qa-rotation')
   clients.push(client)
-  expect((await client.listTools()).tools.length).toBe(30)
+  expect((await client.listTools()).tools.length).toBe(TOOL_NAMES.length)
   const before = await app.first.evaluate(() => window.baren!.mcp.status())
   expect(before.agents.some((a) => a.name === 'qa-rotation' && a.connected)).toBe(true)
   const sessionId = (client.transport as { sessionId?: string } | undefined)?.sessionId
@@ -274,7 +275,7 @@ test('a disabled server refuses connections and comes back with the same token',
   app.endpoint = endpoint
   const again = await connect(endpoint, 'qa-disable-2')
   clients.push(again)
-  expect((await again.listTools()).tools.length).toBe(30)
+  expect((await again.listTools()).tools.length).toBe(TOOL_NAMES.length)
 })
 
 test('at most 32 sessions: the 33rd initialize is refused until one ends', async () => {

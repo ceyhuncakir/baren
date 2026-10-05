@@ -23,8 +23,8 @@ interface Hook {
   schema: Record<string, (...args: unknown[]) => unknown>
 }
 
-async function openEditor(page: Page) {
-  await page.goto(FILE)
+async function openEditor(page: Page, url = FILE) {
+  await page.goto(url)
   await page.getByTestId('editor').waitFor()
   await page.waitForFunction(
     () => (window as unknown as { __barenEditor?: Hook }).__barenEditor?.canvas != null,
@@ -175,4 +175,110 @@ test("a collaborator's comment appears live, with the open count on the rail", a
   await expect(pin).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(pin).toHaveCount(0)
+})
+
+test('mention a teammate from the reply field; unread marks; a mention of you toasts', async ({
+  page,
+}, testInfo) => {
+  await openEditor(page)
+  const at = await artboardPoint(page)
+  const post = (body: string, mentionsMe: boolean, threadId: string | null) =>
+    page.evaluate(
+      ({ nodeId, body, mentionsMe, threadId }) => {
+        const hook = (window as unknown as { __barenEditor: Hook }).__barenEditor
+        const doc = hook.session.doc
+        const author = { id: 'u-defne', name: 'Defne Aydın', kind: 'user' }
+        const mentions = mentionsMe ? [{ id: 'u-ceyhun', name: 'ceyhun cakir', kind: 'user' }] : []
+        return hook.schema['transact']!(
+          doc,
+          () =>
+            threadId === null
+              ? hook.schema['createCommentThread']!(doc, {
+                  pageId: hook.canvas.getPageId(),
+                  nodeId,
+                  x: 24,
+                  y: 24,
+                  worldX: 0,
+                  worldY: 0,
+                  author,
+                  body,
+                  mentions,
+                })
+              : hook.schema['addCommentMessage']!(doc, threadId, { author, body, mentions }),
+          { origin: 'remote:test' },
+        ) as string
+      },
+      { nodeId: at.id, body, mentionsMe, threadId },
+    )
+  const threadId = await post('Can we try a darker header?', false, null)
+
+  // Unread: the rail dot, then the pin, until the thread is opened.
+  const rail = page.getByRole('button', { name: /Comments, 1 open, unread/ })
+  await expect(rail).toBeVisible()
+  await rail.click()
+  const pin = page.getByRole('button', { name: /^Comment by Defne Aydın/ })
+  await expect(pin).toHaveAccessibleName(/unread$/)
+  await pin.click()
+  const card = page.getByRole('dialog', { name: 'Comment thread' })
+  await expect(card).toBeVisible()
+  await expect(pin).not.toHaveAccessibleName(/unread/)
+  await expect(page.getByRole('button', { name: 'Comments, 1 open' })).toBeVisible()
+
+  // @ suggests people (the team, earlier authors); Enter picks, the mention is highlighted.
+  const reply = card.getByRole('combobox', { name: 'Reply' })
+  await reply.click()
+  await reply.pressSequentially('Sure @Def')
+  const option = page.getByRole('option', { name: /Defne Aydın/ })
+  await expect(option).toBeVisible()
+  await shot(page, testInfo, 'mention-suggestions')
+  await reply.press('Enter')
+  await expect(reply).toHaveValue('Sure @Defne Aydın ')
+  await reply.pressSequentially('on it')
+  await reply.press('Enter')
+  await expect(card.getByText('@Defne Aydın', { exact: true })).toBeVisible()
+  const saved = await threads(page)
+  const last = saved[0]!.messages.at(-1) as unknown as { body: string; mentions: unknown[] }
+  expect(last.body).toBe('Sure @Defne Aydın on it')
+  expect(last.mentions).toEqual([{ id: 'u-defne', name: 'Defne Aydın', kind: 'user' }])
+
+  // Defne mentions you: a toast whose View opens the thread again.
+  await page.keyboard.press('Escape')
+  await expect(card).toHaveCount(0)
+  await post('@ceyhun cakir does this read better?', true, threadId)
+  const toast = page.getByText('Defne Aydın mentioned you')
+  await expect(toast).toBeVisible()
+  await expect(pin).toHaveAccessibleName(/mentions you$/)
+  await shot(page, testInfo, 'mention-toast')
+  await page.getByRole('button', { name: 'View' }).click()
+  await expect(card).toBeVisible()
+  await expect(card.getByText('@ceyhun cakir', { exact: true })).toBeVisible()
+})
+
+test('@Claude Code in a comment starts a request: working, then Stop', async ({
+  page,
+}, testInfo) => {
+  // `agentRuns=on`: the mock bridge has `claude` and runs a fake request that keeps working.
+  await openEditor(page, '/?fixture=design&agentRuns=on#/file/f-acme')
+  await page.keyboard.press('c')
+  const at = await artboardPoint(page)
+  await page.mouse.click(at.x, at.y)
+  const composer = page.getByRole('dialog', { name: 'New comment' })
+  const field = composer.locator('textarea')
+  await field.pressSequentially('@Cla')
+  await expect(page.getByRole('option', { name: /Claude Code/ })).toBeVisible()
+  await field.press('Enter')
+  await field.pressSequentially('make this card denser')
+  await field.press('Enter')
+
+  const card = page.getByRole('dialog', { name: 'Comment thread' })
+  const status = card.getByRole('status')
+  await expect(status).toContainText('Claude Code is working')
+  await expect(status).toContainText('Taking a screenshot')
+  const pin = page.getByRole('button', { name: /^Comment by / })
+  await expect(pin).toHaveAttribute('data-working', 'true')
+  await shot(page, testInfo, 'agent-request-working')
+
+  await status.getByRole('button', { name: 'Stop' }).click()
+  await expect(status).toHaveText('You stopped Claude Code.')
+  await expect(pin).not.toHaveAttribute('data-working', 'true')
 })

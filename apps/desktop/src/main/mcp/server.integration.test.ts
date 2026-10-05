@@ -437,6 +437,51 @@ describe('MCP server over Streamable HTTP (SDK client)', () => {
     expect(finished).toEqual({ released: ['a1'], remaining: [] })
   })
 
+  it("keeps a comment request's token to its file, public images and no file navigation", async () => {
+    const access = svc.runAccess({ runId: 'run1', fileId: 'f2' })
+    const client = await connect('claude-code', access.token)
+
+    // No fileId: the comment's file, not the one the user is looking at (f1, focused).
+    const info = await client.callTool({ name: 'get_basic_info', arguments: {} })
+    expect(JSON.parse(text(info, 0))).toEqual(header('f2'))
+    expect(visibleB.requests.at(-1)).toMatchObject({ tool: 'get_basic_info', fileId: 'f2' })
+
+    const other = await client.callTool({ name: 'get_basic_info', arguments: { fileId: 'f1' } })
+    expect(other.isError).toBe(true)
+    expect(last(other)).toContain('Error [invalid_argument]')
+    for (const [name, args] of [
+      ['list_files', {}],
+      ['open_file', { fileId: 'f3' }],
+      ['create_file', { name: 'Exfil' }],
+      ['export', { fileId: 'f2', nodes: { a1: [{ format: 'png', scale: '1x' }] } }],
+    ] as const) {
+      const refused = await client.callTool({ name, arguments: args })
+      expect([name, refused.isError, last(refused)]).toMatchObject([
+        name,
+        true,
+        expect.stringContaining('Error [unsupported]'),
+      ])
+    }
+
+    // Image sources: no files on this computer, no loopback or private network.
+    const write = await client.callTool({
+      name: 'write_html',
+      arguments: {
+        html: '<div><img src="/home/ana/private.png"><img src="http://127.0.0.1:8787/a.png"></div>',
+        mode: 'insert-children',
+        targetNodeId: 'p1',
+      },
+    })
+    const assets = body(write)['assets'] as Record<string, { error?: string }>
+    expect(assets['/home/ana/private.png']).toMatchObject({ error: 'unsupported_source' })
+    expect(assets['http://127.0.0.1:8787/a.png']).toMatchObject({ error: 'unsupported_source' })
+
+    // The run ended: its session closes and the token stops working.
+    await access.revoke()
+    await expect(client.callTool({ name: 'get_basic_info', arguments: {} })).rejects.toThrow()
+    await expect(connect('claude-code', access.token)).rejects.toThrow()
+  })
+
   it('reports batch failures and semantic validation as tool errors', async () => {
     const client = await connect('codex')
     const styles = await client.callTool({

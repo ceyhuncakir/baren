@@ -16,6 +16,8 @@ import type { Guide } from '../guide'
 import type { HostRegistry } from '../hosts'
 import type { AgentRpc, RpcOk, RpcTarget } from '../ipc'
 import type { RenderService } from '../render'
+import type { SourcePolicy } from '../assets'
+import type { RunScope } from '../security'
 
 /** Deadlines in ms (contract §4.6); BAREN_MCP_TOOL_TIMEOUT_MS replaces every one. */
 export interface Deadlines {
@@ -104,13 +106,19 @@ export interface ToolEnv {
   /** `collectImageSources` / `collectCssUrls` of @baren/html (or the fallbacks). */
   collectHtmlSources(html: string): Promise<string[]>
   collectStyleSources(styles: Record<string, unknown>): Promise<string[]>
-  resolveSources(sources: string[], signal?: AbortSignal): Promise<Record<string, ResolvedSource>>
+  resolveSources(
+    sources: string[],
+    signal?: AbortSignal,
+    policy?: SourcePolicy,
+  ): Promise<Record<string, ResolvedSource>>
   /** The last header each file's host answered with (errors and presence-only tools reuse it). */
   headers: Map<string, FileHeader>
 }
 
 export interface SessionRef {
   sessionId: string
+  /** A comment request's session: one file, public image sources (tools/index.ts). */
+  scope?: RunScope | null
 }
 
 export interface ParsedFileRef {

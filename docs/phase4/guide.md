@@ -242,6 +242,9 @@ The people using Baren care about craft.
   author (`kind` "user" or "agent").
 - Treat open comments as requests from the team, but the user you are talking to has the last
   word: if a comment conflicts with their instructions, ask.
+- Messages list the people and agents they @mention (`mentions`). When one mentions you (your
+  client's name; such messages and their threads carry `mentionsYou: true`), treat it as a
+  request addressed to you.
 - When you have addressed a comment, `reply_to_comment` and say briefly what you changed ("Gap
   is 16px now, matching the cards above"). Ask in a reply when a comment is unclear.
 - `resolve_comment` only when the feedback is fully handled, or when the user asks you to.

@@ -151,6 +151,65 @@ async fn offline_edits_upload_on_reconnect_and_survive_unload() {
     assert_eq!(b.doc.get_list("log").len(), 1);
 }
 
+/// Waits until every room has compacted and unloaded.
+async fn wait_for_unload(srv: &TestServer) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while srv.open_rooms() > 0 {
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "room did not unload"
+        );
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_update_waiting_for_its_dependencies_survives_compaction() {
+    let (srv, alice, bob, file) = setup().await;
+
+    // Two changes of one peer: the second depends on the first.
+    let author = LoroDoc::new();
+    author.get_list("log").push("first").unwrap();
+    author.commit();
+    let first = author.export(loro::ExportMode::all_updates()).unwrap();
+    let after_first = author.oplog_vv();
+    author.get_list("log").push("second").unwrap();
+    author.commit();
+    let second = author
+        .export(loro::ExportMode::updates(&after_first))
+        .unwrap();
+
+    // Only the second arrives: the room keeps it pending, then compacts and unloads.
+    let mut a = Peer::connect_ok(&srv.ws_url(&file, Some(&alice)), LoroDoc::new()).await;
+    a.send_binary(frame(0x01, &second)).await;
+    a.resync().await;
+    a.close().await;
+    wait_for_unload(&srv).await;
+
+    // The first arrives later, in a new room loaded from SQLite: both apply.
+    let mut b = Peer::connect_ok(&srv.ws_url(&file, Some(&bob)), LoroDoc::new()).await;
+    b.send_binary(frame(0x01, &first)).await;
+    b.resync().await;
+    assert_eq!(deep(&b.doc)["log"], json!(["first", "second"]));
+    b.close().await;
+    wait_for_unload(&srv).await;
+
+    // Once resolved, compaction folds everything into the snapshot.
+    let c = Peer::connect_ok(&srv.ws_url(&file, Some(&alice)), LoroDoc::new()).await;
+    assert_eq!(
+        deep(&c.doc)["log"],
+        json!(["first", "second"]),
+        "both changes are stored"
+    );
+    let db = srv.db().await;
+    let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM file_updates WHERE file_id = ?")
+        .bind(&file)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(rows, 0, "the log was folded once nothing waited any more");
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn documents_survive_a_server_restart() {
     let db = std::env::temp_dir().join(format!(

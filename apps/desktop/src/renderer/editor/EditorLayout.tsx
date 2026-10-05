@@ -8,6 +8,7 @@ import { EditorContextMenu } from './canvas/EditorContextMenu'
 import { EditorToolRail } from './chrome/EditorToolRail'
 import { useCollaboration } from './collab/useCollaboration'
 import { useEditorCommands } from './commands/useEditorCommands'
+import { useOpenCheckpoint } from './history/useOpenCheckpoint'
 import { Inspector } from './inspector/Inspector'
 import { LeftPanel } from './LeftPanel'
 import { useEditor, useEditorState, useSelectedNodes } from './session/context'
@@ -25,6 +26,7 @@ export function EditorLayout() {
   const session = useEditor()
   const leftOpen = useEditorState((s) => s.leftPanelOpen)
   useCollaboration(session)
+  useOpenCheckpoint(session)
   return (
     <div className={css.editor} data-testid="editor">
       <EditorCommands />

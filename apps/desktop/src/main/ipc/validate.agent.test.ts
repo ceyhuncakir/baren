@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IpcArgumentError, MiB, agentIs, approxSize, args } from './validate'
+import { IpcArgumentError, MiB, agentIs, agentRunRequest, approxSize, args } from './validate'
 
 describe('agent IPC validation (contract §4.14)', () => {
   const response = args(agentIs.response(32 * MiB))
@@ -83,5 +83,33 @@ describe('agent IPC validation (contract §4.14)', () => {
       1 + 3 + 1 + 8 + 8 + 8 + 1 + 10,
     )
     expect(approxSize('x'.repeat(100), 50)).toBe(Number.POSITIVE_INFINITY)
+  })
+})
+
+describe('comment request validation (agentRuns:start)', () => {
+  const ok = {
+    fileId: 'f1',
+    fileName: 'File',
+    pageName: '',
+    threadId: 't1',
+    messageId: 'm1',
+    authorName: 'Ana',
+    body: '@Claude Code tighten this',
+    layer: { id: '1@2', name: 'Card' },
+    artboard: null,
+  }
+
+  it('accepts a well-formed request and keeps only its fields', () => {
+    expect(agentRunRequest({ ...ok, extra: 'dropped' }, 0)).toEqual(ok)
+  })
+
+  it('rejects missing ids, empty or oversized comments and malformed layers', () => {
+    const bad = (value: unknown) => () => agentRunRequest(value, 0)
+    expect(bad(null)).toThrow(IpcArgumentError)
+    expect(bad({ ...ok, threadId: '' })).toThrow(IpcArgumentError)
+    expect(bad({ ...ok, body: '' })).toThrow(IpcArgumentError)
+    expect(bad({ ...ok, body: 'x'.repeat(10_001) })).toThrow(IpcArgumentError)
+    expect(bad({ ...ok, layer: { id: 1, name: 'Card' } })).toThrow(IpcArgumentError)
+    expect(bad({ ...ok, artboard: 'nope' })).toThrow(IpcArgumentError)
   })
 })

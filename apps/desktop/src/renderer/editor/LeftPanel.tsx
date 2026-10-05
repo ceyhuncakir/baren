@@ -20,6 +20,7 @@ import { ComponentsSection } from './components/ComponentsSection'
 import { LayersPanel } from './layers/LayersPanel'
 import { PagesSection } from './layers/PagesSection'
 import { useComponents, useDocName, useEditor, useEditorState } from './session/context'
+import { canEdit } from './session/readOnly'
 import type { PanelMode } from './session/store'
 import { ThemePanel } from './theme/ThemePanel'
 import css from './Editor.module.css'
@@ -37,8 +38,15 @@ export function LeftPanel() {
   const { store } = useEditor()
   const mode = useEditorState((s) => s.mode)
   const hasComponents = useComponents().list.length > 0
+  // Previewing a version: the live file's layers and pages are not editable (or confusing).
+  const previewing = useEditorState((s) => s.previewVersionId !== null)
   return (
-    <EditorPanel side="left" aria-label="Layers and pages">
+    <EditorPanel
+      side="left"
+      aria-label="Layers and pages"
+      inert={previewing}
+      className={previewing ? css.panelInert : undefined}
+    >
       <FileHeader />
       <PanelModeSwitch>
         <Segmented<PanelMode>
@@ -102,7 +110,7 @@ function FileHeader() {
             name={name}
             onDone={(next) => {
               setEditing(false)
-              if (next === null) return
+              if (next === null || !canEdit(session)) return
               transact(session.doc, () => setDocName(session.doc, next), {
                 origin: 'editor:rename',
               })
@@ -114,7 +122,7 @@ function FileHeader() {
             type="button"
             className={css.fileHeaderTitle}
             title="Double-click to rename"
-            onDoubleClick={() => setEditing(true)}
+            onDoubleClick={() => setEditing(canEdit(session))}
           >
             {name}
           </button>

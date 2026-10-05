@@ -39,7 +39,7 @@ function thread(over: Partial<CommentThread> & Pick<CommentThread, 'id'>): Comme
     resolved: false,
     resolvedBy: null,
     resolvedAt: null,
-    messages: [{ id: 'm', author: ana, body: 'Hi', createdAt: 1, editedAt: null }],
+    messages: [{ id: 'm', author: ana, body: 'Hi', createdAt: 1, editedAt: null, mentions: [] }],
     ...over,
   }
 }
@@ -62,6 +62,7 @@ describe('comment authors', () => {
       body: 'x',
       createdAt: 1,
       editedAt: null,
+      mentions: [],
     })
     expect(isOwnMessage(msg(ana), ana)).toBe(true)
     expect(isOwnMessage(msg({ ...ana, id: 'u2' }), ana)).toBe(false)
@@ -131,8 +132,8 @@ describe('comment lists', () => {
   const b = thread({
     id: 'b',
     messages: [
-      { id: 'm1', author: ana, body: 'Old', createdAt: 2, editedAt: null },
-      { id: 'm2', author: ana, body: 'Newest reply', createdAt: 50, editedAt: null },
+      { id: 'm1', author: ana, body: 'Old', createdAt: 2, editedAt: null, mentions: [] },
+      { id: 'm2', author: ana, body: 'Newest reply', createdAt: 50, editedAt: null, mentions: [] },
     ],
   })
   const c = thread({ id: 'c', resolved: true, createdAt: 99 })

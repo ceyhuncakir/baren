@@ -12,6 +12,7 @@ import { AgentToolError } from './errors'
 import type { DocIndex } from './docIndex'
 import type { AgentGeometry } from './geometry'
 import { resolveRef, type DocContext } from './model'
+import { checkpointBeforeAgentWrite } from './checkpoint'
 
 export interface AssetAccess {
   /** Store bytes in the core; resolves to their hash. */
@@ -89,9 +90,13 @@ export interface ToolSpec {
 
 export const ORIGIN_PREFIX = 'agent:'
 
-/** Run `fn` as the call's single transaction (origin `agent:<tool>`); geometry is re-measured after. */
+/**
+ * Run `fn` as the call's single transaction (origin `agent:<tool>`); geometry is re-measured after.
+ * An agent's first write after a while records a version first (`checkpoint.ts`).
+ */
 export function commit<T>(call: ToolCall, fn: () => T): T {
   if (call.signal.aborted) throw new AgentToolError('cancelled', 'The request was cancelled.')
+  if (call.agent) checkpointBeforeAgentWrite(call.env.doc, call.agent.name)
   try {
     return transact(call.env.doc, fn, { origin: `${ORIGIN_PREFIX}${call.tool}` })
   } finally {

@@ -76,6 +76,7 @@ export function createBridge(
   const subscribeAgentRequests = fanOut(ipc, 'agent:request', 'agent.onRequest')
   const subscribeAgentCancels = fanOut(ipc, 'agent:cancel', 'agent.onCancel')
   const subscribeAgentPresence = fanOut(ipc, 'agent:presence', 'agent.onPresence')
+  const subscribeAgentRuns = fanOut(ipc, 'agentRuns:update', 'agentRuns.onUpdate')
 
   return {
     window: {
@@ -115,6 +116,15 @@ export function createBridge(
 
     fonts: {
       faces: (family) => ipc.invoke('fonts:faces', family),
+    },
+
+    agentRuns: {
+      status: () => ipc.invoke('agentRuns:status'),
+      setEnabled: (enabled) => ipc.invoke('agentRuns:set-enabled', enabled),
+      start: (request) => ipc.invoke('agentRuns:start', request),
+      stop: (runId) => ipc.invoke('agentRuns:stop', runId),
+      list: () => ipc.invoke('agentRuns:list'),
+      onUpdate: (cb) => subscribeAgentRuns(cb),
     },
 
     export: {

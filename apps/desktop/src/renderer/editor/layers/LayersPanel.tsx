@@ -31,6 +31,7 @@ import {
 } from 'react'
 import { moveLayers, renameNode, setFlag } from '../model/docOps'
 import { useEditor, useEditorState, useLayerTreeVersion } from '../session/context'
+import { canEdit } from '../session/readOnly'
 import { hoverId, selectIds } from '../session/selection'
 import { dropTargetAt, type DropTarget } from './dnd'
 import { flattenLayers, indexOfRow, rowState, type FlatRow } from './flatten'
@@ -198,29 +199,34 @@ export function LayersPanel({ header = false }: { header?: boolean }) {
     [session, store],
   )
 
+  // A viewer selects and expands layers but changes nothing (`session/readOnly`).
   const onStartRename = useCallback(
     (id: string) => {
-      if (isTreeId(id)) store.setState({ renamingId: id })
+      if (isTreeId(id) && canEdit(session)) store.setState({ renamingId: id })
     },
-    [store],
+    [session, store],
   )
   const onRename = useCallback(
     (id: string, name: string) => {
-      renameNode(doc, id, name)
+      if (canEdit(session)) renameNode(doc, id, name)
       store.setState({ renamingId: null })
     },
-    [doc, store],
+    [session, doc, store],
   )
   const onRenameCancel = useCallback(() => store.setState({ renamingId: null }), [store])
   const onToggleLocked = useCallback(
     (id: string) => {
-      if (isTreeId(id)) setFlag(doc, [id], 'locked', !(tree.meta(id)?.locked ?? false))
+      if (isTreeId(id) && canEdit(session)) {
+        setFlag(doc, [id], 'locked', !(tree.meta(id)?.locked ?? false))
+      }
     },
-    [doc, tree],
+    [session, doc, tree],
   )
   const onToggleHidden = useCallback(
-    (id: string) => setFlag(doc, [id], 'hidden', !(tree.meta(id)?.hidden ?? false)),
-    [doc, tree],
+    (id: string) => {
+      if (canEdit(session)) setFlag(doc, [id], 'hidden', !(tree.meta(id)?.hidden ?? false))
+    },
+    [session, doc, tree],
   )
 
   // --- Drag and drop ------------------------------------------------------------
@@ -256,6 +262,10 @@ export function LayersPanel({ header = false }: { header?: boolean }) {
     if (!d.active) {
       if (d.ids.length === 0) return
       if (Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < DRAG_THRESHOLD) return
+      if (!canEdit(session)) {
+        dragRef.current = null
+        return
+      }
       d.active = true
       e.currentTarget.setPointerCapture(e.pointerId)
     }

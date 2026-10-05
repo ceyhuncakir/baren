@@ -42,6 +42,12 @@
 
 /* Left panel ---------------------------------------------------------------- */
 
+/* Previewing a version (history/): the live file's layers and pages are not editable. */
+.panelInert {
+  opacity: 0.5;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
 .leftScroll {
   display: flex;
   flex: 1 1 0;

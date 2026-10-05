@@ -19,7 +19,9 @@
  *     messages: mergeable LoroMap {
  *       <messageId>: mergeable LoroMap {
  *         authorId, authorName: string, authorKind: 'user' | 'agent',
- *         body: string, createdAt: number, editedAt?: number
+ *         body: string, createdAt: number, editedAt?: number,
+ *         mentions?: { id, name, kind }[]   people and agents the message @mentions (a plain
+ *                                         JSON value; absent = none, old clients ignore it)
  *       }
  *     }
  *   }
@@ -37,9 +39,20 @@ import { newCommentId } from './ids.ts'
 
 export const MAX_COMMENT_LENGTH = 10_000
 const MAX_AUTHOR_FIELD = 256
+export const MAX_COMMENT_MENTIONS = 50
 
 export interface CommentAuthor {
   /** User id, `agent:<name>` for agents, or `local` in a file that is not shared. */
+  id: string
+  name: string
+  kind: 'user' | 'agent'
+}
+
+/**
+ * Someone a message @mentions: a user id or `agent:<name>`, with the name the body shows after
+ * the `@` (the body keeps the text as typed).
+ */
+export interface CommentMention {
   id: string
   name: string
   kind: 'user' | 'agent'
@@ -51,6 +64,8 @@ export interface CommentMessage {
   body: string
   createdAt: number
   editedAt: number | null
+  /** Empty when the message mentions nobody. */
+  mentions: CommentMention[]
 }
 
 export interface CommentThread {
@@ -99,6 +114,31 @@ function checkAuthor(author: CommentAuthor): void {
   }
 }
 
+/** Validated mentions, deduplicated by id (first wins). */
+function checkMentions(mentions: readonly CommentMention[] | undefined): CommentMention[] {
+  if (mentions === undefined) return []
+  if (mentions.length > MAX_COMMENT_MENTIONS)
+    invalid(`A comment mentions at most ${MAX_COMMENT_MENTIONS} people`)
+  const out: CommentMention[] = []
+  const seen = new Set<string>()
+  for (const m of mentions) {
+    checkAuthor(m)
+    if (seen.has(m.id)) continue
+    seen.add(m.id)
+    out.push({ id: m.id, name: m.name, kind: m.kind })
+  }
+  return out
+}
+
+function setMentions(msg: LoroMap, mentions: readonly CommentMention[]): void {
+  if (mentions.length > 0)
+    msg.set(
+      'mentions',
+      mentions.map((m) => ({ ...m })),
+    )
+  else if (msg.get('mentions') !== undefined) msg.delete('mentions')
+}
+
 function checkPin(pin: CommentPin): void {
   if (typeof pin.pageId !== 'string' || pin.pageId === '') invalid('A comment needs a page')
   if (pin.nodeId !== null && (typeof pin.nodeId !== 'string' || pin.nodeId === ''))
@@ -131,6 +171,7 @@ function writeMessage(
   author: CommentAuthor,
   body: string,
   now: number,
+  mentions: readonly CommentMention[],
 ): void {
   const msg = thread.ensureMergeableMap('messages').ensureMergeableMap(id)
   msg.set('authorId', author.id)
@@ -138,23 +179,30 @@ function writeMessage(
   msg.set('authorKind', author.kind)
   msg.set('body', body)
   msg.set('createdAt', now)
+  setMentions(msg, mentions)
 }
 
 /** Start a thread with its first message; returns the thread id. */
 export function createCommentThread(
   doc: LoroDoc,
-  input: CommentPin & { author: CommentAuthor; body: string; now?: number },
+  input: CommentPin & {
+    author: CommentAuthor
+    body: string
+    mentions?: readonly CommentMention[]
+    now?: number
+  },
 ): string {
   checkPin(input)
   checkAuthor(input.author)
   const body = checkBody(input.body)
+  const mentions = checkMentions(input.mentions)
   const now = input.now ?? Date.now()
   const id = newCommentId()
   const entry = commentsMap(doc).ensureMergeableMap(id)
   setPin(entry, input)
   entry.set('createdAt', now)
   entry.set('resolved', false)
-  writeMessage(entry, newCommentId(), input.author, body, now)
+  writeMessage(entry, newCommentId(), input.author, body, now, mentions)
   autoCommit(doc)
   return id
 }
@@ -163,13 +211,19 @@ export function createCommentThread(
 export function addCommentMessage(
   doc: LoroDoc,
   threadId: string,
-  input: { author: CommentAuthor; body: string; now?: number },
+  input: {
+    author: CommentAuthor
+    body: string
+    mentions?: readonly CommentMention[]
+    now?: number
+  },
 ): string {
   const thread = threadMap(doc, threadId)
   checkAuthor(input.author)
   const body = checkBody(input.body)
+  const mentions = checkMentions(input.mentions)
   const id = newCommentId()
-  writeMessage(thread, id, input.author, body, input.now ?? Date.now())
+  writeMessage(thread, id, input.author, body, input.now ?? Date.now(), mentions)
   autoCommit(doc)
   return id
 }
@@ -183,17 +237,26 @@ function messageMap(doc: LoroDoc, threadId: string, messageId: string): LoroMap 
   return msg
 }
 
+/**
+ * Change a message's text; `mentions` (when given) replaces its mentions. Unchanged text and
+ * mentions write nothing.
+ */
 export function editCommentMessage(
   doc: LoroDoc,
   threadId: string,
   messageId: string,
   body: string,
   now: number = Date.now(),
+  mentions?: readonly CommentMention[],
 ): void {
   const msg = messageMap(doc, threadId, messageId)
   const text = checkBody(body)
-  if (msg.get('body') === text) return
-  msg.set('body', text)
+  const next = mentions === undefined ? null : checkMentions(mentions)
+  const before = decodeMentions(msg.get('mentions'))
+  const mentionsChanged = next !== null && JSON.stringify(next) !== JSON.stringify(before)
+  if (msg.get('body') === text && !mentionsChanged) return
+  if (msg.get('body') !== text) msg.set('body', text)
+  if (mentionsChanged) setMentions(msg, next)
   msg.set('editedAt', now)
   autoCommit(doc)
 }
@@ -253,6 +316,20 @@ function str(v: unknown): string | null {
   return typeof v === 'string' && v !== '' ? v : null
 }
 
+function decodeMentions(raw: unknown): CommentMention[] {
+  if (!Array.isArray(raw)) return []
+  const out: CommentMention[] = []
+  for (const r of raw) {
+    if (typeof r !== 'object' || r === null) continue
+    const m = r as Record<string, unknown>
+    const id = str(m['id'])
+    const name = str(m['name'])
+    if (id === null || name === null) continue
+    out.push({ id, name, kind: m['kind'] === 'agent' ? 'agent' : 'user' })
+  }
+  return out
+}
+
 function decodeMessage(id: string, raw: unknown): CommentMessage | null {
   if (typeof raw !== 'object' || raw === null) return null
   const m = raw as Record<string, unknown>
@@ -269,6 +346,7 @@ function decodeMessage(id: string, raw: unknown): CommentMessage | null {
     body,
     createdAt: num(m['createdAt']),
     editedAt: typeof m['editedAt'] === 'number' ? m['editedAt'] : null,
+    mentions: decodeMentions(m['mentions']),
   }
 }
 

@@ -1,4 +1,5 @@
-/* Following a collaborator: border and pill in their colour (`--follow-color`). */
+/* Following a collaborator: border and pill in their colour (`--follow-color`). Spotlighting:
+   the pill alone, in this user's colour. */
 
 .frame {
   position: absolute;
@@ -27,10 +28,22 @@
   pointer-events: auto;
 }
 
+.top {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .label {
-  max-width: 240px;
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.detail {
+  font-weight: var(--font-weight-regular);
+  opacity: 0.8;
 }
 
 .stop {
@@ -41,4 +54,26 @@
 .stop:hover {
   background: color-mix(in srgb, currentColor 16%, transparent);
   color: inherit;
+}
+
+/* The spotlight pill's text button ("Stop"). */
+.stopText {
+  height: 20px;
+  margin-left: 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stopText:hover {
+  background: color-mix(in srgb, currentColor 26%, transparent);
+}
+
+.stopText:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
 }

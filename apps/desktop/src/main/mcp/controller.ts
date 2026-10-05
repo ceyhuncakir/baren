@@ -19,6 +19,7 @@ import {
 } from 'electron'
 import type { AgentHostState, AgentResponse } from '../../renderer/types/bridge'
 import type { CoreBackend } from '../core/types'
+import { markHiddenSender } from '../ipc/senders'
 import type { Logger } from '../log'
 import { guardWebContents } from '../security/guards'
 import type { WindowManager } from '../windows/windowManager'
@@ -290,6 +291,8 @@ export class McpController extends McpService {
       webPreferences: { ...this.webPreferences(), backgroundThrottling: false },
     })
     const contents = win.webContents
+    // A file session, not a user's window: only the IPC channels it needs (ipc/senders.ts).
+    markHiddenSender(contents, 'agent-host')
     guardWebContents(
       contents,
       this.electronDeps.appOrigins,
@@ -323,6 +326,8 @@ export class McpController extends McpService {
     })
     const contents = win.webContents
     contents.setFrameRate(30)
+    // Lays out design content for agents: assets, fonts and its answers only (ipc/senders.ts).
+    markHiddenSender(contents, 'agent-render')
     guardWebContents(
       contents,
       this.electronDeps.appOrigins,

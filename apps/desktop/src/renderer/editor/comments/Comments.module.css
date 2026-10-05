@@ -303,6 +303,76 @@
   padding-top: 6px;
 }
 
+/* A comment request to Claude Code (AgentRunStatus): working, failed, stopped, no reply. */
+.runStatus {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 10px 6px 14px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-foreground-muted);
+  font-size: var(--text-xs);
+  line-height: 16px;
+}
+
+.runStatus[data-state='working'] {
+  background: color-mix(in srgb, var(--color-agent) 6%, transparent);
+  color: var(--color-foreground);
+}
+
+.runText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.runActivity {
+  color: var(--color-foreground-muted);
+}
+
+.runStatus[data-state='working'] .runText {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runError {
+  overflow-wrap: anywhere;
+  color: var(--color-destructive);
+}
+
+/* The pin of a thread Claude Code is working on: a slow agent-coloured pulse. */
+.pin[data-working]::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 18px 18px 18px 6px;
+  box-shadow: 0 0 0 2px var(--color-agent);
+  animation: run-pulse 1.4s var(--ease-out) infinite;
+  pointer-events: none;
+}
+
+@keyframes run-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin[data-working]::after {
+    animation: none;
+  }
+}
+
 .viewerNote {
   flex-shrink: 0;
   padding: 10px 14px 12px;
@@ -433,5 +503,131 @@
   line-height: 14px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* ---- @mentions ---- */
+
+.inputWrap {
+  position: relative;
+  display: flex;
+}
+
+/* Suggestions above the text field (the reply field sits at the card's bottom edge). */
+.suggestions {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 260px;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  cursor: default;
+}
+
+.suggestion[aria-selected='true'] {
+  background: var(--color-selection-subtle);
+}
+
+.suggestionName {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mention,
+.mentionMe {
+  border-radius: 3px;
+  color: var(--color-link);
+  font-weight: var(--font-weight-medium);
+}
+
+/* You: a tinted chip, so a mention of you stands out in a long thread. */
+.mentionMe {
+  padding: 0 2px;
+  background: var(--color-selection-subtle);
+  color: var(--color-selection);
+}
+
+/* ---- Unread ---- */
+
+/* Someone else wrote since you last opened the thread. */
+.pinUnread {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-brand);
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+/* An unread message mentions you. */
+.pinMention {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-brand);
+  box-shadow: 0 0 0 2px var(--color-surface);
+  color: var(--color-brand-foreground);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 16px;
+}
+
+.rowUnread .rowAuthor,
+.rowUnread .rowPreview {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* An unread row's dot, at the end of its first line. */
+.rowDot {
+  flex-shrink: 0;
+  align-self: center;
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-radius: var(--radius-full);
+  background: var(--color-brand);
+}
+
+.rowMention {
+  color: var(--color-brand);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Rail: something unread anywhere in the file. */
+.railUnread {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-brand);
+  box-shadow: 0 0 0 1.5px var(--color-surface);
   pointer-events: none;
 }

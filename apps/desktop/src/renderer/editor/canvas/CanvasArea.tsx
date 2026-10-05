@@ -6,7 +6,8 @@
  * at the drop point; components dragged from the Components panel or the picker highlight
  * the deepest frame that can take them (no component cycles) and become instances there.
  * The visible world rectangle goes to collaborators as presence, and following a collaborator
- * (`collab/follow`) drives the camera from theirs.
+ * (`collab/follow`) drives the camera from theirs. The canvas is read-only for a viewer of a
+ * shared file and while a version preview covers it (`session/readOnly`).
  */
 import type {
   CanvasController,
@@ -22,20 +23,24 @@ import { wouldCreateCycleForKeys } from '@baren/schema'
 import { resolveCanvasAsset } from '../../lib/assets'
 import { FollowOverlay } from '../collab/FollowOverlay'
 import { CommentsLayer } from '../comments/CommentsLayer'
+import { VersionPreview } from '../history/VersionPreview'
 import { COMMENT_ORIGIN } from '../comments/ops'
 import { visibleWorldRect } from '../collab/follow'
 import { useFollow } from '../collab/useFollow'
+import { useSpotlight } from '../collab/useSpotlight'
 import { draggedComponent, endComponentDrag } from '../components/componentDrag'
 import { dragHasFiles, imageFilesOf, insertImageFiles } from '../images/insert'
 import { PREVIEW_ORIGIN_PREFIX } from '../model/previewEdits'
 import { PanelToggle } from '../LeftPanel'
 import { useEditor, useEditorState, useLayerTreeVersion } from '../session/context'
+import { useReadOnly } from '../session/readOnly'
 import { sameIds } from '../session/store'
 import css from '../Editor.module.css'
 
 /**
  * Not undoable (contract §8.1): remote/sync, fixtures, inspector previews, derived refits, and
- * comments (`comment:*`: Ctrl+Z undoes design edits, never a comment).
+ * comments (`comment:*`: Ctrl+Z undoes design edits, never a comment) and the version list
+ * (`version:*`; a restore itself is `editor:restore`, an ordinary undo step).
  */
 const UNDO_EXCLUDE = [
   'remote',
@@ -45,6 +50,7 @@ const UNDO_EXCLUDE = [
   PREVIEW_ORIGIN_PREFIX,
   'derived',
   COMMENT_ORIGIN,
+  'version',
 ]
 /** DesignCanvas defaults to `position: relative`; the canvas fills the column instead. */
 const CANVAS_STYLE = { position: 'absolute', inset: 0 } as const
@@ -56,10 +62,12 @@ export function CanvasArea() {
   const { store, tree, doc } = session
   const pageId = useEditorState((s) => s.pageId)
   const leftOpen = useEditorState((s) => s.leftPanelOpen)
+  const readOnly = useReadOnly()
   useLayerTreeVersion()
   const empty = tree.children(pageId).length === 0
   const visited = useRef(new Set<string>())
   const follow = useFollow(session)
+  useSpotlight(session)
 
   // The initial viewport applies only to the page the canvas is created with.
   const initialViewport = useMemo(() => session.initialViewports[pageId] ?? ('fit' as const), [doc])
@@ -220,6 +228,7 @@ export function CanvasArea() {
         doc={doc}
         pageId={pageId}
         viewport={initialViewport}
+        readOnly={readOnly}
         viewportChangeThrottleMs={VIEWPORT_EMIT_MS}
         keyboard="canvas"
         undoExcludeOriginPrefixes={UNDO_EXCLUDE}
@@ -239,6 +248,7 @@ export function CanvasArea() {
       {empty && <EmptyCanvasHint className={css.emptyHint} />}
       <CommentsLayer />
       <FollowOverlay />
+      <VersionPreview />
       {!leftOpen && <PanelToggle floating />}
     </div>
   )

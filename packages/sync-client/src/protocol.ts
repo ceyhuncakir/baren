@@ -112,6 +112,13 @@ export interface ClientPresence {
   agents?: AgentWirePresence[]
   /** Absent or `null` when unknown (e.g. the canvas is not mounted yet). */
   viewport?: ViewportPresence | null
+  /**
+   * Spotlight ("follow me"): epoch ms when this client started asking everyone to follow it;
+   * absent or `null` when not presenting. Additive like `viewport`.
+   */
+  spotlight?: number | null
+  /** The user id this client is following; absent or `null` when nobody. */
+  following?: string | null
 }
 
 /** One connected client, as fanned out by the server. */
@@ -181,12 +188,19 @@ export function parseServerText(text: string): ServerText | null {
       return typeof value['clientId'] === 'string' ? (value as ServerText) : null
     case 'presence': {
       if (typeof value['clientId'] !== 'string' || !Array.isArray(value['selection'])) return null
-      // Agents and viewport are optional; malformed values are dropped, never the whole frame.
+      // Agents, viewport, spotlight and following are optional; malformed values are dropped,
+      // never the whole frame.
       const frame: Record<string, unknown> = { ...value }
       if ('agents' in value) {
         frame['agents'] = Array.isArray(value['agents']) ? value['agents'].filter(isAgent) : []
       }
       if ('viewport' in value && !isViewport(value['viewport'])) frame['viewport'] = null
+      const spotlight = value['spotlight']
+      if ('spotlight' in value && !(typeof spotlight === 'number' && Number.isFinite(spotlight)))
+        frame['spotlight'] = null
+      const following = value['following']
+      if ('following' in value && !(typeof following === 'string' && following !== ''))
+        frame['following'] = null
       return frame as unknown as ServerText
     }
     case 'error':

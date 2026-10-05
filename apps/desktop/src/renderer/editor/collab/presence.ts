@@ -20,11 +20,15 @@ export class PresenceRelay {
     cursor: Point | null
     selection: string[]
     viewport: ViewportPresence | null
+    spotlight: number | null
+    following: string | null
   } = {
     pageId: null,
     cursor: null,
     selection: [],
     viewport: null,
+    spotlight: null,
+    following: null,
   }
   /** MCP agents connected to this app, relayed to collaborators (Phase 4 contract §10.3). */
   private agents: AgentWirePresence[] = []
@@ -57,6 +61,20 @@ export class PresenceRelay {
   readonly setViewport = (viewport: ViewportPresence | null): void => {
     this.state.viewport = viewport
     this.sink?.setPresence({ viewport })
+  }
+
+  /** When this client started a spotlight ("follow me", `collab/spotlight`), or null. */
+  readonly setSpotlight = (spotlight: number | null): void => {
+    if (this.state.spotlight === spotlight) return
+    this.state.spotlight = spotlight
+    this.sink?.setPresence({ spotlight })
+  }
+
+  /** The user id this client follows, or null (a presenter counts its followers with it). */
+  readonly setFollowing = (following: string | null): void => {
+    if (this.state.following === following) return
+    this.state.following = following
+    this.sink?.setPresence({ following })
   }
 
   /**

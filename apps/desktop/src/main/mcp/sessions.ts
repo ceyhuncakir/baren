@@ -14,7 +14,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { Logger } from '../log'
-import { jsonRpcErrorBody } from './security'
+import { jsonRpcErrorBody, type RunScope } from './security'
 
 export const MAX_SESSIONS = 32
 export const SESSION_IDLE_MS = 30 * 60_000
@@ -28,6 +28,8 @@ export const MAX_BODY_BYTES = 4 * 1024 * 1024
 
 export interface SessionHandle {
   sessionId: string
+  /** Opened with a comment request's run token: what it may touch (null: the app's token). */
+  scope: RunScope | null
 }
 
 export interface SessionEntry {
@@ -131,8 +133,16 @@ export class SessionManager {
     return [...this.sessions.keys()]
   }
 
-  /** Route one authenticated `/mcp` request (POST, GET or DELETE). */
-  async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  /**
+   * Route one authenticated `/mcp` request (POST, GET or DELETE). `scope` is the credential's
+   * (null for the app's token): a session only takes requests with the credential that opened
+   * it, so a run token cannot drive another agent's session (or the other way round).
+   */
+  async handle(
+    req: IncomingMessage,
+    res: ServerResponse,
+    scope: RunScope | null = null,
+  ): Promise<void> {
     const sessionId = headerValue(req, 'mcp-session-id')
     let body: unknown = undefined
     if (req.method === 'POST') {
@@ -157,7 +167,7 @@ export class SessionManager {
 
     if (sessionId !== undefined) {
       const entry = this.sessions.get(sessionId)
-      if (!entry || entry.closed) {
+      if (!entry || entry.closed || entry.ref.scope?.runId !== scope?.runId) {
         sendJsonRpcError(res, 404, 'Session not found', -32001)
         return
       }
@@ -183,11 +193,16 @@ export class SessionManager {
       sendJsonRpcError(res, 503, 'too_many_sessions: close another MCP client and retry', -32001)
       return
     }
-    await this.open(req, res, body)
+    await this.open(req, res, body, scope)
   }
 
-  private async open(req: IncomingMessage, res: ServerResponse, body: unknown): Promise<void> {
-    const ref: SessionHandle = { sessionId: '' }
+  private async open(
+    req: IncomingMessage,
+    res: ServerResponse,
+    body: unknown,
+    scope: RunScope | null,
+  ): Promise<void> {
+    const ref: SessionHandle = { sessionId: '', scope }
     const server = this.options.createServer(ref)
     let entry!: SessionEntry
     const transport = new StreamableHTTPServerTransport({
@@ -258,6 +273,12 @@ export class SessionManager {
   async close(sessionId: string): Promise<void> {
     const entry = this.sessions.get(sessionId)
     if (entry) await this.closeEntry(entry)
+  }
+
+  /** Close the sessions opened with a run token (the run ended). */
+  async closeRun(runId: string): Promise<void> {
+    const runs = [...this.sessions.values()].filter((e) => e.ref.scope?.runId === runId)
+    await Promise.all(runs.map((e) => this.closeEntry(e)))
   }
 
   /** Close every session (token reset, disable, quit). */

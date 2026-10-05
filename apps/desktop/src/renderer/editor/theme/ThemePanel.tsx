@@ -7,10 +7,12 @@ import { useMemo } from 'react'
 import { upsertTokens } from '../model/tokenOps'
 import { groupTokens, uniqueTokenName, type TokenGroupId } from '../model/tokens'
 import { useEditor, useEditorState, useTokenOrders, useTokens } from '../session/context'
+import { canEdit } from '../session/readOnly'
 import css from '../Editor.module.css'
 
 export function ThemePanel() {
-  const { store, doc } = useEditor()
+  const session = useEditor()
+  const { store, doc } = session
   const tokens = useTokens()
   const orders = useTokenOrders()
   const query = useEditorState((s) => s.tokenQuery)
@@ -28,6 +30,7 @@ export function ThemePanel() {
     })
 
   const addToken = () => {
+    if (!canEdit(session)) return
     const name = uniqueTokenName('--color-new', tokens)
     upsertTokens(doc, { [name]: { type: 'color', value: '#000000' } })
     store.setState((s) => {

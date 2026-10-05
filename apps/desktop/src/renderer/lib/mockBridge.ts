@@ -13,6 +13,7 @@ import type {
   AgentPresenceUpdate,
   AgentRequest,
   AgentResponse,
+  AgentRun,
   AgentToolName,
   ClipboardRead,
   ClipboardWrite,
@@ -664,6 +665,66 @@ export function createMockBridge(options: MockBridgeOptions = {}): MockBridge {
         return null
       },
     },
+
+    // Comment requests: no `claude` in browser mode unless `?agentRuns=on` (a fake run that
+    // reports one tool and keeps working until stopped, for behaviour tests).
+    agentRuns: (() => {
+      let enabled = true
+      const runs: AgentRun[] = []
+      const listeners = new Set<(run: AgentRun) => void>()
+      const emit = (run: AgentRun) => {
+        for (const l of [...listeners]) l({ ...run })
+      }
+      const status = async () => ({
+        enabled,
+        claudePath: queryParam('agentRuns') === 'on' ? '/usr/local/bin/claude' : null,
+      })
+      return {
+        status,
+        async setEnabled(next: boolean) {
+          enabled = next
+          return status()
+        },
+        async start(request) {
+          if (!(await status()).claudePath)
+            throw new Error('Claude Code is not installed on this computer.')
+          const run: AgentRun = {
+            id: `run-${runs.length + 1}`,
+            fileId: request.fileId,
+            threadId: request.threadId,
+            messageId: request.messageId,
+            state: 'starting',
+            activity: 'Starting',
+            error: null,
+            startedAt: Date.now(),
+            endedAt: null,
+          }
+          runs.push(run)
+          setTimeout(() => {
+            if (run.state !== 'starting') return
+            run.state = 'working'
+            run.activity = 'Taking a screenshot'
+            emit(run)
+          }, 50)
+          return { ...run }
+        },
+        async stop(runId: string) {
+          const run = runs.find((r) => r.id === runId)
+          if (!run || run.endedAt !== null) return
+          run.state = 'stopped'
+          run.activity = null
+          run.endedAt = Date.now()
+          emit(run)
+        },
+        async list() {
+          return [...runs].reverse().map((r) => ({ ...r }))
+        },
+        onUpdate(cb: (run: AgentRun) => void) {
+          listeners.add(cb)
+          return () => listeners.delete(cb)
+        },
+      }
+    })(),
 
     export: {
       async html(fileId, nodeId) {

@@ -135,6 +135,38 @@ describe('get_comments', () => {
     expect(body.threads[2]).toMatchObject({ layer: null, artboard: null, position: { x: 7, y: 8 } })
   })
 
+  it('lists the people and agents a message mentions, and flags mentions of the caller', async () => {
+    const s = setup()
+    const asked = createCommentThread(s.doc, {
+      pageId: s.page,
+      nodeId: s.button,
+      x: 0,
+      y: 0,
+      worldX: 0,
+      worldY: 0,
+      author: ana,
+      body: '@Test can you tighten this? cc @Ben',
+      mentions: [
+        { id: 'agent:Test', name: 'Test', kind: 'agent' },
+        { id: 'u2', name: 'Ben', kind: 'user' },
+      ],
+    })
+    const body = await ok<{ threads: Record<string, unknown>[] }>(testEnv(s.doc), 'get_comments')
+    const thread = body.threads.find((t) => t['id'] === asked) as Record<string, unknown>
+    expect(thread['mentionsYou']).toBe(true)
+    expect((thread['messages'] as Record<string, unknown>[])[0]).toMatchObject({
+      mentions: [
+        { name: 'Test', kind: 'agent' },
+        { name: 'Ben', kind: 'user' },
+      ],
+      mentionsYou: true,
+    })
+    // Threads without mentions carry neither field.
+    const plain = body.threads.find((t) => t['id'] === s.onButton) as Record<string, unknown>
+    expect(plain['mentionsYou']).toBeUndefined()
+    expect((plain['messages'] as Record<string, unknown>[])[0]).not.toHaveProperty('mentions')
+  })
+
   it('filters by page, by layer subtree and includes resolved threads on request', async () => {
     const s = setup()
     const env = testEnv(s.doc)
@@ -146,6 +178,9 @@ describe('get_comments', () => {
     expect(await ids({ nodeId: s.other })).toEqual([])
     expect(await ids({ nodeId: s.other, includeResolved: true })).toEqual([s.onOther])
     expect(await ids({ nodeId: s.page2 })).toEqual([s.onPage2])
+    expect(await ids({ threadId: s.onButton })).toEqual([s.onButton])
+    expect(await ids({ threadId: s.onOther })).toEqual([])
+    expect(await ids({ threadId: s.onOther, includeResolved: true })).toEqual([s.onOther])
     const resolved = (
       await ok<{ threads: ThreadOut[] }>(env, 'get_comments', { includeResolved: true })
     ).threads.find((t) => t.id === s.onOther)

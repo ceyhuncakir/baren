@@ -55,10 +55,36 @@ function ref(env: HostEnv, id: string | null): { id: string; name: string } | nu
   return node ? { id, name: displayName(env, node) } : null
 }
 
-/** A thread as agents see it (get_comments, reply_to_comment, resolve_comment). */
-export function threadOut(env: HostEnv, t: CommentThread): Record<string, unknown> {
+/**
+ * A thread as agents see it (get_comments, reply_to_comment, resolve_comment). `you`: the calling
+ * agent's comment identity (`agent:<name>`); messages that @mention it get `mentionsYou`, and so
+ * does the thread. Messages list their mentions only when they have some.
+ */
+export function threadOut(
+  env: HostEnv,
+  t: CommentThread,
+  you: string | null = null,
+): Record<string, unknown> {
   const layer = ref(env, t.nodeId)
   const artboardId = layer === null ? null : artboardOfRef(env, layer.id)
+  let mentionsYou = false
+  const messages = t.messages.map((m) => {
+    const out: Record<string, unknown> = {
+      id: m.id,
+      author: { name: m.author.name, kind: m.author.kind },
+      body: m.body,
+      createdAt: iso(m.createdAt),
+      edited: m.editedAt !== null,
+    }
+    if (m.mentions.length > 0) {
+      out['mentions'] = m.mentions.map((x) => ({ name: x.name, kind: x.kind }))
+      if (you !== null && m.mentions.some((x) => x.id === you)) {
+        out['mentionsYou'] = true
+        mentionsYou = true
+      }
+    }
+    return out
+  })
   const out: Record<string, unknown> = {
     id: t.id,
     status: t.resolved ? 'resolved' : 'open',
@@ -66,14 +92,9 @@ export function threadOut(env: HostEnv, t: CommentThread): Record<string, unknow
     layer,
     artboard: ref(env, artboardId),
     position: pinPosition(env, t),
-    messages: t.messages.map((m) => ({
-      id: m.id,
-      author: { name: m.author.name, kind: m.author.kind },
-      body: m.body,
-      createdAt: iso(m.createdAt),
-      edited: m.editedAt !== null,
-    })),
+    messages,
   }
+  if (mentionsYou) out['mentionsYou'] = true
   if (t.resolved) {
     if (t.resolvedBy !== null) out['resolvedBy'] = t.resolvedBy
     if (t.resolvedAt !== null) out['resolvedAt'] = iso(t.resolvedAt)
@@ -105,10 +126,12 @@ export function getComments(call: ToolCall): ToolOutput {
   const pageId = str(args, 'pageId')
   const nodeId = str(args, 'nodeId')
   const includeResolved = bool(args, 'includeResolved') === true
+  const threadId = str(args, 'threadId')
   const page = pageId === undefined || pageId === '' ? null : pageArg(env, pageId)
   const node = nodeId === undefined || nodeId === '' ? null : requireRef(env, nodeId)
   const pageOrder = new Map(getChildIds(env.doc, null).map((id, i) => [id, i]))
   const threads = getCommentThreads(env.doc).filter((t) => {
+    if (threadId !== undefined && threadId !== '' && t.id !== threadId) return false
     if (!includeResolved && t.resolved) return false
     if (page !== null && t.pageId !== page) return false
     if (node !== null) {
@@ -128,7 +151,10 @@ export function getComments(call: ToolCall): ToolOutput {
     if (board !== null) touched.add(board)
   }
   return {
-    result: { count: threads.length, threads: threads.map((t) => threadOut(env, t)) },
+    result: {
+      count: threads.length,
+      threads: threads.map((t) => threadOut(env, t, agentAuthor(call).id)),
+    },
     touched: [...touched],
   }
 }
@@ -192,7 +218,12 @@ export function replyToComment(call: ToolCall): ToolOutput {
   const messageId = commitComment(call, 'agent-reply', () =>
     addCommentMessage(env.doc, threadId, { author: agentAuthor(call), body }),
   )
-  return { result: { messageId, thread: threadOut(env, requireThread(env, threadId)) } }
+  return {
+    result: {
+      messageId,
+      thread: threadOut(env, requireThread(env, threadId), agentAuthor(call).id),
+    },
+  }
 }
 
 export function resolveComment(call: ToolCall): ToolOutput {
@@ -205,5 +236,5 @@ export function resolveComment(call: ToolCall): ToolOutput {
       setCommentResolved(env.doc, threadId, resolved, agentName(call)),
     )
   }
-  return { result: { thread: threadOut(env, requireThread(env, threadId)) } }
+  return { result: { thread: threadOut(env, requireThread(env, threadId), agentAuthor(call).id) } }
 }

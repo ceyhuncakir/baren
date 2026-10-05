@@ -252,7 +252,11 @@ Theme and updates are described in "Phase 2" below.
   origins from VITE_SERVER_URL at build time>`. A second privileged scheme, **`baren-asset://<hash>`**,
   serves image bytes from the local core (see "Images").
   Sandbox + context isolation; only the app's own top frame may call IPC; every IPC argument is
-  validated. On Linux/Windows the main process owns the app shortcuts (Ctrl+Shift+N, Ctrl+Q,
+  validated. Main also checks which window sent it (`src/main/ipc/senders.ts`): the user's
+  windows (`WindowManager`) use the whole bridge, the hidden windows of the MCP server only what
+  they need (a headless host: its file session, assets, fonts, the sync token and agent answers;
+  the render window: assets, fonts and answers), and an unknown sender nothing. The CSP is set
+  for production builds only (the Vite dev server needs inline scripts). On Linux/Windows the main process owns the app shortcuts (Ctrl+Shift+N, Ctrl+Q,
   Ctrl+R, Ctrl+Shift+R, Ctrl+Shift+I, F11, Ctrl+M, Ctrl+W); macOS uses a native menu.
 - **Core backends** (`src/main/core`): the Rust addon `crates/napi/baren-core.<platform>-<arch>.node`
   exports `CoreHandle(dataDir)` with `listFiles, createFile, renameFile, archiveFile, removeFile,
@@ -297,13 +301,25 @@ Theme and updates are described in "Phase 2" below.
 
 ### Team files and collaboration
 
-A file is local until it is shared. **Share** (the editor's share popover: Invite or Copy link)
-uploads the full snapshot with `POST /api/teams/:id/files` and links the local file with
-`files.setRemote`. Team members' Recents/Files pull team files they do not have yet
+While the user is signed in, files go into their current team on their own
+(`renderer/state/autoShare.ts`): opening a file shares it (`autoShareOnOpen` in
+`editor/collab/account.ts`, also in an agent's headless host), and Home uploads the remaining
+local files in the background (every 10 s). The Scratchpad and archived files stay on this
+machine, a user who may only view the current team shares nothing, and signed out or offline
+every file stays local. Sharing uploads the full snapshot with `POST /api/teams/:id/files` and
+links the local file with `files.setRemote` (`shareOnce` keeps the editor and Home from uploading
+the same file twice). Team members' Recents/Files pull team files they do not have yet
 (`GET /api/teams/:id/files` → `GET /api/files/:id/snapshot` → `files.import` → `files.setRemote`).
 Both copies share the Loro history, so live sync only exchanges new ops. While a linked file is open
 the editor runs `connectFile` (remote edits arrive as Loro imports; local commits are sent as
 updates; presence drives cursors, selections, gesture ghosts and avatars).
+
+**Viewers** (`editor/session/readOnly.ts`): the server drops a viewer's document updates, so the
+editor is view-only for them, from their role in the room (`welcome`), else in the file's team.
+The canvas is read-only (as under a version preview), edit commands, shortcuts and drawing tools
+are off, the layers, pages, file name and theme panels change nothing, and the inspector shows the
+values under a "view only" note (inert); refused edits toast why. A `read_only` notice from the
+server (edits from this copy that never reached the file) is shown as a toast too.
 
 ### Comments
 
@@ -327,6 +343,66 @@ world points by one rAF loop (`pinLayout.ts`, through the `translate` property s
 it closes the open thread. In comment mode the inspector lists the page's threads (open first, newest
 activity first, "Show resolved"); a row centres the canvas on its pin and opens it.
 
+Mentions: a message may carry `mentions: { id, name, kind }[]` (user ids, `agent:<name>` for
+agents; a plain JSON value, absent when empty, ignored by older clients) while its body keeps the
+text as typed; only recorded names are highlighted. Typing `@` in a comment field suggests people
+in the file (presence), agents working in it, the file's team members (`GET
+/api/teams/:id/members`, once per session) and earlier authors (`comments/people.ts`). Unread
+state is per user and per file in localStorage (`comments/unread.ts`, never in the document): a
+message of someone else is unread after the user's baseline (everything existing when they first
+open the file reads as read) until its thread is opened; tracked by message id, so authors' clocks
+do not matter. Unread pins get a dot ("@" when an unread message mentions you), unread rows are
+bold, and the rail button gets a dot when anything in the file is unread. A new message that
+mentions you while the file is open shows a "<name> mentioned you" toast whose View reveals the
+thread (`comments/reveal.ts`). Agents see `mentions` per message in `get_comments`, and
+`mentionsYou` on messages and threads that address them.
+
+Comment requests: a comment the user posts that @mentions Claude Code starts a background
+`claude -p` run on this computer (`main/agentRuns/`; `bridge.agentRuns`, `agentRuns:*` IPC). Only
+the asker's app starts it, so a teammate's comment never spends this user's Claude plan. The run
+loads only the built-in MCP server (`--mcp-config` with the URL and a token in a 0600 file deleted
+when the run ends, `--strict-mcp-config`), may use only `mcp__baren__*` tools
+(`--permission-mode dontAsk`), starts in `<userData>/agent-runs/` (no project settings) and answers
+with `reply_to_comment`; `get_comments` takes a `threadId`. The prompt quotes what collaborators
+wrote, so the run gets its own token (`McpService.runAccess`, memory only, revoked when the run
+ends): its sessions work on the comment's file only (`mcp/tools/runScope.ts`: no `list_files`,
+`open_file`, `create_file` or `export`; a `fileId` must be that file, a call without one goes to
+it), and its image sources are public http(s) only (no local files, no loopback or private
+addresses, every redirect checked: `PUBLIC_SOURCES` in `mcp/assets.ts`). On Windows an npm
+install's `claude.cmd` is started as `node <its cli.js>`, never through `cmd.exe`. Progress comes from
+`--output-format stream-json` (`agentRuns:update`: starting, the current tool, done or failed) and
+shows in the thread card (Stop, Retry) and as a pulse on the pin. A thread's Claude Code session id
+is remembered, so a follow-up mention resumes it (`--resume`). At most 3 runs at once, 20 minutes
+each; quitting stops them and waits (SIGKILL after 3 s), and config files a crash left behind
+are deleted before the next run. Preferences → "Comment requests" turns them off and shows the
+`claude` it found (installer locations, PATH, then the login shell).
+
+### Version history
+
+Versions live in the document's root map `versions` (`packages/schema/src/versions.ts`): per id a
+mergeable `{ name, createdAt, author, frontiers (encodeFrontiers, taken before the entry is
+written), auto, reason: manual | session | agent | restore }`. History is never trimmed (the core,
+the sync client and the server only export full snapshots and updates, never shallow snapshots),
+so any version can be shown and restored on any peer. `docAtVersion` forks the doc at the
+version's frontiers (the live doc is never checked out); `restoreVersion` applies
+`diff(now → version)` minus the containers under `comments` and `versions`, with
+`applyDiff(…, { fullState: true })`, as one new change: it syncs to collaborators and is one undo
+step (`editor:restore`). Layers deleted since come back under new ids (Loro re-creates deleted
+tree nodes), so comments pinned on them fall back to their saved page position. Version-list
+commits use `version:*` origins, which design undo excludes; automatic checkpoints are pruned to
+the newest 50 (`MAX_AUTO_VERSIONS`), named versions never are.
+
+Checkpoints: opening a file (visible editor, after the account loads and, in a shared file, the
+first sync) records one when the design changed since the newest version
+(`history/useOpenCheckpoint.ts`); restoring records "Before restoring “…”"; an agent's first write
+after 10 min idle in a file records "Before <agent>'s edits" (`agent/checkpoint.ts`, called from
+the host's `commit`). Editor (`renderer/editor/history/`): the rail's clock opens the panel in the
+inspector (it and comment mode close each other): "Save version", the live file, named versions,
+checkpoints by day; a row previews its version on a read-only canvas over the live one (a
+`DesignCanvas` on the fork, banner with Restore / Back to current, Escape back), with the live
+canvas read-only, the left panel inert and edit commands off. Restore confirms, then toasts with
+Undo. Viewers can browse and preview, not save, rename, delete or restore.
+
 ## Server API (`crates/server`, default `http://127.0.0.1:8787`)
 
 REST, JSON, `Authorization: Bearer <token>`. Errors are always `{ error: { code, message } }` with
@@ -338,7 +414,9 @@ re-send, update feed) are listed in "Server additions" below.
 
 - `POST /api/auth/register {name,email,password}` → `{ userId, needsVerification: true }` (the code is
   emailed; with `MAIL_TRANSPORT=log` it is printed in the server log)
-- `POST /api/auth/verify {email, code}` → `{ token, user }` · `POST /api/auth/login {email,password}` → `{ token, user }`
+- `POST /api/auth/verify {email, code, password?}` → `{ token, user }`. The account gets
+  `password` (the one the verifying user typed): registering an unverified email again replaces
+  its pending password, so whoever proves the address decides it. Older clients omit it. · `POST /api/auth/login {email,password}` → `{ token, user }`
 - `POST /api/auth/resend {email}` (30 s cooldown) · `POST /api/auth/logout`
 - `GET /api/me` → `{ user, teams }` · `GET/POST /api/teams` · `PATCH /api/teams/:id {name?, fileAccess?}` · `DELETE /api/teams/:id` (admin)
 - `Team = { id, name, role, fileAccess: 'members'|'link', memberCount, createdAt }`; registration creates "<first name>'s Team"
@@ -365,18 +443,27 @@ Live sync: `GET /ws/files/:id?token=…` (WebSocket). Binary frames, first byte 
 
 Text frames are presence JSON, never persisted. Client → server: `{ pageId, cursor: {x,y} | null,
 selection: string[], transient?: { kind: 'move'|'resize', nodes: {id, rect:{x,y,width,height}}[] } | null,
-viewport?: {x,y,width,height} | null }` (world coordinates, ≤ 30 Hz; `viewport` is the world
-rectangle the canvas shows, finite with a non-negative size, additive: old servers drop it). It
-drives **Follow**: clicking a collaborator's avatar in the inspector header sets
-`EditorState.following` (their user id) and `editor/collab/follow.ts` shows their page and keeps
-their rectangle centred and whole in this canvas (through the window whose presence changed last),
-with a border and a "Following <name>" pill in their colour; panning, zooming, a click on the
-canvas, Escape, picking another page or the user leaving ends it. Server → client messages carry
-`type`: `welcome {clientId, userId, name, color, role}`, `presence` (the client fields + `clientId, userId, name, color`, identity filled
-in by the server), `leave {clientId, userId}`, `error {code, message}` (e.g. `read_only` for viewers).
+viewport?: {x,y,width,height} | null, spotlight?: number | null, following?: string | null }`
+(world coordinates, ≤ 30 Hz; `viewport` is the world rectangle the canvas shows, finite with a
+non-negative size; `spotlight` the epoch ms the client started a spotlight; `following` the user
+id it follows; all three additive: old servers drop them). They drive **Follow**: clicking a
+collaborator's avatar in the inspector header sets `EditorState.following` (their user id) and
+`editor/collab/follow.ts` shows their page and keeps their rectangle centred and whole in this
+canvas (through the window whose presence changed last, or their spotlighting window), with a
+border and a "Following <name>" pill in their colour; panning, zooming, a click on the canvas,
+Escape, picking another page or the user leaving ends it. **Spotlight** ("follow me",
+`editor/collab/spotlight.ts`): your own avatar's menu asks everyone to follow you
+(`EditorState.spotlight`, a pill with the follower count and Stop); other clients follow the
+newest spotlight that is newer than their own and not handled yet, are not pulled back after
+breaking away (every spotlight running when one is picked up or started counts as handled), stop
+following when it ends, and a newer presenter ends an older one's spotlight. Server → client
+messages carry `type`: `welcome {clientId, userId, name, color, role}`, `presence` (the client
+fields + `clientId, userId, name, color`, identity filled in by the server), `leave {clientId, userId}`, `error {code, message}` (e.g. `read_only` for viewers).
 Close codes: `4401`/`4403`/`4404` terminal (bad token / no access / no file); `4400`, `4408`, `4429`,
 `4500`, `1012` retryable. The server keeps one `LoroDoc` per open room in its own task,
-group-commits updates to SQLite and compacts snapshots periodically.
+group-commits updates to SQLite and compacts snapshots periodically. Loro leaves changes whose
+dependencies are missing out of snapshots, so while a room holds such changes compaction writes
+the snapshot but keeps the update rows (like the core's `unresolved` ranges).
 
 ## Performance targets (CI-enforced where possible)
 

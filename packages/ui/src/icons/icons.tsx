@@ -346,6 +346,16 @@ export const GenerateToolIcon = createIcon(
 export const CommentIcon = createIcon('CommentIcon', <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />, {
   strokeWidth: 1.75,
 })
+/** Version history: a clock face with an arrow turning back. */
+export const HistoryIcon = createIcon(
+  'HistoryIcon',
+  <>
+    <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8.3" />
+    <path d="M3 3.5v4.8h4.8" />
+    <path d="M12 7.5V12l3 2" />
+  </>,
+  { strokeWidth: 1.75 },
+)
 export const ImageIcon = createIcon(
   'ImageIcon',
   <>

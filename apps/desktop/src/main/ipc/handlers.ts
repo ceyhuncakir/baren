@@ -1,7 +1,8 @@
 /**
  * IPC handlers behind `window.baren`. Every message is checked for a
- * trusted sender (top-level app frame) and validated arguments before it
- * touches windows, the core backend or the token store.
+ * trusted sender (top-level app frame of a window main knows, allowed to use
+ * that channel: `senders.ts`) and validated arguments before it touches
+ * windows, the core backend or the token store.
  */
 import {
   BrowserWindow,
@@ -23,6 +24,9 @@ import {
 import type {
   AgentHostState,
   AgentResponse,
+  AgentRun,
+  AgentRunRequest,
+  AgentRunnerStatus,
   McpSetup,
   McpStatus,
   ResolvedTheme,
@@ -37,7 +41,8 @@ import type { Logger } from '../log'
 import type { FontFaceSpec } from '../../renderer/lib/fontUrls'
 import { isAppUrl, isSafeExternalUrl } from '../security/urls'
 import type { WindowManager } from '../windows/windowManager'
-import { IpcArgumentError, MiB, agentIs, args, is } from './validate'
+import { allows, type SenderKind } from './senders'
+import { IpcArgumentError, MiB, agentIs, agentRunRequest, args, is } from './validate'
 
 export interface IpcContext {
   windows: WindowManager
@@ -45,6 +50,8 @@ export interface IpcContext {
   tokens(): Promise<TokenStore>
   deepLinks: DeepLinkRouter
   appOrigins: readonly string[]
+  /** Which window sent a message (`senders.ts`); null for a sender main does not know. */
+  senderKind(contents: WebContents): SenderKind | null
   version(): string
   quit(): void
   checkForUpdates(): Promise<void>
@@ -79,6 +86,14 @@ export interface IpcContext {
   /** Google Fonts for designs (`fonts/googleFonts.ts`, loaded on first use). */
   fonts: {
     faces(family: string): Promise<FontFaceSpec[] | null>
+  }
+  /** Comment requests to Claude Code (`agentRuns/runner.ts`, loaded on first use). */
+  agentRuns: {
+    status(): Promise<AgentRunnerStatus>
+    setEnabled(enabled: boolean): Promise<AgentRunnerStatus>
+    start(request: AgentRunRequest): Promise<AgentRun>
+    stop(runId: string): Promise<void>
+    list(): Promise<AgentRun[]>
   }
   log: Logger
 }
@@ -128,9 +143,14 @@ function runNativeEdit(contents: WebContents, action: NativeEditAction): void {
 export function registerIpcHandlers(ipcMain: IpcMain, ctx: IpcContext): void {
   const { log } = ctx
 
-  const isTrusted = (event: SenderEvent): boolean => {
+  const isTrusted = (event: SenderEvent, channel: Parameters<typeof allows>[1]): boolean => {
     const frame = event.senderFrame
-    return frame !== null && frame.parent === null && isAppUrl(frame.url, ctx.appOrigins)
+    return (
+      frame !== null &&
+      frame.parent === null &&
+      isAppUrl(frame.url, ctx.appOrigins) &&
+      allows(ctx.senderKind(event.sender), channel)
+    )
   }
 
   const handle = <K extends keyof InvokeChannels>(
@@ -142,7 +162,7 @@ export function registerIpcHandlers(ipcMain: IpcMain, ctx: IpcContext): void {
     ) => Promise<InvokeChannels[K]['result']> | InvokeChannels[K]['result'],
   ): void => {
     ipcMain.handle(channel, async (event, ...raw: unknown[]) => {
-      if (!isTrusted(event)) throw new Error(`untrusted sender for ${channel}`)
+      if (!isTrusted(event, channel)) throw new Error(`untrusted sender for ${channel}`)
       return fn(event, ...parse(raw))
     })
   }
@@ -153,8 +173,8 @@ export function registerIpcHandlers(ipcMain: IpcMain, ctx: IpcContext): void {
     fn: (event: IpcMainEvent, ...a: SendChannels[K]) => void,
   ): void => {
     ipcMain.on(channel, (event, ...raw: unknown[]) => {
-      if (!isTrusted(event)) {
-        log.warn('ignored IPC from untrusted sender', { channel })
+      if (!isTrusted(event, channel)) {
+        log.warn('ignored IPC from untrusted sender', { channel, url: event.senderFrame?.url })
         return
       }
       try {
@@ -173,7 +193,7 @@ export function registerIpcHandlers(ipcMain: IpcMain, ctx: IpcContext): void {
   ): void => {
     ipcMain.on(channel, (event) => {
       try {
-        event.returnValue = isTrusted(event) ? fn(event) : refused
+        event.returnValue = isTrusted(event, channel) ? fn(event) : refused
       } catch (error) {
         log.warn(`IPC ${channel} failed`, String(error))
         event.returnValue = refused
@@ -238,6 +258,13 @@ export function registerIpcHandlers(ipcMain: IpcMain, ctx: IpcContext): void {
     async (_e, bytes, mime) => (await ctx.core()).putAsset(bytes, mime),
   )
   handle('assets:get', args(is.id), async (_e, hash) => (await ctx.core()).getAsset(hash))
+  handle('agentRuns:status', none, () => ctx.agentRuns.status())
+  handle('agentRuns:set-enabled', args(is.boolean), (_e, enabled) =>
+    ctx.agentRuns.setEnabled(enabled),
+  )
+  handle('agentRuns:start', args(agentRunRequest), (_e, request) => ctx.agentRuns.start(request))
+  handle('agentRuns:stop', args(is.string(64)), (_e, runId) => ctx.agentRuns.stop(runId))
+  handle('agentRuns:list', none, () => ctx.agentRuns.list())
   handle('fonts:faces', args(is.string(LIMITS.fontFamily)), (_e, family) => ctx.fonts.faces(family))
   handle('export:html', args(is.id, is.id), async (_e, fileId, nodeId) =>
     (await ctx.core()).exportHtml(fileId, nodeId),

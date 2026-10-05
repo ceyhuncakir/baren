@@ -13,6 +13,9 @@ import type {
   AgentPresenceUpdate,
   AgentRequest,
   AgentResponse,
+  AgentRun,
+  AgentRunRequest,
+  AgentRunnerStatus,
   ClipboardRead,
   ClipboardWrite,
   FileMeta,
@@ -63,6 +66,12 @@ export interface InvokeChannels {
   'mcp:reset-token': { args: []; result: McpSetup }
   /** A Google Fonts family's faces (`baren-font://` sources), or null when it is not one. */
   'fonts:faces': { args: [family: string]; result: FontFaceSpec[] | null }
+  /** Comment requests to Claude Code (`main/agentRuns`). */
+  'agentRuns:status': { args: []; result: AgentRunnerStatus }
+  'agentRuns:set-enabled': { args: [enabled: boolean]; result: AgentRunnerStatus }
+  'agentRuns:start': { args: [request: AgentRunRequest]; result: AgentRun }
+  'agentRuns:stop': { args: [runId: string]; result: void }
+  'agentRuns:list': { args: []; result: AgentRun[] }
 }
 
 /**
@@ -118,6 +127,8 @@ export interface EventChannels {
   'mcp:status': [status: McpStatus]
   /** A tool created or imported a file (sent to every app window). */
   'files:changed': []
+  /** A comment request run changed state (sent to every app window). */
+  'agentRuns:update': [run: AgentRun]
 }
 
 export type InvokeChannel = keyof InvokeChannels

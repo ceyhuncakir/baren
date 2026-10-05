@@ -18,6 +18,10 @@
 //!
 //! And an optional `viewport`: the world rectangle the peer currently sees, so others can follow
 //! them. Additive in the same way.
+//!
+//! Spotlight ("follow me") adds two more optional fields: `spotlight`, the epoch ms at which the
+//! peer started asking everyone to follow it (absent when not presenting), and `following`, the
+//! user id the peer is following (so a presenter can count followers). Additive in the same way.
 
 use serde::{Deserialize, Serialize};
 
@@ -35,6 +39,8 @@ pub const MAX_AGENT_FIELD: usize = 64;
 pub const MAX_AGENT_WORKING: usize = 200;
 /// Upper bound on one `working` id, in bytes.
 pub const MAX_AGENT_WORKING_ID: usize = 256;
+/// Upper bound on `following` (a user id), in bytes.
+pub const MAX_FOLLOWING: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Point {
@@ -131,6 +137,10 @@ pub struct ClientPresence {
     pub agents: Vec<AgentPresence>,
     /// World rectangle visible in this client's canvas (for following); absent = unknown.
     pub viewport: Option<Rect>,
+    /// Epoch ms when this client started a spotlight ("follow me"); absent = not presenting.
+    pub spotlight: Option<f64>,
+    /// The user id this client is following; absent = nobody.
+    pub following: Option<String>,
 }
 
 impl ClientPresence {
@@ -152,6 +162,16 @@ impl ClientPresence {
         }
         if self.viewport.is_some_and(|v| !v.is_valid_area()) {
             return Err("viewport must be finite with a non-negative size");
+        }
+        if self.spotlight.is_some_and(|t| !t.is_finite() || t < 0.0) {
+            return Err("spotlight must be a finite, non-negative time");
+        }
+        if self
+            .following
+            .as_ref()
+            .is_some_and(|u| u.is_empty() || u.len() > MAX_FOLLOWING)
+        {
+            return Err("following must be a user id");
         }
         if self.agents.len() > MAX_AGENTS {
             return Err("too many agents");
@@ -182,6 +202,12 @@ pub struct Presence {
     /// World rectangle visible in this client's canvas; omitted when unknown.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub viewport: Option<Rect>,
+    /// When this client started a spotlight (epoch ms); omitted when not presenting.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spotlight: Option<f64>,
+    /// The user id this client is following; omitted when nobody.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub following: Option<String>,
 }
 
 /// Every text frame the server sends.
@@ -235,6 +261,8 @@ mod tests {
             transient: None,
             agents: vec![],
             viewport: None,
+            spotlight: None,
+            following: None,
         });
         let json = serde_json::to_value(&p).unwrap();
         assert_eq!(json["type"], "presence");
@@ -306,6 +334,8 @@ mod tests {
             transient: p.transient.clone(),
             agents: vec![],
             viewport: None,
+            spotlight: None,
+            following: None,
         };
         let json = serde_json::to_value(ServerText::Presence(presence)).unwrap();
         assert_eq!(json["transient"]["kind"], "move");
@@ -322,6 +352,8 @@ mod tests {
             transient: None,
             agents: vec![],
             viewport: None,
+            spotlight: None,
+            following: None,
         }))
         .unwrap();
         assert!(idle.get("transient").is_none(), "absent when idle");
@@ -374,6 +406,8 @@ mod tests {
             transient: None,
             agents: p.agents.clone(),
             viewport: None,
+            spotlight: None,
+            following: None,
         };
         let json = serde_json::to_value(ServerText::Presence(presence)).unwrap();
         assert_eq!(json["agents"][0]["id"], "k3v9q2m1x8z0");
@@ -446,6 +480,8 @@ mod tests {
             transient: None,
             agents: vec![],
             viewport,
+            spotlight: None,
+            following: None,
         };
         let json = serde_json::to_value(ServerText::Presence(presence(p.viewport))).unwrap();
         assert_eq!(json["viewport"]["width"], 1440.0);
@@ -467,5 +503,60 @@ mod tests {
         assert!(bad(rect(f64::INFINITY, 10.0)).validate().is_err());
         assert!(bad(rect(0.0, -1.0)).validate().is_err());
         assert!(bad(rect(0.0, 0.0)).validate().is_ok());
+    }
+
+    #[test]
+    fn spotlight_and_following_round_trip_and_are_validated() {
+        let p: ClientPresence =
+            serde_json::from_str(r#"{"selection":[],"spotlight":1759600000000,"following":"u7"}"#)
+                .unwrap();
+        assert_eq!(p.spotlight, Some(1_759_600_000_000.0));
+        assert_eq!(p.following.as_deref(), Some("u7"));
+        assert!(p.validate().is_ok());
+        let none: ClientPresence =
+            serde_json::from_str(r#"{"spotlight":null,"following":null}"#).unwrap();
+        assert!(none.spotlight.is_none() && none.following.is_none());
+
+        let presence = |spotlight: Option<f64>, following: Option<String>| Presence {
+            client_id: "c".into(),
+            user_id: "u".into(),
+            name: "n".into(),
+            color: "#6D4AFF".into(),
+            page_id: None,
+            cursor: None,
+            selection: vec![],
+            transient: None,
+            agents: vec![],
+            viewport: None,
+            spotlight,
+            following,
+        };
+        let on = presence(p.spotlight, p.following.clone());
+        let json = serde_json::to_value(ServerText::Presence(on.clone())).unwrap();
+        assert_eq!(json["spotlight"], 1_759_600_000_000.0);
+        assert_eq!(json["following"], "u7");
+        let back: ServerText = serde_json::from_value(json).unwrap();
+        assert_eq!(back, ServerText::Presence(on));
+        let off = serde_json::to_value(ServerText::Presence(presence(None, None))).unwrap();
+        assert!(off.get("spotlight").is_none(), "absent when not presenting");
+        assert!(
+            off.get("following").is_none(),
+            "absent when following nobody"
+        );
+
+        let spot = |t: f64| ClientPresence {
+            spotlight: Some(t),
+            ..Default::default()
+        };
+        assert!(spot(f64::NAN).validate().is_err());
+        assert!(spot(-1.0).validate().is_err());
+        assert!(spot(0.0).validate().is_ok());
+        let follow = |u: &str| ClientPresence {
+            following: Some(u.into()),
+            ..Default::default()
+        };
+        assert!(follow("").validate().is_err());
+        assert!(follow(&"u".repeat(MAX_FOLLOWING + 1)).validate().is_err());
+        assert!(follow("u1").validate().is_ok());
     }
 }

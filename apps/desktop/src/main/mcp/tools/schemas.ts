@@ -253,6 +253,10 @@ export const schemas = {
         'Only comments on this layer or inside it (an artboard ID gives all of its comments).',
       ),
     includeResolved: z.boolean().optional().describe('Include resolved threads (default false).'),
+    threadId: z
+      .string()
+      .optional()
+      .describe('Only this thread (pass includeResolved: true to read it when it is resolved).'),
   }),
   reply_to_comment: z.strictObject({
     fileId,
@@ -498,7 +502,7 @@ export const TOOL_META: Record<McpToolName, ToolMeta> = {
     title: 'Get comments',
     kind: 'read',
     description:
-      'Read the comment threads collaborators pinned on layers: their feedback, questions and requests. Call it before you edit an artboard that has openComments in get_basic_info, and whenever the user mentions comments or feedback. Open threads only unless includeResolved is true; narrow with pageId or nodeId (a layer or artboard and everything inside it). Each thread has its status, the page, layer and artboard it is pinned on, its page position and its messages (author name and kind "user" or "agent", text, ISO time), oldest first.',
+      'Read the comment threads collaborators pinned on layers: their feedback, questions and requests. Call it before you edit an artboard that has openComments in get_basic_info, and whenever the user mentions comments or feedback. Open threads only unless includeResolved is true; narrow with pageId, nodeId (a layer or artboard and everything inside it) or threadId. Each thread has its status, the page, layer and artboard it is pinned on, its page position and its messages (author name and kind "user" or "agent", text, ISO time, the people and agents it @mentions), oldest first. mentionsYou marks messages and threads that @mention you: requests addressed to you.',
   },
   reply_to_comment: {
     title: 'Reply to comment',

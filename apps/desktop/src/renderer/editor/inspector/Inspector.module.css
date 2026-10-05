@@ -557,3 +557,17 @@
   align-items: flex-end;
   height: 30px;
 }
+
+/* A viewer of a shared file: the values stay visible, nothing can be changed. */
+.viewOnly {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-foreground-muted);
+}
+
+.viewOnlyBody {
+  display: contents;
+}

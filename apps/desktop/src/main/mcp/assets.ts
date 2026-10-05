@@ -12,8 +12,13 @@
  *
  * Bytes are sniffed: PNG/JPEG/WebP/GIF/AVIF → `putAsset` → `raster`; SVG (≤ 1 MB) → `svg`;
  * anything else → `unsupported_type`. Budget per call: 45 s and 64 MB.
+ *
+ * A comment request's run (`RunScope`) works from text other people wrote, so its sources may
+ * not read this computer's files or reach loopback / private-network hosts (`SourcePolicy`).
  */
+import { lookup as dnsLookup } from 'node:dns/promises'
 import { readFile, stat } from 'node:fs/promises'
+import { isIP } from 'node:net'
 import { basename, extname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ResolvedSource } from '../../renderer/types/bridge'
@@ -227,9 +232,110 @@ export interface FetchLike {
   ): Promise<Response>
 }
 
+/** What image sources may reach. */
+export interface SourcePolicy {
+  /** Absolute paths and file URLs on this computer. */
+  localFiles: boolean
+  /** Loopback, private, link-local and other non-public network addresses. */
+  privateNetwork: boolean
+}
+
+/** Agents the user connected: everything. */
+export const OPEN_SOURCES: SourcePolicy = { localFiles: true, privateNetwork: true }
+/** Comment requests: public http(s) images and data only. */
+export const PUBLIC_SOURCES: SourcePolicy = { localFiles: false, privateNetwork: false }
+
+function nonPublicV4([a, b]: readonly number[]): boolean {
+  if (a === undefined || b === undefined) return true
+  return (
+    a === 0 || // "this" network
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) || // carrier-grade NAT
+    (a === 169 && b === 254) || // link-local
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 192 && b === 0) || // IETF protocol assignments
+    (a === 198 && (b === 18 || b === 19)) || // benchmarking
+    a >= 224 // multicast, reserved, broadcast
+  )
+}
+
+/** The eight 16-bit groups of an IPv6 address (a trailing dotted IPv4 becomes two groups). */
+function ipv6Groups(ip: string): number[] | null {
+  let text = ip
+  const dotted = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(text)
+  if (dotted) {
+    const [w, x, y, z] = dotted.slice(1).map(Number) as [number, number, number, number]
+    text = `${text.slice(0, dotted.index)}${((w << 8) | x).toString(16)}:${((y << 8) | z).toString(16)}`
+  }
+  const [head = '', tail] = text.split('::')
+  const left = head === '' ? [] : head.split(':')
+  const right = tail === undefined || tail === '' ? [] : tail.split(':')
+  const fill = tail === undefined ? 0 : 8 - left.length - right.length
+  const groups = [...left, ...Array<string>(Math.max(0, fill)).fill('0'), ...right].map((g) =>
+    parseInt(g, 16),
+  )
+  return groups.length === 8 && groups.every((g) => g >= 0 && g <= 0xffff) ? groups : null
+}
+
+/** True for addresses that are not on the public internet (IPv4, IPv6, IPv4 inside IPv6). */
+export function isNonPublicAddress(address: string): boolean {
+  const ip = address
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/%.*$/, '')
+  const kind = isIP(ip)
+  if (kind === 4) return nonPublicV4(ip.split('.').map(Number))
+  if (kind !== 6) return true
+  const g = ipv6Groups(ip)
+  if (!g) return true
+  const [g0 = 0, g1 = 0, , , , g5 = 0, g6 = 0, g7 = 0] = g
+  const v4 = [g6 >> 8, g6 & 0xff, g7 >> 8, g7 & 0xff]
+  const zeroPrefix = g.slice(0, 5).every((x) => x === 0)
+  if (zeroPrefix && (g5 === 0 || g5 === 0xffff)) {
+    // ::, ::1, IPv4-compatible and IPv4-mapped addresses.
+    if (g5 === 0 && g6 === 0 && g7 <= 1) return true
+    return nonPublicV4(v4)
+  }
+  if (g0 === 0x64 && g1 === 0xff9b) return nonPublicV4(v4) // NAT64 64:ff9b::/96
+  return (
+    (g0 & 0xfe00) === 0xfc00 || // unique local fc00::/7
+    (g0 & 0xffc0) === 0xfe80 || // link-local fe80::/10
+    (g0 & 0xffc0) === 0xfec0 || // site-local fec0::/10
+    (g0 & 0xff00) === 0xff00 // multicast
+  )
+}
+
+/** Refuse a URL whose host is (or resolves to) a non-public address. */
+async function assertPublicHost(url: string, deps: AssetResolverDeps): Promise<void> {
+  const host = new URL(url).hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  const refused = new SourceError(
+    'unsupported_source',
+    'comment requests can only fetch images from the public internet',
+  )
+  if (host === 'localhost' || host.endsWith('.localhost')) throw refused
+  let addresses: string[]
+  if (isIP(host) !== 0) addresses = [host]
+  else {
+    try {
+      addresses = await (deps.lookup ?? defaultLookup)(host)
+    } catch {
+      throw new SourceError('fetch_failed', `could not resolve ${host}`)
+    }
+  }
+  if (addresses.length === 0 || addresses.some(isNonPublicAddress)) throw refused
+}
+
+async function defaultLookup(host: string): Promise<string[]> {
+  return (await dnsLookup(host, { all: true })).map((a) => a.address)
+}
+
 export interface AssetResolverDeps {
   putAsset(bytes: Uint8Array, mime: string): Promise<string>
   fetch: FetchLike
+  /** Every address `hostname` resolves to (DNS; checked only under `PUBLIC_SOURCES`). */
+  lookup?: (hostname: string) => Promise<string[]>
   readFile?: (path: string) => Promise<Uint8Array>
   stat?: (path: string) => Promise<{ isFile(): boolean; size: number }>
   now?: () => number
@@ -272,6 +378,7 @@ async function fetchBytes(
   deps: AssetResolverDeps,
   limits: typeof ASSET_LIMITS,
   outer: AbortSignal,
+  policy: SourcePolicy,
 ): Promise<Uint8Array> {
   const controller = new AbortController()
   const onOuter = (): void => controller.abort()
@@ -280,6 +387,8 @@ async function fetchBytes(
   try {
     let current = url
     for (let hop = 0; ; hop++) {
+      // Every hop: a public URL may redirect to a private one.
+      if (!policy.privateNetwork) await assertPublicHost(current, deps)
       let res: Response
       try {
         res = await deps.fetch(current, {
@@ -354,6 +463,7 @@ export async function resolveImageSources(
   sources: readonly string[],
   deps: AssetResolverDeps,
   signal?: AbortSignal,
+  policy: SourcePolicy = OPEN_SOURCES,
 ): Promise<Record<string, ResolvedSource>> {
   const limits = { ...ASSET_LIMITS, ...deps.limits }
   const now = deps.now ?? Date.now
@@ -372,6 +482,13 @@ export async function resolveImageSources(
         out[source] = { error: 'unsupported_source', message: kind.reason }
         continue
       }
+      if (kind.kind === 'file' && !policy.localFiles) {
+        out[source] = {
+          error: 'unsupported_source',
+          message: "comment requests can't read files on this computer; use an https URL",
+        }
+        continue
+      }
       if (
         controller.signal.aborted ||
         now() - started > limits.callMs ||
@@ -387,7 +504,7 @@ export async function resolveImageSources(
         const bytes =
           kind.kind === 'file'
             ? await readLocal(kind.path, deps, limits)
-            : await fetchBytes(kind.url, deps, limits, controller.signal)
+            : await fetchBytes(kind.url, deps, limits, controller.signal, policy)
         budgetBytes += bytes.byteLength
         if (budgetBytes > limits.callBytes) {
           throw new SourceError('budget', 'image budget for this call used up (64 MB)')

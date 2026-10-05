@@ -1,7 +1,8 @@
 /**
- * The open comment thread, beside its pin: the messages (author, time, "edited", agents marked),
- * a reply field, Resolve / Reopen, and Edit / Delete on the user's own messages. Deleting the
- * first message deletes the thread, after a confirmation.
+ * The open comment thread, beside its pin: the messages (author, time, "edited", agents marked,
+ * @mentions highlighted), a reply field that suggests people to mention, Resolve / Reopen, and
+ * Edit / Delete on the user's own messages. Deleting the first message deletes the thread, after
+ * a confirmation. While it is open, its messages count as read.
  */
 import {
   CheckIcon,
@@ -12,14 +13,23 @@ import {
   XIcon,
   toast,
 } from '@baren/ui'
-import type { CommentAuthor, CommentMessage, CommentThread } from '@baren/schema'
-import { useRef, useState, type Ref } from 'react'
+import {
+  getCommentThread,
+  type CommentAuthor,
+  type CommentMention,
+  type CommentMessage,
+  type CommentThread,
+} from '@baren/schema'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { formatRelative, useNow } from '../../lib/relativeTime'
 import { useEditor } from '../session/context'
-import { CommentAvatar, CommentInput } from './CommentParts'
+import { CommentAvatar, CommentInput, MessageText } from './CommentParts'
 import { isOwnMessage } from './model'
+import { AgentRunStatus } from './AgentRunStatus'
+import { maybeRunAgent } from './agentRun'
 import { deleteMessage, editMessage, postReply, resolveThread } from './ops'
+import type { CommentReads } from './unread'
 import css from './Comments.module.css'
 
 /** Run a comment write; a failure (e.g. a collaborator deleted the thread) becomes a toast. */
@@ -41,10 +51,11 @@ interface MessageProps {
   me: CommentAuthor
   canWrite: boolean
   now: number
+  candidates: readonly CommentMention[]
   onDeleteThread(): void
 }
 
-function Message({ thread, message, me, canWrite, now, onDeleteThread }: MessageProps) {
+function Message({ thread, message, me, canWrite, now, candidates, onDeleteThread }: MessageProps) {
   const { doc } = useEditor()
   const [editing, setEditing] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -105,9 +116,11 @@ function Message({ thread, message, me, canWrite, now, onDeleteThread }: Message
               placeholder="Edit comment"
               submitLabel="Save"
               initial={message.body}
+              initialMentions={message.mentions}
+              candidates={candidates}
               autoFocus
-              onSubmit={(text) => {
-                const ok = tryWrite(() => editMessage(doc, thread.id, message.id, text))
+              onSubmit={(text, mentions) => {
+                const ok = tryWrite(() => editMessage(doc, thread.id, message.id, text, mentions))
                 if (ok) setEditing(false)
                 return ok
               }}
@@ -115,7 +128,7 @@ function Message({ thread, message, me, canWrite, now, onDeleteThread }: Message
             />
           </div>
         ) : (
-          <div className={css.text}>{message.body}</div>
+          <MessageText body={message.body} mentions={message.mentions} me={me} />
         )}
       </div>
     </div>
@@ -129,6 +142,10 @@ export interface CommentThreadCardProps {
   me: CommentAuthor
   /** False for viewers: they read comments but cannot write. */
   canWrite: boolean
+  /** People and agents the reply and edit fields can @mention. */
+  candidates: readonly CommentMention[]
+  /** This user's read state: the open thread's messages are marked read. */
+  reads: CommentReads
   onClose(): void
   cardRef: Ref<HTMLDivElement>
 }
@@ -138,12 +155,17 @@ export function CommentThreadCard({
   anchorName,
   me,
   canWrite,
+  candidates,
+  reads,
   onClose,
   cardRef,
 }: CommentThreadCardProps) {
-  const { doc } = useEditor()
+  const session = useEditor()
+  const { doc } = session
   const now = useNow()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // Seen while open, including replies that arrive meanwhile.
+  useEffect(() => reads.markRead(thread), [reads, thread])
   const toggleResolved = () =>
     tryWrite(() => resolveThread(doc, thread.id, !thread.resolved, me.name))
   return (
@@ -190,17 +212,36 @@ export function CommentThreadCard({
             me={me}
             canWrite={canWrite}
             now={now}
+            candidates={candidates}
             onDeleteThread={() => setConfirmDelete(true)}
           />
         ))}
       </div>
+      <AgentRunStatus thread={thread} />
       {canWrite ? (
         <div className={css.composer}>
           <CommentInput
             placeholder="Reply"
             submitLabel="Reply"
-            hint="Enter to send"
-            onSubmit={(text) => tryWrite(() => postReply(doc, thread.id, me, text))}
+            hint="Enter to send · @ to mention"
+            candidates={candidates}
+            onSubmit={(text, mentions) => {
+              let id: string | null = null
+              const ok = tryWrite(() => {
+                id = postReply(doc, thread.id, me, text, mentions)
+              })
+              if (ok && id !== null) {
+                maybeRunAgent(
+                  session,
+                  getCommentThread(doc, thread.id),
+                  id,
+                  me.name,
+                  text,
+                  mentions,
+                )
+              }
+              return ok
+            }}
             onCancel={onClose}
           />
         </div>

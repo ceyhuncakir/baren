@@ -1,11 +1,13 @@
 //! Room persistence: a compacted snapshot per file plus an append-only update log.
 //!
-//! Invariant: `files.snapshot` contains every update with `seq <= files.snapshot_seq`, and
-//! `file_updates` only holds rows newer than that. Only the single live room of a file
-//! writes either table for that file, so compaction (snapshot + delete covered rows) is exact.
+//! Invariant: `files.snapshot` plus the rows of `file_updates` hold every update of the file.
+//! Compaction writes a new snapshot and deletes the rows it covers (`seq <= snapshot_seq`), except
+//! while the document has changes waiting for missing dependencies: Loro leaves those out of
+//! snapshots, so their rows are kept until the dependencies arrive. Only the single live room of a
+//! file writes either table for that file, so compaction is exact.
 
 use axum::body::Bytes;
-use loro::{ExportMode, LoroDoc, LoroValue, ValueOrContainer};
+use loro::{ExportMode, LoroDoc, LoroValue, ValueOrContainer, VersionRange, VersionVector};
 use sqlx::SqlitePool;
 
 use crate::db::now_ms;
@@ -41,19 +43,37 @@ pub async fn load(db: &SqlitePool, file_id: &str) -> Result<Option<Stored>, sqlx
     }))
 }
 
-/// Rebuild a document from stored bytes. Runs Loro decoding; call from a blocking thread for
-/// large documents.
-pub fn build_doc(stored: &Stored) -> anyhow::Result<LoroDoc> {
+/// Rebuild a document from stored bytes, with the version ranges still waiting for missing
+/// dependencies (see [`compact`]). Runs Loro decoding; call from a blocking thread for large
+/// documents.
+pub fn build_doc(stored: &Stored) -> anyhow::Result<(LoroDoc, Vec<VersionRange>)> {
     let doc = LoroDoc::new();
+    let mut unresolved = Vec::new();
     if let Some(snapshot) = &stored.snapshot {
-        doc.import(snapshot)
+        let status = doc
+            .import(snapshot)
             .map_err(|e| anyhow::anyhow!("importing snapshot: {e}"))?;
+        unresolved.extend(status.pending.filter(has_ops));
     }
     if !stored.updates.is_empty() {
-        doc.import_batch(&stored.updates)
+        let status = doc
+            .import_batch(&stored.updates)
             .map_err(|e| anyhow::anyhow!("importing {} updates: {e}", stored.updates.len()))?;
+        unresolved.extend(status.pending.filter(has_ops));
     }
-    Ok(doc)
+    Ok((doc, unresolved))
+}
+
+/// True when the range covers at least one op.
+pub fn has_ops(range: &VersionRange) -> bool {
+    range.iter().any(|(_, (start, end))| end > start)
+}
+
+/// True when every op of `range` is in `vv` (its dependencies arrived and it was applied).
+pub fn range_included(range: &VersionRange, vv: &VersionVector) -> bool {
+    range
+        .iter()
+        .all(|(peer, &(_, end))| vv.get(peer).copied().unwrap_or(0) >= end)
 }
 
 /// The stored document as one Loro snapshot, without opening a room.
@@ -67,7 +87,7 @@ pub async fn snapshot_from_db(db: &SqlitePool, file_id: &str) -> anyhow::Result<
         }
     }
     let bytes = tokio::task::spawn_blocking(move || -> anyhow::Result<Vec<u8>> {
-        let doc = build_doc(&stored)?;
+        let (doc, _) = build_doc(&stored)?;
         doc.export(ExportMode::Snapshot)
             .map_err(|e| anyhow::anyhow!("exporting snapshot: {e}"))
     })
@@ -113,15 +133,27 @@ pub async fn append(
     tx.commit().await
 }
 
-/// Replace the snapshot with `snapshot` (which must include every appended row) and drop the
-/// rows it covers.
-pub async fn compact(db: &SqlitePool, file_id: &str, snapshot: &[u8]) -> Result<(), sqlx::Error> {
+/// Replace the snapshot with `snapshot` (which must include every appended row the document
+/// could apply) and, with `fold`, drop the rows it covers.
+///
+/// Loro leaves changes whose dependencies are missing out of snapshots, so while the document
+/// holds such changes the caller passes `fold: false`: the rows that carry them stay in the log
+/// (re-importing the others is idempotent) until the dependencies arrive.
+pub async fn compact(
+    db: &SqlitePool,
+    file_id: &str,
+    snapshot: &[u8],
+    fold: bool,
+) -> Result<(), sqlx::Error> {
     let mut tx = db.begin().await?;
-    let max_seq: Option<i64> =
+    let max_seq: Option<i64> = if fold {
         sqlx::query_scalar("SELECT MAX(seq) FROM file_updates WHERE file_id = ?")
             .bind(file_id)
             .fetch_one(&mut *tx)
-            .await?;
+            .await?
+    } else {
+        None
+    };
     match max_seq {
         Some(seq) => {
             sqlx::query("UPDATE files SET snapshot = ?, snapshot_seq = ? WHERE id = ?")

@@ -66,6 +66,7 @@ import {
 } from '../model/docOps'
 import { indexAfterSelection, pasteTranslate, type PasteMode } from '../model/pastePlacement'
 import type { EditorSession } from '../session/context'
+import { canEdit } from '../session/readOnly'
 import { renderNodePng } from '../session/raster'
 import { selectIds } from '../session/selection'
 import { buildCopyContent, copyPng, copyRich, copyText, readClipboard } from './clipboard'
@@ -103,6 +104,11 @@ export class EditorActions {
 
   private get selection(): readonly string[] {
     return this.session.store.getState().selection
+  }
+
+  /** The document may be changed here (not a viewer, no version preview); tells a viewer why not. */
+  private writable(): boolean {
+    return canEdit(this.session)
   }
 
   /** World geometry from the canvas (measured), falling back to declared styles. */
@@ -158,12 +164,14 @@ export class EditorActions {
   }
 
   delete(): void {
+    if (!this.writable()) return
     const canvas = this.session.canvas.current
     if (canvas) canvas.deleteSelection()
     else deleteNodes(this.session.doc, this.selection, ORIGIN.menu, this.geometry())
   }
 
   duplicate(): void {
+    if (!this.writable()) return
     const canvas = this.session.canvas.current
     if (canvas) {
       canvas.duplicateSelection()
@@ -219,6 +227,7 @@ export class EditorActions {
   }
 
   async cut(): Promise<void> {
+    if (!this.writable()) return
     const refs = [...this.selection]
     if (refs.length === 0) return
     if (!(await this.copy())) return
@@ -235,6 +244,7 @@ export class EditorActions {
    * placement (contract §7.4); "Paste here" passes the clicked point.
    */
   async paste(mode: PasteMode = 'paste', point: PastePoint | null = null): Promise<void> {
+    if (!this.writable()) return
     const clip = await readClipboard()
     const json = clip.baren ?? (clip.text && /^\s*\{/.test(clip.text) ? clip.text : null)
     if (json !== null) {
@@ -465,16 +475,19 @@ export class EditorActions {
   // --- Structure -----------------------------------------------------------------
 
   addFlex(): void {
+    if (!this.writable()) return
     addFlexLayout(this.session.doc, this.info().real)
   }
 
   wrapInFrame(): void {
+    if (!this.writable()) return
     const id = wrapInFrame(this.session.doc, this.info().real, this.geometry())
     if (id) afterFrame(() => selectIds(this.session, [id]))
   }
 
   /** Ctrl+G: one undo step; the new group is selected. */
   group(): string | null {
+    if (!this.writable()) return null
     const { real, virtual } = this.info()
     if (real.length === 0 || virtual) return null
     const id = groupNodes(this.session.doc, real, this.geometry(), { origin: ORIGIN.group })
@@ -484,6 +497,7 @@ export class EditorActions {
 
   /** Ctrl+Shift+G: the former children stay selected. */
   ungroup(): string[] {
+    if (!this.writable()) return []
     const { groups } = this.info()
     if (groups.length === 0) return []
     const children = ungroupNodes(this.session.doc, groups, this.geometry(), {
@@ -495,6 +509,7 @@ export class EditorActions {
 
   /** Ctrl+Alt+K: a selected frame becomes a main; anything else is wrapped first. */
   createComponent(): string | null {
+    if (!this.writable()) return null
     const { real, virtual } = this.info()
     if (real.length === 0 || virtual) return null
     try {
@@ -511,6 +526,7 @@ export class EditorActions {
 
   /** Ctrl+Alt+B: instances become frames with real children (same ids). */
   detachInstance(): string[] {
+    if (!this.writable()) return []
     const { instances } = this.info()
     if (instances.length === 0) return []
     const { doc } = this.session
@@ -527,6 +543,7 @@ export class EditorActions {
 
   /** Clear the selected instances' overrides (or a virtual node's, with what is below it). */
   resetOverrides(): void {
+    if (!this.writable()) return
     const { overridable } = this.info()
     if (overridable.length === 0) return
     const { doc } = this.session
@@ -580,6 +597,7 @@ export class EditorActions {
 
   /** Re-create a deleted main on the "Components" page and go there. */
   restoreMainComponent(key: string): string | null {
+    if (!this.writable()) return null
     const id = restoreMainComponent(this.session.doc, key, { origin: ORIGIN.component })
     if (id) this.reveal(id)
     else toast('Component not found')
@@ -614,6 +632,7 @@ export class EditorActions {
     key: string,
     drop: { clientX: number; clientY: number } | null = null,
   ): string | null {
+    if (!this.writable()) return null
     const { doc, store, resolver } = this.session
     const canvas = this.session.canvas.current
     const found = findMainComponent(doc, key)
@@ -686,20 +705,24 @@ export class EditorActions {
   }
 
   bringToFront(): void {
+    if (!this.writable()) return
     reorder(this.session.doc, this.info().real, 'front')
   }
 
   sendToBack(): void {
+    if (!this.writable()) return
     reorder(this.session.doc, this.info().real, 'back')
   }
 
   rename(): void {
+    if (!this.writable()) return
     const id = this.selection[0]
     if (id === undefined || !isTreeId(id)) return
     this.session.store.setState({ renamingId: id, mode: 'design', leftPanelOpen: true })
   }
 
   toggleLock(): void {
+    if (!this.writable()) return
     const { doc, resolver } = this.session
     const ids = this.info().real
     const allLocked = ids.length > 0 && ids.every((id) => resolver.resolveNode(id)?.locked === true)
@@ -707,6 +730,7 @@ export class EditorActions {
   }
 
   toggleHide(): void {
+    if (!this.writable()) return
     const { doc, resolver } = this.session
     const ids = this.selection
     const allHidden = ids.length > 0 && ids.every((id) => resolver.resolveNode(id)?.hidden === true)
@@ -714,6 +738,7 @@ export class EditorActions {
   }
 
   toggleClip(): void {
+    if (!this.writable()) return
     const { doc, resolver } = this.session
     const frames = this.selection.filter((id) => {
       const t = resolver.resolveNode(id)?.type
@@ -728,6 +753,7 @@ export class EditorActions {
 
   /** Rotate each selected layer by 90° about its own centre (Layout menu). */
   rotate90(): void {
+    if (!this.writable()) return
     const { doc, resolver } = this.session
     const geo = this.geometry()
     const refs = this.selection

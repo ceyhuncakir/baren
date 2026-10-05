@@ -82,6 +82,24 @@ describe('parseServerText', () => {
     expect(parseServerText(`{${base}}`)).not.toHaveProperty('viewport')
   })
 
+  it('keeps spotlight and following and nulls malformed ones', () => {
+    const base =
+      '"type":"presence","clientId":"c","userId":"u","name":"n","color":"#fff","pageId":null,"cursor":null,"selection":[]'
+    expect(parseServerText(`{${base},"spotlight":1759600000000,"following":"u7"}`)).toMatchObject({
+      spotlight: 1759600000000,
+      following: 'u7',
+    })
+    expect(parseServerText(`{${base},"spotlight":"soon","following":42}`)).toMatchObject({
+      type: 'presence',
+      spotlight: null,
+      following: null,
+    })
+    expect(parseServerText(`{${base},"following":""}`)).toMatchObject({ following: null })
+    const old = parseServerText(`{${base}}`)
+    expect(old).not.toHaveProperty('spotlight')
+    expect(old).not.toHaveProperty('following')
+  })
+
   it('ignores junk', () => {
     for (const text of [
       '',

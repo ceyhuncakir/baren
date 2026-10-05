@@ -4,7 +4,7 @@
  * `EditorRoot`; components read it through `useEditor()` and subscribe narrowly.
  */
 import type { CanvasController } from '@baren/canvas'
-import type { CommentThread, ComponentResolver, DesignNode, Token } from '@baren/schema'
+import type { CommentThread, ComponentResolver, DesignNode, DocVersion, Token } from '@baren/schema'
 import type { LoroDoc } from 'loro-crdt'
 import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from 'react'
 import { useStore } from 'zustand'
@@ -18,6 +18,7 @@ import type { EditorActions } from '../commands/actions'
 import type { LayerTree } from '../model/layerTree'
 import {
   CommentsWatcher,
+  VersionsWatcher,
   ComponentsWatcher,
   DocNameWatcher,
   NodesWatcher,
@@ -50,6 +51,8 @@ export interface EditorSession {
   docName: DocNameWatcher
   /** Comment threads of every page (`comments/`). */
   comments: CommentsWatcher
+  /** Version history, newest first (`history/`). */
+  versions: VersionsWatcher
   store: EditorStore
   /** Set by the canvas once mounted; null before and after. */
   canvas: { current: CanvasController | null }
@@ -132,6 +135,12 @@ export function useCommentThreads(): readonly CommentThread[] {
   return useSyncExternalStore(comments.subscribe, comments.getSnapshot, comments.getSnapshot)
 }
 
+/** The file's versions, newest first (live: local and collaborators' changes). */
+export function useVersions(): readonly DocVersion[] {
+  const { versions } = useEditor()
+  return useSyncExternalStore(versions.subscribe, versions.getSnapshot, versions.getSnapshot)
+}
+
 export function useDocName(): string {
   const { docName } = useEditor()
   return useSyncExternalStore(docName.subscribe, docName.getSnapshot, docName.getSnapshot)
@@ -167,6 +176,7 @@ export function createWatchers(events: DocEvents) {
     docName: new DocNameWatcher(events),
     components: new ComponentsWatcher(events),
     comments: new CommentsWatcher(events),
+    versions: new VersionsWatcher(events),
   }
 }
 

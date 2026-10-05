@@ -2,7 +2,8 @@
  * Tool rail (all editor artboards): select, hand | artboard, rectangle, pen, text, insert |
  * component, image, generate | comment. Canvas tools (pen included) switch the canvas tool; the
  * others are actions: the insert menu, the component picker (32), the image picker; generate is
- * not available yet. Comment toggles comment mode and shows the page's open comment count.
+ * not available yet. Comment toggles comment mode and shows the page's open comment count;
+ * the clock opens version history in the inspector.
  */
 import {
   ArtboardToolIcon,
@@ -11,6 +12,7 @@ import {
   DropdownMenu,
   GenerateToolIcon,
   HandToolIcon,
+  HistoryIcon,
   ImagePlusIcon,
   InsertToolIcon,
   MenuItem,
@@ -24,20 +26,31 @@ import {
 } from '@baren/ui'
 import { memo, useRef, type ReactNode } from 'react'
 import { useCommentThreads, useEditor, useEditorState } from '../session/context'
+import { useViewer } from '../session/readOnly'
 import type { EditorTool } from '../session/store'
 import { pickAndInsertImage, runTool, toggleCommentMode } from '../commands/tools'
+import { useCommentAuthor, useReads } from '../comments/hooks'
 import { openCount } from '../comments/model'
+import { isUnread, useCommentReads } from '../comments/unread'
 import { ComponentPicker } from '../components/ComponentPicker'
+import { toggleHistory } from '../history/commands'
 import commentCss from '../comments/Comments.module.css'
 
-/** The comment tool and the page's open comment count. */
+/**
+ * The comment tool, the page's open comment count, and a dot when anything in the file is
+ * unread (on any page).
+ */
 const CommentButton = memo(function CommentButton() {
   const session = useEditor()
   const active = useEditorState((s) => s.commentMode)
   const pageId = useEditorState((s) => s.pageId)
-  const viewer = useEditorState((s) => s.self?.role === 'viewer')
-  const count = openCount(useCommentThreads(), pageId)
-  const label = count > 0 ? `Comments, ${count} open` : 'Comments'
+  const viewer = useViewer()
+  const threads = useCommentThreads()
+  const me = useCommentAuthor()
+  const readState = useCommentReads(useReads(me))
+  const unread = threads.some((t) => isUnread(t, readState, me))
+  const count = openCount(threads, pageId)
+  const label = `${count > 0 ? `Comments, ${count} open` : 'Comments'}${unread ? ', unread' : ''}`
   const button = (
     <ToolButton
       label={label}
@@ -48,6 +61,7 @@ const CommentButton = memo(function CommentButton() {
       onClick={() => toggleCommentMode(session)}
     >
       <CommentIcon size={16} />
+      {unread && <span className={commentCss.railUnread} aria-hidden="true" />}
       {count > 0 && (
         <span className={commentCss.railBadge} aria-hidden="true">
           {count > 99 ? '99+' : count}
@@ -62,6 +76,22 @@ const CommentButton = memo(function CommentButton() {
     </span>
   ) : (
     button
+  )
+})
+
+/** Version history: opens the file's versions in the inspector. */
+const HistoryButton = memo(function HistoryButton() {
+  const session = useEditor()
+  const open = useEditorState((s) => s.historyOpen)
+  return (
+    <ToolButton
+      label="Version history"
+      active={open}
+      aria-pressed={open}
+      onClick={() => toggleHistory(session)}
+    >
+      <HistoryIcon size={16} />
+    </ToolButton>
   )
 })
 
@@ -137,6 +167,7 @@ export const EditorToolRail = memo(function EditorToolRail() {
       {TOOLS_3.map(button)}
       <ToolDivider />
       <CommentButton />
+      <HistoryButton />
       <ComponentPicker anchorRef={componentRef} />
       <DropdownMenu
         open={insertOpen}

@@ -11,6 +11,7 @@ import {
   setCommentResolved,
   transact,
   type CommentAuthor,
+  type CommentMention,
   type CommentPin,
 } from '@baren/schema'
 import type { LoroDoc } from 'loro-crdt'
@@ -23,8 +24,9 @@ export function postThread(
   pin: CommentPin,
   author: CommentAuthor,
   body: string,
+  mentions: readonly CommentMention[] = [],
 ): string {
-  return transact(doc, () => createCommentThread(doc, { ...pin, author, body }), {
+  return transact(doc, () => createCommentThread(doc, { ...pin, author, body, mentions }), {
     origin: `${COMMENT_ORIGIN}:create`,
   })
 }
@@ -34,8 +36,9 @@ export function postReply(
   threadId: string,
   author: CommentAuthor,
   body: string,
+  mentions: readonly CommentMention[] = [],
 ): string {
-  return transact(doc, () => addCommentMessage(doc, threadId, { author, body }), {
+  return transact(doc, () => addCommentMessage(doc, threadId, { author, body, mentions }), {
     origin: `${COMMENT_ORIGIN}:reply`,
   })
 }
@@ -46,8 +49,14 @@ export function resolveThread(doc: LoroDoc, threadId: string, resolved: boolean,
   })
 }
 
-export function editMessage(doc: LoroDoc, threadId: string, messageId: string, body: string): void {
-  transact(doc, () => editCommentMessage(doc, threadId, messageId, body), {
+export function editMessage(
+  doc: LoroDoc,
+  threadId: string,
+  messageId: string,
+  body: string,
+  mentions?: readonly CommentMention[],
+): void {
+  transact(doc, () => editCommentMessage(doc, threadId, messageId, body, Date.now(), mentions), {
     origin: `${COMMENT_ORIGIN}:edit`,
   })
 }

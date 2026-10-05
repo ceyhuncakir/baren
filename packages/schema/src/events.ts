@@ -49,6 +49,8 @@ export interface NodeChangeBatch {
   components: string[]
   /** Comment threads that were added, changed or removed. */
   comments: string[]
+  /** Versions that were added, renamed or removed. */
+  versions: string[]
 }
 
 export type NodeChangeListener = (batch: NodeChangeBatch) => void
@@ -104,6 +106,7 @@ export function toNodeChangeBatch(batch: LoroEventBatch): NodeChangeBatch {
   const tokenNames = new Set<string>()
   const componentKeys = new Set<string>()
   const commentIds = new Set<string>()
+  const versionIds = new Set<string>()
   let meta = false
 
   for (const event of batch.events) {
@@ -152,6 +155,12 @@ export function toNodeChangeBatch(batch: LoroEventBatch): NodeChangeBatch {
       } else if (typeof path[1] === 'string') {
         commentIds.add(path[1])
       }
+    } else if (root === CONTAINER.versions) {
+      if (path.length === 1 && diff.type === 'map') {
+        for (const k of Object.keys(diff.updated)) versionIds.add(k)
+      } else if (typeof path[1] === 'string') {
+        versionIds.add(path[1])
+      }
     } else if (root === CONTAINER.meta) {
       meta = true
     }
@@ -182,6 +191,7 @@ export function toNodeChangeBatch(batch: LoroEventBatch): NodeChangeBatch {
     meta,
     components: [...componentKeys],
     comments: [...commentIds],
+    versions: [...versionIds],
   }
 }
 
@@ -197,7 +207,8 @@ export function subscribeNodes(doc: LoroDoc, listener: NodeChangeListener): () =
       out.tokens.length > 0 ||
       out.meta ||
       out.components.length > 0 ||
-      out.comments.length > 0
+      out.comments.length > 0 ||
+      out.versions.length > 0
     )
       listener(out)
   })

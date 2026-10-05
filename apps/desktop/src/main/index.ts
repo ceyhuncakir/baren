@@ -8,6 +8,7 @@
  * cheap; the backend, token store, macOS menu and electron-updater load lazily
  * afterwards.
  */
+import { spawn } from 'node:child_process'
 import { performance } from 'node:perf_hooks'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -41,6 +42,7 @@ import {
 import { DeepLinkRouter } from './deeplink/router'
 import { createClipboardService } from './clipboard/clipboard'
 import { registerIpcHandlers } from './ipc/handlers'
+import { hiddenSenderKind } from './ipc/senders'
 import { createLogger } from './log'
 import { serveAssets } from './protocol/assetProtocol'
 import { serveFonts } from './protocol/fontProtocol'
@@ -122,6 +124,25 @@ const savedThemePreference = loadThemePreference(themeFile, log.child('theme'))
 
 let windows: WindowManager | null = null
 let updates: UpdateController | null = null
+// Comment requests to Claude Code: loaded on first use (Preferences, a mention, the editor).
+let agentRunner: Promise<import('./agentRuns/runner').AgentRunner> | null = null
+const agentRuns = () =>
+  (agentRunner ??= Promise.all([
+    import('./agentRuns/runner'),
+    import('./agentRuns/findClaude'),
+  ]).then(
+    ([{ AgentRunner }, { claudeLaunch, findClaude }]) =>
+      new AgentRunner({
+        dir: join(userDataDir, 'agent-runs'),
+        spawn: (command, args, options) => spawn(command, args, options),
+        findClaude: () => findClaude(),
+        launch: (claude) => claudeLaunch(claude),
+        // A token of the run's own, for the comment's file only (mcp/tools/runScope.ts).
+        mcp: async (scope) => (await loadMcp()).runAccess(scope),
+        broadcast: (run) => windows?.broadcast('agentRuns:update', run),
+        log: log.child('agent-runs'),
+      }),
+  ))
 // Google Fonts for designs: loaded on the first font request (the catalog stays off the cold path).
 let fontService: Promise<import('./fonts/googleFonts').GoogleFontService> | null = null
 const googleFonts = () =>
@@ -226,6 +247,7 @@ let mcpController: McpController | null = null
 let mcpLoading: Promise<McpController> | null = null
 let mcpScheduled = false
 let mcpShutDown = false
+let agentRunsStopped = false
 /** `agent:host` states that arrived before the controller loaded (replayed on load). */
 const earlyHostStates = new Map<
   number,
@@ -705,6 +727,9 @@ async function bootstrap(
     tokens,
     deepLinks,
     appOrigins,
+    // The user's windows, else the hidden windows the MCP server opened (ipc/senders.ts).
+    senderKind: (contents) =>
+      windows?.isAppWebContents(contents.id) ? 'app' : hiddenSenderKind(contents.id),
     version: () => app.getVersion(),
     quit: () => app.quit(),
     checkForUpdates,
@@ -723,6 +748,13 @@ async function bootstrap(
     clipboard: createClipboardService(clipboard, (record) => new ClipboardItem(record)),
     mcp: mcpIpc,
     fonts: { faces: async (family) => (await googleFonts()).faces(family) },
+    agentRuns: {
+      status: async () => (await agentRuns()).status(),
+      setEnabled: async (enabled) => (await agentRuns()).setEnabled(enabled),
+      start: async (request) => (await agentRuns()).start(request),
+      stop: async (runId) => (await agentRuns()).stop(runId),
+      list: async () => (await agentRuns()).list(),
+    },
     log: log.child('ipc'),
   })
 
@@ -768,15 +800,30 @@ function start(): void {
   app.on('before-quit', (event) => {
     quitting = true
     updates?.stop()
-    // MCP: refuse new requests, flush headless hosts (≤ 3 s), remove endpoint.json; then quit.
-    if (mcpController && !mcpShutDown) {
-      event.preventDefault()
-      mcpShutDown = true
-      void mcpController
-        .shutdown()
-        .catch((error: unknown) => log.warn('MCP shutdown failed', String(error)))
-        .finally(() => app.quit())
+    const tasks: Promise<unknown>[] = []
+    // Comment requests: stop the `claude` processes and wait for them (≤ 4 s), so none outlives
+    // the app and their config files (with their tokens) are gone.
+    if (agentRunner && !agentRunsStopped) {
+      agentRunsStopped = true
+      tasks.push(
+        agentRunner
+          .then((runner) => runner.stopAll())
+          .catch((error: unknown) => log.warn('stopping comment requests failed', String(error))),
+      )
     }
+    // MCP: refuse new requests, flush headless hosts (≤ 3 s), remove endpoint.json.
+    if (mcpController && !mcpShutDown) {
+      mcpShutDown = true
+      tasks.push(
+        mcpController
+          .shutdown()
+          .catch((error: unknown) => log.warn('MCP shutdown failed', String(error))),
+      )
+    }
+    if (tasks.length === 0) return
+    // Quit again once they are done.
+    event.preventDefault()
+    void Promise.all(tasks).finally(() => app.quit())
   })
 
   app.on('will-quit', (event) => {

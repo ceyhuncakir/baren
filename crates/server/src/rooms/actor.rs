@@ -22,7 +22,7 @@ use axum::extract::ws::Utf8Bytes;
 use baren_proto::dto::Role;
 use baren_proto::wire::close_code;
 use baren_proto::{encode_frame, ClientPresence, MsgType, Presence, ServerText};
-use loro::{ExportMode, LoroDoc, VersionVector};
+use loro::{ExportMode, LoroDoc, VersionRange, VersionVector};
 use sqlx::SqlitePool;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::MissedTickBehavior;
@@ -135,6 +135,14 @@ enum ImportFailure {
     Panicked,
 }
 
+/// What an imported update did to the room's document.
+struct Imported {
+    /// It added ops, or some of its changes wait for missing dependencies.
+    changed: bool,
+    /// The changes waiting for missing dependencies, if any.
+    pending: Option<VersionRange>,
+}
+
 pub struct Room {
     file_id: String,
     db: SqlitePool,
@@ -145,6 +153,9 @@ pub struct Room {
     pending: Vec<Bytes>,
     /// Rows in `file_updates` not yet folded into the snapshot.
     rows_since_compact: usize,
+    /// Version ranges imported with missing dependencies. Loro keeps them out of snapshots, so
+    /// compaction keeps the update rows until every one of them has been applied.
+    unresolved: Vec<VersionRange>,
     last_compact: Instant,
     empty_since: Option<Instant>,
     mirrored_name: Option<String>,
@@ -267,7 +278,8 @@ impl Room {
         };
         let rows = stored.updates.len();
         let name = stored.name.clone();
-        let doc = tokio::task::spawn_blocking(move || store::build_doc(&stored)).await??;
+        let (doc, unresolved) =
+            tokio::task::spawn_blocking(move || store::build_doc(&stored)).await??;
         Ok(Some(Self {
             file_id,
             db,
@@ -276,6 +288,7 @@ impl Room {
             clients: HashMap::new(),
             pending: Vec::new(),
             rows_since_compact: rows,
+            unresolved,
             last_compact: Instant::now(),
             empty_since: Some(Instant::now()),
             mirrored_name: Some(name),
@@ -470,8 +483,12 @@ impl Room {
             return;
         }
         match self.import(payload.clone()).await {
-            Ok(false) => {}
-            Ok(true) => {
+            Ok(Imported { changed: false, .. }) => {}
+            Ok(Imported {
+                changed: true,
+                pending,
+            }) => {
+                self.unresolved.extend(pending);
                 self.broadcast_binary(client_id, &frame);
                 self.pending.push(payload);
             }
@@ -490,8 +507,8 @@ impl Room {
         }
     }
 
-    /// Import an update; `Ok(true)` if it added anything (or is waiting on dependencies).
-    async fn import(&self, payload: Bytes) -> Result<bool, ImportFailure> {
+    /// Import an update: whether it added anything (or is waiting on dependencies).
+    async fn import(&self, payload: Bytes) -> Result<Imported, ImportFailure> {
         let doc = self.doc.clone();
         let large = payload.len() > BLOCKING_IMPORT_BYTES;
         let work = move || {
@@ -502,7 +519,13 @@ impl Room {
                     tracing::debug!(error = %err, "rejected update");
                     Err(ImportFailure::Invalid)
                 }
-                Ok(Ok(status)) => Ok(status.pending.is_some() || doc.oplog_vv() != before),
+                Ok(Ok(status)) => {
+                    let pending = status.pending.filter(store::has_ops);
+                    Ok(Imported {
+                        changed: pending.is_some() || doc.oplog_vv() != before,
+                        pending,
+                    })
+                }
             }
         };
         if large {
@@ -622,6 +645,8 @@ impl Room {
             transient: presence.transient,
             agents: presence.agents,
             viewport: presence.viewport,
+            spotlight: presence.spotlight,
+            following: presence.following,
         })
         .to_json()
         .into();
@@ -693,16 +718,28 @@ impl Room {
             return Ok(());
         }
         let snapshot = self.export_snapshot().await?;
-        store::compact(&self.db, &self.file_id, &snapshot).await?;
+        let fold = self.settle_unresolved();
+        store::compact(&self.db, &self.file_id, &snapshot, fold).await?;
         tracing::debug!(
             file_id = self.file_id,
             rows = self.rows_since_compact,
             bytes = snapshot.len(),
+            kept_rows = !fold,
             "compacted"
         );
         self.rows_since_compact = 0;
         self.last_compact = Instant::now();
         Ok(())
+    }
+
+    /// Forget the unresolved ranges whose ops have all arrived; true when none remain.
+    fn settle_unresolved(&mut self) -> bool {
+        if !self.unresolved.is_empty() {
+            let vv = self.doc.oplog_vv();
+            self.unresolved
+                .retain(|range| !store::range_included(range, &vv));
+        }
+        self.unresolved.is_empty()
     }
 
     async fn compact_logged(&mut self) {

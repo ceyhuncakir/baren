@@ -6,9 +6,10 @@
  * 2. `Host` is `127.0.0.1:<port>` or `localhost:<port>` → else 403 `invalid_host` (DNS rebinding);
  * 3. `Origin` is absent or a loopback origin of this port (or an extra allowed origin) → else 403
  *    `invalid_origin`;
- * 4. `Authorization: Bearer <token>` matches (timing-safe) → else 401; more than 30 wrong
- *    tokens in 60 s → 429 for 60 s, for every request (requests without an Authorization
- *    header are refused but not counted);
+ * 4. `Authorization: Bearer <token>` matches (timing-safe) the app's token, or the token of a
+ *    running comment request (a "run token", scoped to one file: `RunScope`) → else 401; more
+ *    than 30 wrong tokens in 60 s → 429 for 60 s, for every request (requests without an
+ *    Authorization header are refused but not counted);
  * 5. while shutting down → 503.
  */
 import { timingSafeEqual } from 'node:crypto'
@@ -28,7 +29,19 @@ export interface CheckFailure {
   headers?: Record<string, string>
 }
 
-export type CheckResult = { ok: true } | CheckFailure
+/**
+ * What a comment request's `claude -p` run may touch (`agentRuns/`): its own short-lived token
+ * opens sessions that work on the comment's file only (tools/index.ts) and resolve no local
+ * files or private-network URLs as image sources (assets.ts).
+ */
+export interface RunScope {
+  runId: string
+  /** The local file the comment is in. */
+  fileId: string
+}
+
+/** `scope` is null for the app's own token (any agent the user connected). */
+export type CheckResult = { ok: true; scope: RunScope | null } | CheckFailure
 
 export interface RequestFacts {
   remoteAddress: string | undefined
@@ -42,6 +55,8 @@ export interface SecurityContext {
   port: number
   /** The current bearer token (it changes on rotation). */
   token: string
+  /** Live run tokens → their scope (comment requests; none when absent). */
+  runTokens?: ReadonlyMap<string, RunScope>
   /** BAREN_MCP_ALLOWED_ORIGINS. */
   extraOrigins: readonly string[]
 }
@@ -87,6 +102,18 @@ export function isValidBearer(authorization: string | undefined, token: string):
   const expected = Buffer.from(token, 'utf8')
   if (given.length !== expected.length) return false
   return timingSafeEqual(given, expected)
+}
+
+/** The scope of the run token in `authorization`, or null (every token compared in full). */
+export function runScopeOf(
+  authorization: string | undefined,
+  runTokens: ReadonlyMap<string, RunScope> | undefined,
+): RunScope | null {
+  let found: RunScope | null = null
+  for (const [token, scope] of runTokens ?? []) {
+    if (isValidBearer(authorization, token)) found = scope
+  }
+  return found
 }
 
 /**
@@ -163,7 +190,9 @@ export function checkRequest(
       headers: { 'Retry-After': '60' },
     }
   }
-  if (!isValidBearer(facts.authorization, ctx.token)) {
+  const appToken = isValidBearer(facts.authorization, ctx.token)
+  const scope = appToken ? null : runScopeOf(facts.authorization, ctx.runTokens)
+  if (!appToken && scope === null) {
     // Only a wrong token is a guess. Requests without credentials (a web page can make the
     // browser send those, e.g. an <img> pointing at the default port, and browsers cannot
     // attach an Authorization header cross-origin) must not lock out the real agent.
@@ -182,7 +211,7 @@ export function checkRequest(
   if (shuttingDown) {
     return { ok: false, status: 503, code: 'shutting_down', message: 'Baren is quitting' }
   }
-  return { ok: true }
+  return { ok: true, scope }
 }
 
 /** The JSON-RPC error body every refusal carries (contract §4.1). */

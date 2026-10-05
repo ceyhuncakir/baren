@@ -1,7 +1,7 @@
 /**
  * The inspector in comment mode: the current page's threads (open first, newest activity first;
- * resolved ones with "Show resolved", shared with the pins). A row centres the canvas on its pin
- * and opens the thread.
+ * resolved ones with "Show resolved", shared with the pins; unread ones bold with a dot, "@" when
+ * they mention you). A row centres the canvas on its pin and opens the thread.
  */
 import { InspectorSection, Switch } from '@baren/ui'
 import { formatRelative, useNow } from '../../lib/relativeTime'
@@ -12,30 +12,25 @@ import {
   useLayerTreeVersion,
 } from '../session/context'
 import { CommentAvatar } from './CommentParts'
-import { centredOn, lastActivity, listOrder, pageThreads, pinWorld, preview } from './model'
+import { useCommentAuthor, useReads } from './hooks'
+import { lastActivity, listOrder, pageThreads, preview } from './model'
+import { revealThread } from './reveal'
+import { isUnread, unreadMention, useCommentReads } from './unread'
 import css from './Comments.module.css'
 
 export function CommentsPanel() {
-  const { store, canvas, tree } = useEditor()
+  const session = useEditor()
+  const { store, tree } = session
   useLayerTreeVersion()
   const threads = useCommentThreads()
   const pageId = useEditorState((s) => s.pageId)
   const showResolved = useEditorState((s) => s.showResolvedComments)
   const openId = useEditorState((s) => s.openCommentId)
   const now = useNow()
+  const me = useCommentAuthor()
+  const readState = useCommentReads(useReads(me))
   const rows = listOrder(pageThreads(threads, pageId, showResolved))
   const resolvedCount = pageThreads(threads, pageId, true).filter((t) => t.resolved).length
-
-  const show = (id: string) => {
-    const thread = threads.find((t) => t.id === id)
-    const c = canvas.current
-    if (thread && c) {
-      const v = c.getViewport()
-      const world = pinWorld(thread, (n) => c.getNodeBounds(n))
-      c.setViewport(centredOn(world, v.width, v.height, v.zoom), { animate: true })
-    }
-    store.setState({ openCommentId: id })
-  }
 
   return (
     <InspectorSection
@@ -66,20 +61,28 @@ export function CommentsPanel() {
             if (!first) return null
             const anchor = t.nodeId === null ? null : (tree.meta(t.nodeId)?.name ?? null)
             const replies = t.messages.length - 1
+            const unread = isUnread(t, readState, me)
+            const mentioned = unreadMention(t, readState, me)
             return (
               <button
                 key={t.id}
                 type="button"
                 role="listitem"
-                className={`${css.row} ${t.resolved ? css.rowResolved : ''}`}
+                className={`${css.row} ${t.resolved ? css.rowResolved : ''} ${unread ? css.rowUnread : ''}`}
                 aria-current={t.id === openId}
-                onClick={() => show(t.id)}
+                onClick={() => revealThread(session, t.id)}
               >
                 <CommentAvatar author={first.author} size={22} />
                 <span className={css.rowBody}>
                   <span className={css.rowTop}>
                     <span className={css.rowAuthor}>{first.author.name}</span>
                     <span className={css.time}>{formatRelative(lastActivity(t), now)}</span>
+                    {mentioned && (
+                      <span className={css.rowMention} title="Mentions you">
+                        @
+                      </span>
+                    )}
+                    {unread && <span className={css.rowDot} title="Unread" />}
                   </span>
                   <span className={css.rowPreview}>{preview(first.body, 140)}</span>
                   <span className={css.rowFoot}>

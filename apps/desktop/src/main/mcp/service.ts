@@ -5,6 +5,7 @@
  * nativeImage, net) comes in through `McpPlatform` (controller.ts), so the whole service runs in
  * Node tests with fakes.
  */
+import { randomBytes } from 'node:crypto'
 import { chmod, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -31,7 +32,7 @@ import { HostRegistry, type HeadlessWindow, type VisibleWindowInfo } from './hos
 import { McpHttpServer } from './httpServer'
 import { AgentRpc, type RpcTarget } from './ipc'
 import { RenderService, type RenderWindow } from './render'
-import { allowedHosts, allowedOrigins } from './security'
+import { allowedHosts, allowedOrigins, type RunScope } from './security'
 import { SessionManager } from './sessions'
 import { buildSetup } from './setup'
 import {
@@ -124,6 +125,8 @@ export class McpService {
   private lastStatusAt = 0
   private readonly listeners = new Set<() => void>()
   private stopped = false
+  /** Comment requests' run tokens → their scope. Memory only: a token ends with its run. */
+  private readonly runTokens = new Map<string, RunScope>()
 
   constructor(protected readonly deps: McpServiceDeps) {
     this.log = deps.log
@@ -191,7 +194,7 @@ export class McpService {
           ? m.collectCssUrls(styles)
           : collectCssUrlsFallback(styles)
       },
-      resolveSources: (sources, signal) =>
+      resolveSources: (sources, signal, policy) =>
         resolveImageSources(
           sources,
           {
@@ -199,6 +202,7 @@ export class McpService {
             fetch: platform.fetch,
           },
           signal,
+          policy,
         ),
       headers: new Map(),
     }
@@ -242,9 +246,10 @@ export class McpService {
     this.http = new McpHttpServer({
       security: () => ({
         token: this.cfg?.token ?? '',
+        runTokens: this.runTokens,
         extraOrigins: deps.flags.mcpAllowedOrigins,
       }),
-      handle: (req, res) => this.sessions.handle(req, res),
+      handle: (req, res, scope) => this.sessions.handle(req, res, scope),
       log: this.log,
     })
     const sweep = setInterval(() => this.agents.sweep(), 1_000)
@@ -448,6 +453,26 @@ export class McpService {
       command: this.deps.platform.stdioCommand(),
       args: [this.config.paths.shim],
     })
+  }
+
+  /**
+   * Access for one comment request run (`agentRuns/`): a fresh token whose sessions work on
+   * `scope.fileId` only and resolve only public image sources (tools/runScope.ts). `revoke`
+   * when the run ends: the token stops working and its sessions close.
+   */
+  runAccess(scope: RunScope): { url: string; token: string; revoke(): Promise<void> } {
+    const port = this.http.port
+    if (this.state !== 'running' || port === null) throw new Error('The MCP server is off')
+    const token = `brr_${randomBytes(32).toString('base64url')}`
+    this.runTokens.set(token, scope)
+    return {
+      url: endpointUrl(port),
+      token,
+      revoke: async () => {
+        this.runTokens.delete(token)
+        await this.sessions.closeRun(scope.runId)
+      },
+    }
   }
 
   async resetToken(): Promise<McpSetup> {

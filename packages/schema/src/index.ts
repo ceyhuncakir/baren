@@ -30,6 +30,7 @@ export {
   metaMap,
   tokensMap,
   commentsMap,
+  versionsMap,
   type CommitOptions,
   type CreateEmptyDocOptions,
 } from './doc.ts'
@@ -53,6 +54,7 @@ export {
 export { setTokens, getTokens, isTokenName, type SetTokensOptions } from './tokens.ts'
 export {
   MAX_COMMENT_LENGTH,
+  MAX_COMMENT_MENTIONS,
   addCommentMessage,
   createCommentThread,
   decodeCommentThread,
@@ -64,10 +66,25 @@ export {
   moveCommentThread,
   setCommentResolved,
   type CommentAuthor,
+  type CommentMention,
   type CommentMessage,
   type CommentPin,
   type CommentThread,
 } from './comments.ts'
+export {
+  MAX_AUTO_VERSIONS,
+  MAX_VERSION_NAME,
+  changedSinceVersion,
+  createVersion,
+  deleteVersion,
+  docAtVersion,
+  getVersion,
+  getVersions,
+  renameVersion,
+  restoreVersion,
+  type DocVersion,
+  type VersionReason,
+} from './versions.ts'
 export { toSnapshot, toSubtreeSnapshot } from './snapshot.ts'
 export {
   subscribeNodes,

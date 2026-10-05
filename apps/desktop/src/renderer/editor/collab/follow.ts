@@ -54,12 +54,17 @@ export class PeerActivity {
     this.seen = next
   }
 
-  /** The client of `userId` to follow: the one that changed most recently. */
+  /**
+   * The client of `userId` to follow: the one that changed most recently, among the windows
+   * that are spotlighting when any is (`collab/spotlight`).
+   */
   pick(peers: readonly PeerPresence[], userId: string): PeerPresence | null {
+    const spotlighting = peers.some((p) => p.userId === userId && typeof p.spotlight === 'number')
     let best: PeerPresence | null = null
     let bestAt = Number.NEGATIVE_INFINITY
     for (const peer of peers) {
       if (peer.userId !== userId) continue
+      if (spotlighting && typeof peer.spotlight !== 'number') continue
       const at = this.seen.get(peer.clientId)?.at ?? Number.NEGATIVE_INFINITY
       if (best === null || at >= bestAt) {
         best = peer

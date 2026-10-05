@@ -298,6 +298,46 @@ export interface RenderJob {
   ids: string[]
 }
 
+/**
+ * A comment that mentions Claude Code, handed to a background `claude -p` run (`main/agentRuns`):
+ * what the run needs to find the thread and understand the request.
+ */
+export interface AgentRunRequest {
+  fileId: string
+  fileName: string
+  pageName: string
+  threadId: string
+  /** The message that asked (the run starts from it). */
+  messageId: string
+  authorName: string
+  body: string
+  layer: { id: string; name: string } | null
+  artboard: { id: string; name: string } | null
+}
+
+export type AgentRunState = 'starting' | 'working' | 'done' | 'failed' | 'stopped'
+
+export interface AgentRun {
+  id: string
+  fileId: string
+  threadId: string
+  messageId: string
+  state: AgentRunState
+  /** What it is doing now ("Taking a screenshot"); null when not running. */
+  activity: string | null
+  /** Why it failed (failed only). */
+  error: string | null
+  startedAt: number
+  endedAt: number | null
+}
+
+export interface AgentRunnerStatus {
+  /** Comment requests are on (Preferences). */
+  enabled: boolean
+  /** The `claude` executable that runs them, or null when it was not found. */
+  claudePath: string | null
+}
+
 export interface BarenBridge {
   window: {
     minimize(): void
@@ -402,6 +442,17 @@ export interface BarenBridge {
     /** Rejects with "The MCP server is off" when not running. */
     setup(): Promise<McpSetup>
     resetToken(): Promise<McpSetup>
+  }
+  /** Comments that mention Claude Code, run as background `claude -p` sessions. */
+  agentRuns: {
+    status(): Promise<AgentRunnerStatus>
+    setEnabled(enabled: boolean): Promise<AgentRunnerStatus>
+    /** Start a run for a comment (rejects when off, `claude` is missing or the thread is busy). */
+    start(request: AgentRunRequest): Promise<AgentRun>
+    stop(runId: string): Promise<void>
+    /** Runs of this app session, newest first. */
+    list(): Promise<AgentRun[]>
+    onUpdate(cb: (run: AgentRun) => void): () => void
   }
   /** Agent requests routed by main to the renderer that hosts a file (Phase 4 runtime). */
   agent: {
