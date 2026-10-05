@@ -188,6 +188,27 @@ describe('docGeometry', () => {
     })
     expectFrameClose(geo.frameOf(inner), frame(90, 90, 10, 10, -170))
   })
+
+  it('places flow children inside logical padding (as @baren/html stores it)', () => {
+    const { doc, pageId } = docWithPage()
+    const board = (styles: Record<string, string | number>) =>
+      createNode(doc, {
+        type: 'frame',
+        parentId: pageId,
+        styles: { left: 0, top: 0, width: 400, height: 300, display: 'flex', ...styles },
+      })
+    const child = (parentId: string) =>
+      createNode(doc, { type: 'rect', parentId, styles: { width: 30, height: 40 } })
+    const pair = child(board({ paddingBlock: '16px', paddingInline: '24px 8px' }))
+    const mixed = child(board({ paddingTop: 12, paddingInline: 20, paddingBottom: 4 }))
+    const sides = child(board({ paddingBlockStart: '6px', paddingInlineStart: '9px' }))
+    const short = child(board({ padding: '10px 5px' }))
+    const geo = docGeometry(doc)
+    expectFrameClose(geo.frameOf(pair), frame(24, 16, 30, 40))
+    expectFrameClose(geo.frameOf(mixed), frame(20, 12, 30, 40))
+    expectFrameClose(geo.frameOf(sides), frame(9, 6, 30, 40))
+    expectFrameClose(geo.frameOf(short), frame(5, 10, 30, 40))
+  })
 })
 
 describe('setRotation / rotateNodes', () => {

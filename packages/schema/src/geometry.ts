@@ -145,10 +145,32 @@ export function borderInsets(styles: Styles): { left: number; top: number } {
   }
 }
 
+/** First value of a 1–2 value logical pair like `paddingInline: "8px 12px"` (start, end). */
+function pairStart(v: StyleValue | undefined): number | null {
+  if (v === undefined) return null
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null
+  return toPx(v.trim().split(/\s+/)[0])
+}
+
+/**
+ * Declared left/top padding of a frame (unknown = 0). Physical longhands win over logical ones
+ * and the shorthand, as `@baren/html` stores padding as `padding`, `paddingBlock` +
+ * `paddingInline`, or a mix of physical and logical keys (horizontal-tb, ltr).
+ */
 function paddingInsets(styles: Styles): { left: number; top: number } {
   return {
-    left: toPx(styles['paddingLeft']) ?? boxSide(styles['padding'], 3) ?? 0,
-    top: toPx(styles['paddingTop']) ?? boxSide(styles['padding'], 0) ?? 0,
+    left:
+      toPx(styles['paddingLeft']) ??
+      toPx(styles['paddingInlineStart']) ??
+      pairStart(styles['paddingInline']) ??
+      boxSide(styles['padding'], 3) ??
+      0,
+    top:
+      toPx(styles['paddingTop']) ??
+      toPx(styles['paddingBlockStart']) ??
+      pairStart(styles['paddingBlock']) ??
+      boxSide(styles['padding'], 0) ??
+      0,
   }
 }
 
