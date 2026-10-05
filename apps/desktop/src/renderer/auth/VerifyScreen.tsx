@@ -29,7 +29,7 @@ function VerifyForm({ verification }: { verification: PendingVerification }) {
     setBusy(true)
     setError(null)
     try {
-      await finish(await api.auth.verify(verification.email, value))
+      await finish(await api.auth.verify(verification.email, value, verification.password))
     } catch (e) {
       setError(authErrorFor(e).message)
       setBusy(false)

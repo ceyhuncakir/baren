@@ -21,6 +21,11 @@ export interface PendingVerification {
   email: string
   /** When the last code was sent (drives "Resend in 0:24"). */
   sentAt: number
+  /**
+   * The password just typed on Create account or Sign in, sent with the code so the account
+   * keeps this user's password (`api.auth.verify`). Memory only: this store is never persisted.
+   */
+  password?: string
 }
 
 export interface SessionState {

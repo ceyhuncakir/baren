@@ -55,7 +55,8 @@ pub async fn register(
 
     let user_id = match existing {
         // Registering again before verifying replaces the pending account's name and password,
-        // so a typo or a lost code never locks the address.
+        // so a typo or a lost code never locks the address. Whoever proves the address with the
+        // code sets the final password (`verify`), so this cannot take over someone's sign-up.
         Some((id, _)) => {
             sqlx::query("UPDATE users SET name = ?, password_hash = ? WHERE id = ?")
                 .bind(&name)
@@ -191,6 +192,9 @@ pub async fn verify(
     let email = validate::email(&req.email)?;
     let invalid = || ApiError::bad_request("invalid_code", "That code is not right. Try again.");
     let code = validate::email_code(&req.code).ok_or_else(invalid)?;
+    if let Some(password) = &req.password {
+        validate::password(password)?;
+    }
     if !state.credential_limiter.check(&format!("verify:{email}")) {
         return Err(ApiError::too_many_requests());
     }
@@ -234,11 +238,24 @@ pub async fn verify(
         return Err(invalid());
     }
 
+    // The code proves the email is the caller's: the account gets the password they chose, not
+    // the one of whoever registered this address last (see `VerifyRequest::password`).
+    let password_hash = match req.password {
+        Some(password) => Some(secrets::hash_password(password).await?),
+        None => None,
+    };
     let mut tx = state.db.begin().await?;
     sqlx::query("UPDATE users SET email_verified = 1 WHERE id = ?")
         .bind(&row.id)
         .execute(&mut *tx)
         .await?;
+    if let Some(hash) = &password_hash {
+        sqlx::query("UPDATE users SET password_hash = ? WHERE id = ?")
+            .bind(hash)
+            .bind(&row.id)
+            .execute(&mut *tx)
+            .await?;
+    }
     sqlx::query("DELETE FROM email_codes WHERE user_id = ?")
         .bind(&row.id)
         .execute(&mut *tx)

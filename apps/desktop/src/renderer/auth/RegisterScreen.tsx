@@ -43,7 +43,7 @@ export function RegisterScreen() {
     setBusy(true)
     try {
       await api.auth.register({ name: name.trim(), email: email.trim(), password })
-      useSession.getState().setVerification({ email: email.trim(), sentAt: Date.now() })
+      useSession.getState().setVerification({ email: email.trim(), sentAt: Date.now(), password })
       navigate(paths.verify)
     } catch (error) {
       const { field, message } = authErrorFor(error)

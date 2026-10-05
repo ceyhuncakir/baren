@@ -60,6 +60,16 @@ describe('createApiClient', () => {
     })
   })
 
+  it('sends the password with the verification code only when given', async () => {
+    const { fetch, calls } = mockFetch(() => json({}))
+    const api = createApiClient({ baseUrl: 'http://srv', getToken: () => null, fetch })
+    await api.auth.verify('e@x.com', '123456', 'correct horse')
+    await api.auth.verify('e@x.com', '123456')
+    expect(calls[0]!.body).toEqual({ email: 'e@x.com', code: '123456', password: 'correct horse' })
+    expect(calls[1]!.body).toEqual({ email: 'e@x.com', code: '123456' })
+    expect(calls[0]!.headers['authorization']).toBeUndefined()
+  })
+
   it('maps every endpoint to the documented route', async () => {
     const { fetch, calls } = mockFetch(() => json({}))
     const api = createApiClient({ baseUrl: 'http://srv', getToken: () => 't', fetch })

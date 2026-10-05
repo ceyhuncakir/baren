@@ -39,7 +39,12 @@ export interface ApiClientOptions {
 export interface ApiClient {
   auth: {
     register(req: RegisterRequest): Promise<RegisterResponse>
-    verify(email: string, code: string): Promise<AuthResponse>
+    /**
+     * Verify the email with its code. `password` is the one the user registered (or signed in)
+     * with: the server sets it, so someone who registered the same address again before it was
+     * verified cannot end up with the account.
+     */
+    verify(email: string, code: string, password?: string): Promise<AuthResponse>
     /** Send a fresh verification code (no-op within 30 s of the last one). */
     resendCode(email: string): Promise<OkResponse>
     login(email: string, password: string): Promise<AuthResponse>
@@ -181,8 +186,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   const client: ApiClient = {
     auth: {
       register: (req) => request('POST', '/api/auth/register', { body: req, auth: false }),
-      verify: (email, code) =>
-        request('POST', '/api/auth/verify', { body: { email, code }, auth: false }),
+      verify: (email, code, password) =>
+        request('POST', '/api/auth/verify', {
+          body: password === undefined ? { email, code } : { email, code, password },
+          auth: false,
+        }),
       resendCode: (email) => request('POST', '/api/auth/resend', { body: { email }, auth: false }),
       login: (email, password) =>
         request('POST', '/api/auth/login', { body: { email, password }, auth: false }),

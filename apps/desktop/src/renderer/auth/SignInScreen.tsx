@@ -39,7 +39,7 @@ export function SignInScreen() {
       await finish(await api.auth.login(email.trim(), password))
     } catch (error) {
       if (isApiError(error) && error.code === 'email_not_verified') {
-        useSession.getState().setVerification({ email: email.trim(), sentAt: Date.now() })
+        useSession.getState().setVerification({ email: email.trim(), sentAt: Date.now(), password })
         void api.auth.resendCode(email.trim()).catch(() => undefined)
         navigate(paths.verify)
         return

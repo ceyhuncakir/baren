@@ -128,6 +128,12 @@ pub struct RegisterResponse {
 pub struct VerifyRequest {
     pub email: String,
     pub code: String,
+    /// The password the verifying user registered (or signed in) with. A code proves the
+    /// email is theirs, so the account keeps *their* password: registering again before
+    /// verifying replaces the pending password, and without this field whoever registered last
+    /// would own the account. Optional for older clients.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

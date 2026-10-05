@@ -216,6 +216,62 @@ async fn verification_code_attempts_are_limited() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn registering_again_before_verification_cannot_take_over_the_account() {
+    let srv = TestServer::start().await;
+    let email = "selin@example.com";
+    let register = |password: &'static str| {
+        srv.api(
+            "POST",
+            "/api/auth/register",
+            None,
+            Some(json!({ "name": "Selin", "email": email, "password": password })),
+        )
+    };
+    let login = |password: &'static str| {
+        srv.api(
+            "POST",
+            "/api/auth/login",
+            None,
+            Some(json!({ "email": email, "password": password })),
+        )
+    };
+    // The owner signs up; someone else registers the same address before it is verified,
+    // which replaces the pending password and mails the owner a fresh code.
+    assert_eq!(register("owner's password").await.0, 200);
+    assert_eq!(register("someone else's").await.0, 200);
+    let code = srv.mailer.last_code_for(email).unwrap();
+
+    // A password that could never be set is refused before the code is checked.
+    let (status, body) = srv
+        .api(
+            "POST",
+            "/api/auth/verify",
+            None,
+            Some(json!({ "email": email, "code": code, "password": "short" })),
+        )
+        .await;
+    assert_eq!(status, 400, "{body}");
+    assert_eq!(body["error"]["code"], "weak_password");
+
+    // The owner enters the code from their inbox; their app sends the password they chose.
+    let (status, body) = srv
+        .api(
+            "POST",
+            "/api/auth/verify",
+            None,
+            Some(json!({ "email": email, "code": code, "password": "owner's password" })),
+        )
+        .await;
+    assert_eq!(status, 200, "{body}");
+
+    let (status, body) = login("someone else's").await;
+    assert_eq!(status, 401, "{body}");
+    assert_eq!(body["error"]["code"], "invalid_credentials");
+    let (status, body) = login("owner's password").await;
+    assert_eq!(status, 200, "{body}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn protected_endpoints_require_a_session() {
     let srv = TestServer::start().await;
     for (method, path) in [
