@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Imperative DOM canvas renderer, overlay layer and spatial index.",
+  "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react.tsx"

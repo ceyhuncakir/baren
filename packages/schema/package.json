@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Document model (Loro) types and helpers shared by renderer, canvas, sync client and Rust core.",
+  "license": "MIT",
   "exports": {
     ".": "./src/index.ts"
   },

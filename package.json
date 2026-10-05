@@ -1,5 +1,28 @@
 {
   "name": "baren",
+  "license": "MIT",
+  "description": "Open-source, local-first design tool where every layer is real HTML/CSS: live multiplayer (Loro CRDT), self-hosted sync and a built-in MCP server for AI coding agents.",
+  "keywords": [
+    "design-tool",
+    "figma-alternative",
+    "local-first",
+    "crdt",
+    "loro",
+    "multiplayer",
+    "collaboration",
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "claude-code",
+    "electron",
+    "rust",
+    "html-css",
+    "ui-design"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ceyhuncakir/baren.git"
+  },
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.17.1",

@@ -6,7 +6,7 @@ members = ["crates/core", "crates/napi", "crates/server", "crates/proto"]
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
-license = "UNLICENSED"
+license = "MIT"
 publish = false
 
 [workspace.dependencies]

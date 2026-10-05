@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "HTML/CSS ↔ document conversion: write_html import (HTML → Loro nodes) and JSX/HTML export for the MCP tools.",
+  "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
     "./sources": "./src/sources.ts"

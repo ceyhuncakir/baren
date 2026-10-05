@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Design tokens, bundled fonts and React UI components.",
+  "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
     "./icons": "./src/icons/index.ts",

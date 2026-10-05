@@ -1,6 +1,7 @@
 {
   "name": "@baren/core-native",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "description": "Node-API bindings to baren-core (Rust) for the Electron main process.",
   "main": "index.js",

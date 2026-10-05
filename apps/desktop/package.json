@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Baren desktop app",
+  "license": "MIT",
   "author": "baren",
   "homepage": "https://baren.dev",
   "main": "./out/main/index.js",

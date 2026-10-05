@@ -5,6 +5,16 @@
   </picture>
 </p>
 
+<p align="center">
+  <strong>The open-source, local-first design tool where every layer is real HTML and CSS.</strong><br>
+  Design together live, host the sync server yourself, and let AI coding agents such as Claude Code,
+  Cursor and Codex design with you through the built-in MCP server.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 Baren is a local-first, multiplayer design tool for the desktop. Your files live on your machine
 (a Rust core with SQLite), so the app works offline and does not need an account. When you share a
 file with your team, it syncs live through a small server that you host yourself. Edits are merged
@@ -404,3 +414,7 @@ stdio agent joins the same session.
 `packages/sync-client/tests/e2e*.test.ts` start their own server from a built `baren-server`
 binary (`BAREN_SERVER_BIN=<path>`; otherwise they look in the `target/` directories listed at
 the top of each file) and run with `pnpm test`.
+
+## License
+
+Baren is released under the [MIT License](LICENSE).

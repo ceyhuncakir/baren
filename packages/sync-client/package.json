@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "TypeScript client for the baren server REST API and WebSocket live sync.",
+  "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
     "./api": "./src/api-entry.ts"
